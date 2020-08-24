@@ -49,6 +49,7 @@ avoid adding features or APIs which do not map onto the
 - Use CMake for entire build (see [#70])
 - Add helper to fix pass-by-value migration (see [#111])
 - Allow distance operator `<->` to work for cells at different resolutions (using center child).
+- Add `gist` operator class (see [#42], thanks [@abelvm])
 
 ## [4.0.3] - 2022-11-04
 
@@ -241,6 +242,7 @@ avoid adding features or APIs which do not map onto the
 [#37]: https://github.com/zachasme/h3-pg/issues/37
 [#38]: https://github.com/zachasme/h3-pg/issues/38
 [#41]: https://github.com/zachasme/h3-pg/issues/41
+[#42]: https://github.com/zachasme/h3-pg/pull/42
 [#55]: https://github.com/zachasme/h3-pg/issues/55
 [#64]: https://github.com/zachasme/h3-pg/issues/64
 [#65]: https://github.com/zachasme/h3-pg/pull/65
