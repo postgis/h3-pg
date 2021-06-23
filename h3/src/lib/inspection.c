@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Bytes & Brains
+ * Copyright 2018-2021 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,40 +24,40 @@
 #include "extension.h"
 
 PG_FUNCTION_INFO_V1(h3_get_resolution);
-PG_FUNCTION_INFO_V1(h3_get_base_cell);
-PG_FUNCTION_INFO_V1(h3_is_valid);
+PG_FUNCTION_INFO_V1(h3_get_base_cell_number);
+PG_FUNCTION_INFO_V1(h3_is_valid_cell);
 PG_FUNCTION_INFO_V1(h3_is_res_class_iii);
 PG_FUNCTION_INFO_V1(h3_is_pentagon);
-PG_FUNCTION_INFO_V1(h3_get_faces);
+PG_FUNCTION_INFO_V1(h3_get_icosahedron_faces);
 
 /* Returns the resolution of the index */
 Datum
 h3_get_resolution(PG_FUNCTION_ARGS)
 {
 	H3Index		hex = PG_GETARG_H3INDEX(0);
-	int			resolution = h3GetResolution(hex);
+	int			resolution = getResolution(hex);
 
 	PG_RETURN_INT32(resolution);
 }
 
 /* Returns the base cell number of the index */
 Datum
-h3_get_base_cell(PG_FUNCTION_ARGS)
+h3_get_base_cell_number(PG_FUNCTION_ARGS)
 {
 	H3Index		hex = PG_GETARG_H3INDEX(0);
-	int			base_cell_number = h3GetBaseCell(hex);
+	int			result = getBaseCellNumber(hex);
 
-	PG_RETURN_INT32(base_cell_number);
+	PG_RETURN_INT32(result);
 }
 
 /* Returns true if this is a valid H3 index */
 Datum
-h3_is_valid(PG_FUNCTION_ARGS)
+h3_is_valid_cell(PG_FUNCTION_ARGS)
 {
 	H3Index		hex = PG_GETARG_H3INDEX(0);
-	bool		isValid = h3IsValid(hex);
+	bool		result = isValidCell(hex);
 
-	PG_RETURN_BOOL(isValid);
+	PG_RETURN_BOOL(result);
 }
 
 /* Returns true if this index has a resolution with Class III orientation */
@@ -65,9 +65,9 @@ Datum
 h3_is_res_class_iii(PG_FUNCTION_ARGS)
 {
 	H3Index		hex = PG_GETARG_H3INDEX(0);
-	bool		isResClassIII = h3IsResClassIII(hex);
+	bool		result = isResClassIII(hex);
 
-	PG_RETURN_BOOL(isResClassIII);
+	PG_RETURN_BOOL(result);
 }
 
 /* Returns true if this hex represents a pentagonal cell */
@@ -75,14 +75,14 @@ Datum
 h3_is_pentagon(PG_FUNCTION_ARGS)
 {
 	H3Index		hex = PG_GETARG_H3INDEX(0);
-	bool		isPentagon = h3IsPentagon(hex);
+	bool		result = isPentagon(hex);
 
-	PG_RETURN_BOOL(isPentagon);
+	PG_RETURN_BOOL(result);
 }
 
 /* Find all icosahedron faces intersected by a given H3 index */
 Datum
-h3_get_faces(PG_FUNCTION_ARGS)
+h3_get_icosahedron_faces(PG_FUNCTION_ARGS)
 {
 	Oid			elmtype = INT4OID;
 	int16		elmlen;
@@ -100,7 +100,7 @@ h3_get_faces(PG_FUNCTION_ARGS)
 	int		   *faces = palloc(maxFaces * sizeof(int));
 	Datum	   *elements = palloc(maxFaces * sizeof(Datum));
 
-	h3GetFaces(hex, faces);
+	getIcosahedronFaces(hex, faces);
 
 	for (int i = 0; i < maxFaces; i++)
 	{

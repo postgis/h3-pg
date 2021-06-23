@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 Bytes & Brains
+ * Copyright 2018-2021 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,41 +19,46 @@
 --| These functions permit moving between resolutions in the H3 grid system.
 --| The functions produce parent (coarser) or children (finer) cells.
 
---@ availability: 1.0.0
-CREATE OR REPLACE FUNCTION h3_to_parent(h3index, resolution integer DEFAULT -1) RETURNS h3index
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_to_parent(h3index, resolution integer) IS
-'Returns the parent of the given index';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_parent(cell h3index, parentRes integer DEFAULT -1) RETURNS h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_parent(cell h3index, parentRes integer)
+IS 'Returns the parent of the given index';
 
---@ availability: 1.0.0
-CREATE OR REPLACE FUNCTION h3_to_children(h3index, resolution integer DEFAULT -1) RETURNS SETOF h3index
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_to_children(index h3index, resolution integer) IS
-'Returns the set of children of the given index';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_children(cell h3index, childRes integer DEFAULT -1) RETURNS SETOF h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_children(cell h3index, childRes integer)
+IS 'Returns the set of children of the given index';
 
---@ availability: 3.6.0
-CREATE OR REPLACE FUNCTION h3_to_center_child(h3index, resolution integer DEFAULT -1) RETURNS h3index
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_to_parent(h3index, resolution integer) IS
-'Returns the center child (finer) index contained by input index at given resolution';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_Center_child(cell h3index, childRes integer DEFAULT -1) RETURNS h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_Center_child(cell h3index, childRes integer)
+IS 'Returns the center child (finer) index contained by input index at given resolution';
 
---@ availability: 0.2.0
-CREATE OR REPLACE FUNCTION h3_compact(h3index[]) RETURNS SETOF h3index
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_compact(h3index[]) IS
-'Compacts the given array as best as possible';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_compact_cells(cells h3index[]) RETURNS SETOF h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_compact_cells(cells h3index[])
+IS 'Compacts the given array as best as possible';
 
---@ availability: 0.2.0
-CREATE OR REPLACE FUNCTION h3_uncompact(h3index[], resolution integer DEFAULT -1) RETURNS SETOF h3index
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_uncompact(h3index[], resolution integer) IS
-'Uncompacts the given array at the given resolution. If no resolution is given, then it is chosen as one higher than the highest resolution in the set';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_uncompact_cells(cells h3index[], resolution integer DEFAULT -1) RETURNS SETOF h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_uncompact_cells(cells h3index[], resolution integer)
+IS 'Uncompacts the given array at the given resolution. If no resolution is given, then it is chosen as one higher than the highest resolution in the set';
 
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 -- Custom Funtions
 
 --@ internal
-CREATE OR REPLACE FUNCTION __h3_to_children_aux(index h3index, resolution integer, current INTEGER) 
+CREATE OR REPLACE FUNCTION __h3_cell_to_children_aux(index h3index, resolution integer, current integer) 
     RETURNS SETOF h3index AS $$
     DECLARE 
         retSet h3index[];
@@ -68,9 +73,9 @@ CREATE OR REPLACE FUNCTION __h3_to_children_aux(index h3index, resolution intege
         END IF;
 
         IF current < resolution THEN
-            SELECT ARRAY(SELECT h3_to_children(index)) into retSet;
+            SELECT ARRAY(SELECT h3_cell_to_children(index)) into retSet;
             FOREACH r in ARRAY retSet LOOP
-                RETURN QUERY SELECT __h3_to_children_aux(r, resolution, current + 1);
+                RETURN QUERY SELECT __h3_cell_to_children_aux(r, resolution, current + 1);
             END LOOP;
         ELSE
             RETURN NEXT index;
@@ -78,8 +83,8 @@ CREATE OR REPLACE FUNCTION __h3_to_children_aux(index h3index, resolution intege
     END;$$ LANGUAGE plpgsql;
 
 --@ availability: 1.0.0
-CREATE OR REPLACE FUNCTION h3_to_children_slow(index h3index, resolution integer DEFAULT -1) RETURNS SETOF h3index
-    AS $$ SELECT __h3_to_children_aux($1, $2, -1) $$ LANGUAGE SQL;
-    COMMENT ON FUNCTION h3_to_children_slow(index h3index, resolution integer) IS
+CREATE OR REPLACE FUNCTION h3_cell_to_children_slow(index h3index, resolution integer DEFAULT -1) RETURNS SETOF h3index
+    AS $$ SELECT __h3_cell_to_children_aux($1, $2, -1) $$ LANGUAGE SQL;
+    COMMENT ON FUNCTION h3_cell_to_children_slow(index h3index, resolution integer) IS
 'Slower version of H3ToChildren but allocates less memory';
 

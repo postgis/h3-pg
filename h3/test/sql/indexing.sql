@@ -8,38 +8,38 @@
 \set resolution 3
 
 --
--- TEST h3_to_geo and h3_geo_to_h3
+-- TEST h3_cell_to_lat_lng and h3_lat_lng_to_cell
 --
 
 -- convertion to geo works
-SELECT h3_to_geo(:hexagon) ~= :geo;
+SELECT h3_cell_to_lat_lng(:hexagon) ~= :geo;
 
 -- convertion to h3 index works
-SELECT h3_geo_to_h3(:geo, :resolution) = :hexagon;
+SELECT h3_lat_lng_to_cell(:geo, :resolution) = :hexagon;
 
--- h3_to_geo is inverse of h3_geo_to_h3
-SELECT h3_to_geo(i) ~= :geo AND h3_get_resolution(i) = :resolution FROM (
-    SELECT h3_geo_to_h3(:geo, :resolution) AS i
+-- h3_cell_to_lat_lng is inverse of h3_lat_lng_to_cell
+SELECT h3_cell_to_lat_lng(i) ~= :geo AND h3_get_resolution(i) = :resolution FROM (
+    SELECT h3_lat_lng_to_cell(:geo, :resolution) AS i
 ) AS q;
--- h3_geo_to_h3 is inverse of h3_to_geo
-SELECT h3_geo_to_h3(g, r) = :hexagon FROM (
-    SELECT h3_to_geo(:hexagon) AS g, h3_get_resolution(:hexagon) AS r
+-- h3_lat_lng_to_cell is inverse of h3_cell_to_lat_lng
+SELECT h3_lat_lng_to_cell(g, r) = :hexagon FROM (
+    SELECT h3_cell_to_lat_lng(:hexagon) AS g, h3_get_resolution(:hexagon) AS r
 ) AS q;
 -- same for pentagon
-SELECT h3_geo_to_h3(g, r) = :pentagon FROM (
-    SELECT h3_to_geo(:pentagon) AS g, h3_get_resolution(:pentagon) AS r
+SELECT h3_lat_lng_to_cell(g, r) = :pentagon FROM (
+    SELECT h3_cell_to_lat_lng(:pentagon) AS g, h3_get_resolution(:pentagon) AS r
 ) AS q;
 
 --
--- TEST h3_to_geo_boundary
+-- TEST h3_cell_to_boundary
 --
 
 -- polyfill of geo boundary returns original index
-SELECT h3_polyfill(h3_to_geo_boundary(:hexagon), null, :resolution) = :hexagon;
+SELECT h3_polygon_to_cells(h3_cell_to_boundary(:hexagon), null, :resolution) = :hexagon;
 
 -- same for pentagon
-SELECT h3_polyfill(h3_to_geo_boundary(:pentagon), null, :resolution) = :pentagon;
+SELECT h3_polygon_to_cells(h3_cell_to_boundary(:pentagon), null, :resolution) = :pentagon;
 
 -- the boundary of an edgecrossing index is different with flag set to true
-SELECT h3_to_geo_boundary(:hexagon) ~= h3_to_geo_boundary(:hexagon, true)
-AND NOT h3_to_geo_boundary(:edgecross) ~= h3_to_geo_boundary(:edgecross, true);
+SELECT h3_cell_to_boundary(:hexagon) ~= h3_cell_to_boundary(:hexagon, true)
+AND NOT h3_cell_to_boundary(:edgecross) ~= h3_cell_to_boundary(:edgecross, true);

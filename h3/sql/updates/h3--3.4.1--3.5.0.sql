@@ -32,11 +32,11 @@ CREATE OR REPLACE FUNCTION h3_edge_length(resolution integer, km boolean DEFAULT
     COMMENT ON FUNCTION h3_edge_length(integer, boolean) IS
 'Average hexagon edge length in (kilo)meters at the given resolution.';
 -- replace separate area functions with single function
-DROP FUNCTION IF EXISTS h3_hex_area_km2(integer);
-DROP FUNCTION IF EXISTS h3_hex_area_m2(integer);
-CREATE OR REPLACE FUNCTION h3_hex_area(resolution integer, km boolean DEFAULT FALSE) RETURNS float
+DROP FUNCTION IF EXISTS h3_get_hexagon_area_avg_km2(integer);
+DROP FUNCTION IF EXISTS h3_get_hexagon_area_avg_m2(integer);
+CREATE OR REPLACE FUNCTION h3_get_hexagon_area_avg(resolution integer, km boolean DEFAULT FALSE) RETURNS float
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_hex_area(integer, boolean) IS
+    COMMENT ON FUNCTION h3_get_hexagon_area_avg(integer, boolean) IS
 'Average hexagon area in square (kilo)meters at the given resolution.';
 
 DROP FUNCTION IF EXISTS h3_hex_range(h3index, integer);

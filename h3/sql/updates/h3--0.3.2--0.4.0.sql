@@ -26,7 +26,7 @@ This function may fail to find the line between two indexes, for
 example if they are very far apart. It may also fail when finding
 distances for indexes on opposite sides of a pentagon.';
 
-CREATE OR REPLACE FUNCTION __h3_h3_to_children_aux(index h3index, resolution integer, current INTEGER) 
+CREATE OR REPLACE FUNCTION __h3_h3_cell_to_children_aux(index h3index, resolution integer, current INTEGER) 
     RETURNS SETOF h3index AS $$
     DECLARE 
         retSet h3index[];
@@ -41,9 +41,9 @@ CREATE OR REPLACE FUNCTION __h3_h3_to_children_aux(index h3index, resolution int
         END IF;
 
         IF current < resolution THEN
-            SELECT ARRAY(SELECT h3_h3_to_children(index)) into retSet;
+            SELECT ARRAY(SELECT h3_h3_cell_to_children(index)) into retSet;
             FOREACH r in ARRAY retSet LOOP
-                RETURN QUERY SELECT __h3_h3_to_children_aux(r, resolution, current + 1);
+                RETURN QUERY SELECT __h3_h3_cell_to_children_aux(r, resolution, current + 1);
             END LOOP;
         ELSE
             RETURN NEXT index;

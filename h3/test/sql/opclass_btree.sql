@@ -3,7 +3,7 @@
 \set hexagon ':string::h3index'
 
 CREATE TABLE h3_test_btree (hex h3index PRIMARY KEY);
-INSERT INTO h3_test_btree (hex) SELECT * from h3_get_res_0_indexes();
+INSERT INTO h3_test_btree (hex) SELECT * from h3_get_res_0_cells();
 CREATE INDEX h3_btree ON h3_test_btree USING btree (hex);
 --
 -- TEST b-tree operator class

@@ -19,7 +19,7 @@ EXTVERSION = $(shell grep default_version $(EXTENSION).control | \
 	sed -e "s/default_version[[:space:]]*=[[:space:]]*'\([^']*\)'/\1/")
 
 # h3 core library version to clone and statically link
-LIBH3_VERSION = v3.7.1
+LIBH3_VERSION = master
 # directory that h3 core repository is cloned into
 LIBH3_SOURCE = libh3-$(LIBH3_VERSION)
 # h3 static library location
@@ -113,7 +113,7 @@ format: clean
 	pgindent
 
 docs/api.md: $(SQL_INSTALLS)
-	python .github/documentation/generate.py "h3/sql/install/*" > $@
+	PIPENV_PIPFILE=.github/documentation/Pipfile pipenv run python .github/documentation/generate.py "h3/sql/install/*" > $@
 	npx doctoc $@
 
 # functions which we have decided not to provide bindings for
@@ -126,11 +126,11 @@ EXCLUDED_BINDING_FUNCTIONS = \
 # functions provided that are not part of expected binding functions
 EXTRA_BINDING_FUNCTIONS = \
 	get_extension_version \
-	to_children_slow \
-	to_geo_boundary_geography \
-	to_geo_boundary_geometry \
-	to_geography \
-	to_geometry
+	cell_to_children_slow \
+	cell_to_geo_boundary_geography \
+	cell_to_geo_boundary_geometry \
+	cell_to_geography \
+	cell_to_geometry
 
 /tmp/excluded-functions:
 	echo "$(EXCLUDED_BINDING_FUNCTIONS)" | tr " " "\n" > $@
@@ -153,7 +153,8 @@ h3/test/expected/ci-install.out: $(SQL_UPDATES)
 	psql -c "DROP DATABASE IF EXISTS pg_regress;"
 	psql -c "CREATE DATABASE pg_regress;"
 	psql -d pg_regress -c "CREATE EXTENSION postgis;"
-	psql -d pg_regress -c "CREATE EXTENSION h3 VERSION '0.1.0';"
+#	psql -d pg_regress -c "CREATE EXTENSION h3 VERSION '0.1.0';"
+	psql -d pg_regress -c "CREATE EXTENSION h3;"
 	psql -d pg_regress -c "ALTER EXTENSION h3 UPDATE;"
 	echo $(PRINT_TYPES_SQL) > $@
 	psql -d pg_regress -c $(PRINT_TYPES_SQL) >> $@

@@ -1,5 +1,5 @@
 #!/bin/sh -l
-set -e
+#set -e
 
 DISTRIBUTION=$1
 

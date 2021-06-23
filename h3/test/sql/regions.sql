@@ -4,7 +4,7 @@
 -- center hex
 \set center '\'81583ffffffffff\''
 -- 7 child hexes in res 0 index
-\set solid 'ARRAY(SELECT h3_to_children(:res0index, 1))'
+\set solid 'ARRAY(SELECT h3_cell_to_children(:res0index, 1))'
 -- 6 child hexes in rim of res 0 index
 \set hollow 'array_remove(:solid, :center)'
 -- polygon with 2 holes
@@ -13,28 +13,28 @@
 \set pentagon '\'831c00fffffffff\'::h3index'
 
 --
--- TEST h3_polyfill and h3_set_to_multi_polygon
+-- TEST h3_polygon_to_cells and h3_set_to_multi_polygon
 --
 
--- h3_polyfill is inverse of h3_set_to_multi_polygon for set without holes
+-- h3_polygon_to_cells is inverse of h3_set_to_multi_polygon for set without holes
 SELECT array_agg(result) is null FROM (
-    SELECT h3_polyfill(exterior, holes, 1) result FROM (
+    SELECT h3_polygon_to_cells(exterior, holes, 1) result FROM (
         SELECT exterior, holes FROM h3_set_to_multi_polygon(:solid)
     ) qq
     EXCEPT SELECT unnest(:solid) result
 ) q;
 
--- h3_polyfill is inverse of h3_set_to_multi_polygon for set with a hole
+-- h3_polygon_to_cells is inverse of h3_set_to_multi_polygon for set with a hole
 SELECT array_agg(result) is null FROM (
-    SELECT h3_polyfill(exterior, holes, 1) result FROM (
+    SELECT h3_polygon_to_cells(exterior, holes, 1) result FROM (
         SELECT exterior, holes FROM h3_set_to_multi_polygon(:hollow)
     ) qq
     EXCEPT SELECT unnest(:hollow) result
 ) q;
 
--- h3_polyfill works for polygon with two holes
+-- h3_polygon_to_cells works for polygon with two holes
 SELECT COUNT(*) = 48 FROM (
-    SELECT h3_polyfill(:with2holes, 10)
+    SELECT h3_polygon_to_cells(:with2holes, 10)
 ) q;
 
 -- h3_polyfill doesn't segfault on NULL value in holes

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 Bytes & Brains
+ * Copyright 2018-2021 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,7 +153,7 @@ COMMENT ON OPERATOR <@ (h3index, h3index) IS
 CREATE OPERATOR <-> (
   LEFTARG = h3index,
   RIGHTARG = h3index,
-  PROCEDURE = h3_distance,
+  PROCEDURE = h3_grid_distance,
   COMMUTATOR = <->
 );
 COMMENT ON OPERATOR <-> (h3index, h3index) IS

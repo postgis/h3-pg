@@ -6,10 +6,10 @@ Developed in collaboration with [Scandinavian Highlands](http://www.scandinavian
 
 ## Prerequisites
 
-* PostgreSQL 9.6 or higher (*including server headers*). It might work with earlier versions, we have not tested earlier than 9.6.
-* C compiler (e.g., gcc)
-* GNU Make
-* Git & CMake (for libh3)
+- PostgreSQL 9.6 or higher (_including server headers_). It might work with earlier versions, we have not tested earlier than 9.6.
+- C compiler (e.g., gcc)
+- GNU Make
+- Git & CMake (for libh3)
 
 ## Quick Overview
 
@@ -20,7 +20,7 @@ $ pgxn install h3
 $ pgxn load h3
 $ psql
 =# SELECT h3_geo_to_h3(POINT('37.3615593,-122.0553238'), 5);
-  h3_geo_to_h3   
+  h3_geo_to_h3
 -----------------
  85e35e73fffffff
 (1 row)
@@ -37,7 +37,7 @@ pgxn install h3
 
 ## Usage
 
-Generally, all functions have been renamed from camelCase in H3 to snake_case in SQL with an added `h3_` prefix (except when that would result in a double `h3_` prefix). For example `geoToH3` becomes `h3_geo_to_h3` and `h3ToChildren` becomes `h3_to_children`.
+Generally, all functions have been renamed from camelCase in H3 to snake*case in SQL with an added `h3*`prefix (except when that would result in a double`h3\_`prefix). For example`geoToH3`becomes`h3_geo_to_h3`and`h3ToChildren`becomes`h3_cell_to_children`.
 
 See [API reference](docs/api.md) for all provided functions.
 

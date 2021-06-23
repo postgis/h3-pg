@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 Bytes & Brains
+ * Copyright 2021 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,34 @@
  * limitations under the License.
  */
 
---| # Indexing functions
+--| # H3 Vertex functions
 --|
---| These function are used for finding the H3 index containing coordinates,
---| and for finding the center and boundary of H3 indexes.
+--| Functions for working with cell vertexes.
 
 --@ availability: 4.0.0
 CREATE OR REPLACE FUNCTION
-    h3_lat_lng_to_cell(latlng point, resolution integer) RETURNS h3index
+    h3_cell_to_vertex(cell h3index, vertexNum integer) RETURNS h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_lat_lng_to_cell(point, integer)
-IS 'Indexes the location at the specified resolution';
+    h3_cell_to_vertex(cell h3index, vertexNum integer)
+IS 'Returns a single vertex for a given cell, as an H3 index';
 
 --@ availability: 4.0.0
 CREATE OR REPLACE FUNCTION
-    h3_cell_to_lat_lng(cell h3index) RETURNS point
+    h3_cell_to_vertexes(cell h3index) RETURNS SETOF h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_lat_lng(h3index)
-IS 'Finds the centroid of the index';
+    h3_cell_to_vertexes(cell h3index)
+IS 'Returns all vertexes for a given cell, as H3 indexes';
 
 --@ availability: 4.0.0
 CREATE OR REPLACE FUNCTION
-    h3_cell_to_boundary(cell h3index, extend_at_meridian boolean DEFAULT FALSE) RETURNS polygon
+    h3_vertex_to_lat_lng(vertex h3index) RETURNS point
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_boundary(h3index, boolean)
-IS 'Finds the boundary of the index, second argument extends coordinates when crossing 180th meridian to help visualization';
+    h3_vertex_to_lat_lng(vertex h3index)
+IS 'Get the geocoordinates of an H3 vertex';
+
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_is_valid_vertex(vertex h3index) RETURNS boolean
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_is_valid_vertex(vertex h3index)
+IS 'Whether the input is a valid H3 vertex';

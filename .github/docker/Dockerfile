@@ -9,9 +9,15 @@ ENV ARCH=$ARCH
 
 RUN apt-get update && apt-get install -y \
     build-essential \
-    cmake \
     git \
     pgxnclient
+
+# Setup cmake apt repository
+RUN apt-key adv --fetch-keys https://apt.kitware.com/keys/kitware-archive-latest.asc
+RUN echo "deb https://apt.kitware.com/ubuntu/ ${UBUNTU} main" >> /etc/apt/sources.list.d/pgdg.list
+
+RUN apt-get update && apt-get install -y \
+    cmake
 
 # Setup PostgreSQL apt repository
 RUN apt-key adv --fetch-keys https://www.postgresql.org/media/keys/ACCC4CF8.asc

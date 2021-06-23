@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 Bytes & Brains
+ * Copyright 2018-2021 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,50 +19,57 @@
 --| Grid traversal allows finding cells in the vicinity of an origin cell, and
 --| determining how to traverse the grid from one cell to another.
 
---@ availability: 0.2.0
-CREATE OR REPLACE FUNCTION h3_k_ring(h3index, k integer DEFAULT 1) RETURNS SETOF h3index
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_k_ring(h3index, k integer) IS
-'Produces indices within "k" distance of the origin index';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_grid_disk(origin h3index, k integer DEFAULT 1) RETURNS SETOF h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_grid_disk(h3index, integer)
+IS 'Produces indices within "k" distance of the origin index';
 
---@ availability: 0.2.0
-CREATE OR REPLACE FUNCTION h3_k_ring_distances(h3index, k integer DEFAULT 1, OUT index h3index, OUT distance int) RETURNS SETOF record
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_k_ring_distances(h3index, k integer) IS
-'Produces indices within "k" distance of the origin index paired with their distance to the origin';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_grid_disk_distances(origin h3index, k integer DEFAULT 1, OUT index h3index, OUT distance int) RETURNS SETOF record
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_grid_disk_distances(h3index, integer)
+IS 'Produces indices within "k" distance of the origin index paired with their distance to the origin';
 
---@ availability: 0.2.0
-CREATE OR REPLACE FUNCTION h3_hex_ring(h3index, k integer DEFAULT 1) RETURNS SETOF h3index
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_hex_ring(h3index, k integer) IS
-'Returns the hollow hexagonal ring centered at origin with distance "k"';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_grid_ring_unsafe(origin h3index, k integer DEFAULT 1) RETURNS SETOF h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_grid_ring_unsafe(h3index, integer)
+IS 'Returns the hollow hexagonal ring centered at origin with distance "k"';
 
---@ availability: 0.4.0
-CREATE OR REPLACE FUNCTION h3_line(h3index, h3index) RETURNS SETOF h3index
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_line(h3index, h3index) IS
-'Given two H3 indexes, return the line of indexes between them (inclusive).
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_grid_path_cells(origin h3index, destination h3index) RETURNS SETOF h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_grid_path_cells(h3index, h3index)
+IS 'Given two H3 indexes, return the line of indexes between them (inclusive).
 
 This function may fail to find the line between two indexes, for
 example if they are very far apart. It may also fail when finding
 distances for indexes on opposite sides of a pentagon.';
 
---@ availability: 0.2.0
-CREATE OR REPLACE FUNCTION h3_distance(h3index, h3index) RETURNS integer
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_distance(h3index, h3index) IS
-'Returns the distance in grid cells between the two indices';    
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION
+    h3_grid_distance(origin h3index, destination h3index) RETURNS integer
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_grid_distance(h3index, h3index)
+IS 'Returns the distance in grid cells between the two indices';    
 
 --@ availability: 0.2.0
-CREATE OR REPLACE FUNCTION h3_experimental_h3_to_local_ij(origin h3index, index h3index) RETURNS POINT
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_experimental_h3_to_local_ij(origin h3index, index h3index) IS
-'Produces local IJ coordinates for an H3 index anchored by an origin.
+CREATE OR REPLACE FUNCTION
+    h3_experimental_h3_to_local_ij(origin h3index, index h3index) RETURNS point
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_experimental_h3_to_local_ij(h3index, h3index)
+IS 'Produces local IJ coordinates for an H3 index anchored by an origin.
 This function is experimental, and its output is not guaranteed to be compatible across different versions of H3.';
 
 --@ availability: 0.2.0
-CREATE OR REPLACE FUNCTION h3_experimental_local_ij_to_h3(origin h3index, coord POINT) RETURNS h3index
-    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_experimental_local_ij_to_h3(origin h3index, coord POINT) IS
-'Produces an H3 index from local IJ coordinates anchored by an origin.
+CREATE OR REPLACE FUNCTION
+    h3_experimental_local_ij_to_h3(origin h3index, coord point) RETURNS h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_experimental_local_ij_to_h3(h3index, point)
+IS 'Produces an H3 index from local IJ coordinates anchored by an origin.
 This function is experimental, and its output is not guaranteed to be compatible across different versions of H3.';

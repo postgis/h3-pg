@@ -18,11 +18,11 @@ SELECT NOT :hexagon <> :hexagon;
 SELECT :hexagon <> :pentagon;
  t
 
-SELECT :pentagon <@ h3_to_parent(:pentagon);
+SELECT :pentagon <@ h3_cell_to_parent(:pentagon);
  t
 
 SELECT bool_and(:pentagon @> c) FROM (
-    SELECT h3_to_children(:pentagon) c
+    SELECT h3_cell_to_children(:pentagon) c
 ) q;
  t
 

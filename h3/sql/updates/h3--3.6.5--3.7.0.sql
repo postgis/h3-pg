@@ -47,9 +47,9 @@ CREATE OR REPLACE FUNCTION h3_exact_edge_length(edge h3index, unit text DEFAULT 
 'Exact length for a specific unidirectional edge.';
 
 -- New call signatures for hexarea and edgelength, using string instead of boolean
-CREATE OR REPLACE FUNCTION h3_hex_area(resolution integer, unit text DEFAULT 'km') RETURNS float
+CREATE OR REPLACE FUNCTION h3_get_hexagon_area_avg(resolution integer, unit text DEFAULT 'km') RETURNS float
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_hex_area(integer, text) IS
+    COMMENT ON FUNCTION h3_get_hexagon_area_avg(integer, text) IS
 'Average hexagon area in square (kilo)meters at the given resolution.';
 
 CREATE OR REPLACE FUNCTION h3_edge_length(resolution integer, unit text DEFAULT 'km') RETURNS float
@@ -57,12 +57,12 @@ CREATE OR REPLACE FUNCTION h3_edge_length(resolution integer, unit text DEFAULT 
     COMMENT ON FUNCTION h3_edge_length(integer, text) IS
 'Average hexagon edge length in (kilo)meters at the given resolution.';
 
-DROP FUNCTION IF EXISTS h3_hex_area(integer, boolean);
+DROP FUNCTION IF EXISTS h3_get_hexagon_area_avg(integer, boolean);
 DROP FUNCTION IF EXISTS h3_edge_length(integer, boolean);
-CREATE OR REPLACE FUNCTION h3_hex_area(resolution integer, km boolean) RETURNS float
-    AS $$ SELECT h3_hex_area($1, CASE WHEN $2 THEN 'km' ELSE 'm' END) $$
+CREATE OR REPLACE FUNCTION h3_get_hexagon_area_avg(resolution integer, km boolean) RETURNS float
+    AS $$ SELECT h3_get_hexagon_area_avg($1, CASE WHEN $2 THEN 'km' ELSE 'm' END) $$
     IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
-    COMMENT ON FUNCTION h3_hex_area(integer, boolean) IS
+    COMMENT ON FUNCTION h3_get_hexagon_area_avg(integer, boolean) IS
 'Deprecated: use string for unit';
 
 CREATE OR REPLACE FUNCTION h3_edge_length(resolution integer, km boolean) RETURNS float

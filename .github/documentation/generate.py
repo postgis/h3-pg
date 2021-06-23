@@ -136,6 +136,9 @@ class SQLTransformer(Transformer):
     def fun_name(self, children):
         return children[1]
 
+    def datatype(self, children):
+        return children[0]
+
     @v_args(inline=True)
     def argument(self, name, argtype, default=None):
         out = ""

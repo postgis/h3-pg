@@ -20,11 +20,11 @@
 -- Custom helper functions
 
 CREATE OR REPLACE FUNCTION h3_basecells() RETURNS SETOF h3index
-    AS 'h3', 'h3_get_res_0_indexes' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    AS 'h3', 'h3_get_res_0_cells' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_basecells() IS
     'Returns all 122 basecells.';
 
-CREATE OR REPLACE FUNCTION __h3_h3_to_children_aux(index h3index, resolution integer, current INTEGER) 
+CREATE OR REPLACE FUNCTION __h3_h3_cell_to_children_aux(index h3index, resolution integer, current INTEGER) 
     RETURNS SETOF h3index AS $$
     DECLARE 
         retSet h3index[];
@@ -39,17 +39,17 @@ CREATE OR REPLACE FUNCTION __h3_h3_to_children_aux(index h3index, resolution int
         END IF;
 
         IF current < resolution THEN
-            SELECT ARRAY(SELECT h3_h3_to_children_fast(index)) into retSet;
+            SELECT ARRAY(SELECT h3_h3_cell_to_children_fast(index)) into retSet;
             FOREACH r in ARRAY retSet LOOP
-                RETURN QUERY SELECT __h3_h3_to_children_aux(r, resolution, current + 1);
+                RETURN QUERY SELECT __h3_h3_cell_to_children_aux(r, resolution, current + 1);
             END LOOP;
         ELSE
             RETURN NEXT index;
         END IF;
     END;$$ LANGUAGE plpgsql;
-CREATE OR REPLACE FUNCTION h3_h3_to_children_slow(index h3index, resolution integer DEFAULT -1) RETURNS SETOF h3index
-    AS $$ SELECT __h3_h3_to_children_aux($1, $2, -1) $$ LANGUAGE SQL;
-    COMMENT ON FUNCTION h3_h3_to_children_slow(index h3index, resolution integer) IS
+CREATE OR REPLACE FUNCTION h3_h3_cell_to_children_slow(index h3index, resolution integer DEFAULT -1) RETURNS SETOF h3index
+    AS $$ SELECT __h3_h3_cell_to_children_aux($1, $2, -1) $$ LANGUAGE SQL;
+    COMMENT ON FUNCTION h3_h3_cell_to_children_slow(index h3index, resolution integer) IS
     'Slower version of H3ToChildren but allocates less memory';
 
 -- PostGIS

@@ -2,7 +2,7 @@
 \set string '\'801dfffffffffff\''
 \set hexagon ':string::h3index'
 CREATE TABLE h3_test_clustering (hex h3index PRIMARY KEY);
-INSERT INTO h3_test_clustering (hex) SELECT * from h3_get_res_0_indexes();
+INSERT INTO h3_test_clustering (hex) SELECT * from h3_get_res_0_cells();
 CREATE INDEX h3_test_clustering_index ON h3_test_clustering USING btree (hex);
 CLUSTER h3_test_clustering_index ON h3_test_clustering;
 --

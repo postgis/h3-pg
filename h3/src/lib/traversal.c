@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Bytes & Brains
+ * Copyright 2018-2021 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,11 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3_k_ring);
-PG_FUNCTION_INFO_V1(h3_k_ring_distances);
-PG_FUNCTION_INFO_V1(h3_hex_ring);
-PG_FUNCTION_INFO_V1(h3_distance);
-PG_FUNCTION_INFO_V1(h3_line);
+PG_FUNCTION_INFO_V1(h3_grid_disk);
+PG_FUNCTION_INFO_V1(h3_grid_disk_distances);
+PG_FUNCTION_INFO_V1(h3_grid_ring_unsafe);
+PG_FUNCTION_INFO_V1(h3_grid_distance);
+PG_FUNCTION_INFO_V1(h3_grid_path_cells);
 PG_FUNCTION_INFO_V1(h3_experimental_h3_to_local_ij);
 PG_FUNCTION_INFO_V1(h3_experimental_local_ij_to_h3);
 
@@ -43,7 +43,7 @@ PG_FUNCTION_INFO_V1(h3_experimental_local_ij_to_h3);
  * pentagon.
  */
 Datum
-h3_k_ring(PG_FUNCTION_ARGS)
+h3_grid_disk(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
@@ -56,10 +56,10 @@ h3_k_ring(PG_FUNCTION_ARGS)
 		int			k = PG_GETARG_INT32(1);
 
 		/* produce indices into allocated memory */
-		int			maxSize = maxKringSize(k);
+		int			maxSize = maxGridDiskSize(k);
 		H3Index    *indices = palloc(maxSize * sizeof(H3Index));
 
-		kRing(origin, k, indices);
+		gridDisk(origin, k, indices);
 
 		funcctx->user_fctx = indices;
 		funcctx->max_calls = maxSize;
@@ -80,7 +80,7 @@ h3_k_ring(PG_FUNCTION_ARGS)
  * pentagon.
  */
 Datum
-h3_k_ring_distances(PG_FUNCTION_ARGS)
+h3_grid_disk_distances(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
@@ -98,13 +98,13 @@ h3_k_ring_distances(PG_FUNCTION_ARGS)
 		 * for
 		 */
 		/* returning */
-		int			maxSize = maxKringSize(k);
+		int			maxSize = maxGridDiskSize(k);
 		hexDistanceTuple *user_fctx = palloc(sizeof(hexDistanceTuple));
 
 		user_fctx->indices = palloc(maxSize * sizeof(H3Index));
 		user_fctx->distances = palloc(maxSize * sizeof(int));
 
-		kRingDistances(origin, k, user_fctx->indices, user_fctx->distances);
+		gridDiskDistances(origin, k, user_fctx->indices, user_fctx->distances);
 
 		ENSURE_TYPEFUNC_COMPOSITE(get_call_result_type(fcinfo, NULL, &tuple_desc));
 
@@ -124,7 +124,7 @@ h3_k_ring_distances(PG_FUNCTION_ARGS)
  * Throws if pentagonal distortion was encountered.
  */
 Datum
-h3_hex_ring(PG_FUNCTION_ARGS)
+h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
@@ -145,13 +145,13 @@ h3_hex_ring(PG_FUNCTION_ARGS)
 		 * If k is larger than 0, the ring is the size of the circle with k,
 		 * minus the circle with k-1
 		 */
-		int			maxSize = maxKringSize(k);
+		int			maxSize = maxGridDiskSize(k);
 
 		if (k > 0)
-			maxSize -= maxKringSize(k - 1);
+			maxSize -= maxGridDiskSize(k - 1);
 		indices = palloc(maxSize * sizeof(H3Index));
 
-		result = hexRing(origin, k, indices);
+		result = gridRingUnsafe(origin, k, indices);
 		ASSERT_EXTERNAL(result == 0, "Pentagonal distortion encountered, this method is undefined when it encounters pentagons");
 
 		funcctx->user_fctx = indices;
@@ -172,13 +172,13 @@ h3_hex_ring(PG_FUNCTION_ARGS)
  * space functions.
  */
 Datum
-h3_distance(PG_FUNCTION_ARGS)
+h3_grid_distance(PG_FUNCTION_ARGS)
 {
 	H3Index		originIndex = PG_GETARG_H3INDEX(0);
 	H3Index		h3Index = PG_GETARG_H3INDEX(1);
 	int			distance;
 
-	distance = h3Distance(originIndex, h3Index);
+	distance = gridDistance(originIndex, h3Index);
 	PG_RETURN_INT32(distance);
 }
 
@@ -190,7 +190,7 @@ h3_distance(PG_FUNCTION_ARGS)
  * distances for indexes on opposite sides of a pentagon.
  */
 Datum
-h3_line(PG_FUNCTION_ARGS)
+h3_grid_path_cells(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
@@ -201,10 +201,10 @@ h3_line(PG_FUNCTION_ARGS)
 		/* get function arguments */
 		H3Index		start = PG_GETARG_H3INDEX(0);
 		H3Index		end = PG_GETARG_H3INDEX(1);
-		int			size = h3LineSize(start, end);
+		int			size = gridPathCellsSize(start, end);
 		H3Index    *indices = palloc(size * sizeof(H3Index));
 
-		int			result = h3Line(start, end, indices);
+		int			result = gridPathCells(start, end, indices);
 
 		ASSERT_EXTERNAL(result == 0, "Failed to generate line");
 

@@ -20,13 +20,13 @@
 -- Hierarchical grid functions (hierarchy.c)
 CREATE OR REPLACE FUNCTION h3_to_center_child(h3index, resolution integer DEFAULT -1) RETURNS h3index
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_to_parent(h3index, resolution integer) IS
+    COMMENT ON FUNCTION h3_cell_to_parent(h3index, resolution integer) IS
 'Returns the center child (finer) index contained by input index at given resolution';
 
 -- Miscellaneous H3 functions (miscellaneous.c)
 CREATE OR REPLACE FUNCTION h3_get_pentagon_indexes(resolution integer) RETURNS SETOF h3index
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_get_res_0_indexes() IS
+    COMMENT ON FUNCTION h3_get_res_0_cells() IS
 'All the pentagon H3 indexes at the specified resolution.';
 
 -- type casts

@@ -1,0 +1,4 @@
+comment = 'H3 PostGIS integration'
+default_version = 'unreleased'
+relocatable = true
+requires = 'h3'

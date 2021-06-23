@@ -82,13 +82,13 @@ CREATE OR REPLACE FUNCTION h3_experimental_local_ij_to_h3(origin h3index, coord 
      This function is experimental, and its output is not guaranteed to be compatible across different versions of H3.';
 
 -- Hierarchical grid functions (hierarchy.c)
-CREATE OR REPLACE FUNCTION h3_h3_to_parent(h3index, resolution integer DEFAULT -1) RETURNS h3index
-    AS 'h3', 'h3_to_parent' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_h3_to_parent(h3index, resolution integer) IS
+CREATE OR REPLACE FUNCTION h3_h3_cell_to_parent(h3index, resolution integer DEFAULT -1) RETURNS h3index
+    AS 'h3', 'h3_cell_to_parent' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    COMMENT ON FUNCTION h3_h3_cell_to_parent(h3index, resolution integer) IS
     'Returns the parent of the given index';
-CREATE OR REPLACE FUNCTION h3_h3_to_children(h3index, resolution integer DEFAULT -1) RETURNS SETOF h3index
-    AS 'h3', 'h3_to_children' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-    COMMENT ON FUNCTION h3_h3_to_children(index h3index, resolution integer) IS
+CREATE OR REPLACE FUNCTION h3_h3_cell_to_children(h3index, resolution integer DEFAULT -1) RETURNS SETOF h3index
+    AS 'h3', 'h3_cell_to_children' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    COMMENT ON FUNCTION h3_h3_cell_to_children(index h3index, resolution integer) IS
     'Returns the set of children of the given index';
 CREATE OR REPLACE FUNCTION h3_compact(h3index[]) RETURNS SETOF h3index
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -155,9 +155,9 @@ CREATE OR REPLACE FUNCTION h3_degs_to_rads(float) RETURNS float
 CREATE OR REPLACE FUNCTION h3_rads_to_degs(float) RETURNS float
     AS 'h3', 'h3index_in' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 -- DEPRECATED in v3.5.0
-CREATE OR REPLACE FUNCTION h3_hex_area_km2(integer) RETURNS float
+CREATE OR REPLACE FUNCTION h3_get_hexagon_area_avg_km2(integer) RETURNS float
     AS 'h3', 'h3index_in' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-CREATE OR REPLACE FUNCTION h3_hex_area_m2(integer) RETURNS float
+CREATE OR REPLACE FUNCTION h3_get_hexagon_area_avg_m2(integer) RETURNS float
     AS 'h3', 'h3index_in' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 CREATE OR REPLACE FUNCTION h3_edge_length_km(integer) RETURNS float
     AS 'h3', 'h3index_in' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;

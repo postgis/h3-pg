@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Bytes & Brains
+ * Copyright 2018-2021 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,22 +23,22 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3_to_parent);
-PG_FUNCTION_INFO_V1(h3_to_children);
-PG_FUNCTION_INFO_V1(h3_to_center_child);
-PG_FUNCTION_INFO_V1(h3_compact);
-PG_FUNCTION_INFO_V1(h3_uncompact);
+PG_FUNCTION_INFO_V1(h3_cell_to_parent);
+PG_FUNCTION_INFO_V1(h3_cell_to_children);
+PG_FUNCTION_INFO_V1(h3_cell_to_center_child);
+PG_FUNCTION_INFO_V1(h3_compact_cells);
+PG_FUNCTION_INFO_V1(h3_uncompact_cells);
 
 /* Returns the parent (coarser) index containing given index */
 Datum
-h3_to_parent(PG_FUNCTION_ARGS)
+h3_cell_to_parent(PG_FUNCTION_ARGS)
 {
 	H3Index		parent;
 
 	/* get function arguments */
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	int			parentRes = PG_GETARG_INT32(1);
-	int			childRes = h3GetResolution(origin);
+	int			childRes = getResolution(origin);
 
 	if (parentRes == -1)
 	{
@@ -53,7 +53,7 @@ h3_to_parent(PG_FUNCTION_ARGS)
 		);
 
 	/* get parent */
-	parent = h3ToParent(origin, parentRes);
+	parent = cellToParent(origin, parentRes);
 	ASSERT_EXTERNAL(parent, "Could not generate parent");
 
 	PG_RETURN_H3INDEX(parent);
@@ -61,7 +61,7 @@ h3_to_parent(PG_FUNCTION_ARGS)
 
 /* Returns children indexes at given resolution (or next resolution if none given) */
 Datum
-h3_to_children(PG_FUNCTION_ARGS)
+h3_cell_to_children(PG_FUNCTION_ARGS)
 {
 	/* stuff done only on the first call of the function */
 	if (SRF_IS_FIRSTCALL())
@@ -86,7 +86,7 @@ h3_to_children(PG_FUNCTION_ARGS)
 		if (resolution == -1)
 		{
 			/* resolution parameter not set */
-			resolution = h3GetResolution(origin) + 1;
+			resolution = getResolution(origin) + 1;
 		}
 		ASSERT(
 			   resolution <= MAX_H3_RES,
@@ -94,16 +94,16 @@ h3_to_children(PG_FUNCTION_ARGS)
 			   "Maximum resolution exceeded"
 			);
 
-		maxSize = maxH3ToChildrenSize(origin, resolution);
+		maxSize = cellToChildrenSize(origin, resolution);
 		size = maxSize * sizeof(H3Index);
 		ASSERT(
 			   AllocSizeIsValid(size),
 			   ERRCODE_OUT_OF_MEMORY,
-			   "Cannot allocate necessary amount memory, try using h3_to_children_slow()"
+			   "Cannot allocate necessary amount memory, try using h3_cell_to_children_slow()"
 			);
 
 		children = palloc(size);
-		h3ToChildren(origin, resolution, children);
+		cellToChildren(origin, resolution, children);
 		ASSERT_EXTERNAL(*children, "Could not generate children");
 
 		funcctx->user_fctx = children;
@@ -119,14 +119,14 @@ h3_to_children(PG_FUNCTION_ARGS)
 
 /* Returns the center child (finer) index contained by input index at given resolution */
 Datum
-h3_to_center_child(PG_FUNCTION_ARGS)
+h3_cell_to_center_child(PG_FUNCTION_ARGS)
 {
 	H3Index		child;
 
 	/* get function arguments */
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	int			childRes = PG_GETARG_INT32(1);
-	int			parentRes = h3GetResolution(origin);
+	int			parentRes = getResolution(origin);
 
 	if (childRes == -1)
 	{
@@ -141,14 +141,14 @@ h3_to_center_child(PG_FUNCTION_ARGS)
 		);
 
 	/* get child */
-	child = h3ToCenterChild(origin, childRes);
+	child = cellToCenterChild(origin, childRes);
 	ASSERT_EXTERNAL(child, "Could not generate center child");
 
 	PG_RETURN_H3INDEX(child);
 }
 
 Datum
-h3_compact(PG_FUNCTION_ARGS)
+h3_compact_cells(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
@@ -173,7 +173,7 @@ h3_compact(PG_FUNCTION_ARGS)
 			h3set[i++] = DatumGetH3Index(value);
 		}
 
-		result = compact(h3set, compactedSet, maxSize);
+		result = compactCells(h3set, compactedSet, maxSize);
 		ASSERT_EXTERNAL(result == 0, "Could not compact input array");
 
 		funcctx->user_fctx = compactedSet;
@@ -185,15 +185,16 @@ h3_compact(PG_FUNCTION_ARGS)
 }
 
 Datum
-h3_uncompact(PG_FUNCTION_ARGS)
+h3_uncompact_cells(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
 		int			result;
 		Datum		value;
 		bool		isnull;
+		bool		error;
 		int			i = 0;
-		int			maxSize;
+		int64_t			maxSize;
 		H3Index    *uncompactedSet;
 
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
@@ -203,14 +204,14 @@ h3_uncompact(PG_FUNCTION_ARGS)
 		ArrayType  *array = PG_GETARG_ARRAYTYPE_P(0);
 		int			resolution = PG_GETARG_INT32(1);
 
-		int			arrayLength = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
+		int			numCompacted = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
 		ArrayIterator iterator = array_create_iterator(array, 0, NULL);
-		H3Index    *h3set = palloc(sizeof(H3Index) * arrayLength);
+		H3Index    *compactedSet = palloc(sizeof(H3Index) * numCompacted);
 
-		/* Extract data from array into h3set, and wipe compactedSet memory */
+		/* Extract data from array into compactedSet, and wipe compactedSet memory */
 		while (array_iterate(iterator, &value, &isnull))
 		{
-			h3set[i++] = DatumGetH3Index(value);
+			compactedSet[i++] = DatumGetH3Index(value);
 		}
 
 		if (resolution == -1)
@@ -219,9 +220,9 @@ h3_uncompact(PG_FUNCTION_ARGS)
 			int			highRes = 0;
 
 			/* Find highest resolution in the given set */
-			for (int i = 0; i < arrayLength; i++)
+			for (int i = 0; i < numCompacted; i++)
 			{
-				int			curRes = h3GetResolution(h3set[i]);
+				int			curRes = getResolution(compactedSet[i]);
 
 				if (curRes > highRes)
 					highRes = curRes;
@@ -235,11 +236,14 @@ h3_uncompact(PG_FUNCTION_ARGS)
 			resolution = (highRes == 15 ? highRes : highRes + 1);
 		}
 
-		maxSize = maxUncompactSize(h3set, arrayLength, resolution);
+		error = uncompactCellsSize(compactedSet, numCompacted, resolution, &maxSize);
+		ASSERT_EXTERNAL(error == 0,
+						"Could not uncompact input array. This may be caused by choosing a lower resolution than some of the indexes"
+			);
 		uncompactedSet = palloc0(maxSize * sizeof(H3Index));
 
-		result = uncompact(h3set, arrayLength, uncompactedSet, maxSize, resolution);
-		ASSERT_EXTERNAL(result == 0,
+		error = uncompactCells(compactedSet, numCompacted, uncompactedSet, maxSize, resolution);
+		ASSERT_EXTERNAL(error == 0,
 						"Could not uncompact input array. This may be caused by choosing a lower resolution than some of the indexes"
 			);
 

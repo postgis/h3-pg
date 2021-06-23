@@ -29,7 +29,7 @@ COMMENT ON OPERATOR <@ (h3index, h3index) IS
 COMMENT ON OPERATOR = (h3index, h3index) IS
   'Returns true if two indexes are the same';
 
-COMMENT ON FUNCTION h3_hex_area(integer, boolean) IS
+COMMENT ON FUNCTION h3_get_hexagon_area_avg(integer, boolean) IS
   NULL;
 
 COMMENT ON FUNCTION h3_edge_length(integer, boolean) IS
