@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 Bytes & Brains
+ * Copyright 2018-2022 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,7 +194,7 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 		bool		isnull;
 		bool		error;
 		int			i = 0;
-		int64_t			maxSize;
+		int64_t		maxSize;
 		H3Index    *uncompactedSet;
 
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
@@ -208,7 +208,10 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 		ArrayIterator iterator = array_create_iterator(array, 0, NULL);
 		H3Index    *compactedSet = palloc(sizeof(H3Index) * numCompacted);
 
-		/* Extract data from array into compactedSet, and wipe compactedSet memory */
+		/*
+		 * Extract data from array into compactedSet, and wipe compactedSet
+		 * memory
+		 */
 		while (array_iterate(iterator, &value, &isnull))
 		{
 			compactedSet[i++] = DatumGetH3Index(value);

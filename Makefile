@@ -1,4 +1,4 @@
-# Copyright 2018-2019 Bytes & Brains
+# Copyright 2018-2022 Bytes & Brains
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ EXTVERSION = $(shell grep default_version $(EXTENSION).control | \
 	sed -e "s/default_version[[:space:]]*=[[:space:]]*'\([^']*\)'/\1/")
 
 # h3 core library version to clone and statically link
-LIBH3_VERSION = master
+LIBH3_VERSION = v4.0.0-rc2
 # directory that h3 core repository is cloned into
 LIBH3_SOURCE = libh3-$(LIBH3_VERSION)
 # h3 static library location

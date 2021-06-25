@@ -27,6 +27,7 @@ avoid adding features or APIs which do not map onto the
   </summary>
 
 - Handle non-polygons for `h3_polyfill` (see [#55], thanks [@Lokks])
+- Update `h3` core library to `v4.0.0`
 
 </details>
 

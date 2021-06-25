@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Bytes & Brains
+ * Copyright 2022 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ Datum
 h3_cell_to_vertex(PG_FUNCTION_ARGS)
 {
 	H3Index		cell = PG_GETARG_H3INDEX(0);
-	int		    vertexNum = PG_GETARG_INT32(1);
+	int			vertexNum = PG_GETARG_INT32(1);
 	H3Index		vertex = cellToVertex(cell, vertexNum);
 
 	PG_RETURN_H3INDEX(vertex);
@@ -102,7 +102,7 @@ Datum
 h3_is_valid_vertex(PG_FUNCTION_ARGS)
 {
 	H3Index		vertex = PG_GETARG_H3INDEX(0);
-    bool        is_valid = isValidVertex(vertex);
+	bool		is_valid = isValidVertex(vertex);
 
-    PG_RETURN_BOOL(is_valid);
+	PG_RETURN_BOOL(is_valid);
 }
