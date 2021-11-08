@@ -26,6 +26,15 @@ $ psql
 (1 row)
 ```
 
+#### On macOS with the Postgres.app Universal Binary
+
+```
+brew install pgxnclient make cmake
+export CMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+pgxn install h3
+```
+
+
 ## Usage
 
 Generally, all functions have been renamed from camelCase in H3 to snake_case in SQL with an added `h3_` prefix (except when that would result in a double `h3_` prefix). For example `geoToH3` becomes `h3_geo_to_h3` and `h3ToChildren` becomes `h3_to_children`.
