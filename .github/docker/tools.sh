@@ -12,24 +12,28 @@ POSTGRESQLS=(14 13) # two latest
 
 cd $BASEDIR
 
-function help {
-  echo -e "Usage: $0"\\n
-  echo -e "-c   --Clean tags"
-  echo -e "-b   --Build images"
-  echo -e "-p   --Push images"
-  echo -e "-t   --Run tests"
+printhelp () { echo \
+"Usage: $0 [-a i386] [-u bionic] [-g 12] -b|-p|-t
 
-  echo -e "-a   --Arch: amd64 or i386"
-  echo -e "-n   --Name: focal, bionic, etc"
-  echo -e "-g   --Postgres version"
+Options:
+  -a   Architecture (amd64 or i386)
+  -u   Ubuntu release (focal, bionic, etc.)
+  -g   PostgreSQL version (15, 14, etc.)
+
+Commands
+  -b   Build images
+  -p   Push images
+  -t   Run tests"
+
+  exit 0;
 }
 
-while getopts ':chbpta::n::g::' o; do
-case "$o" in
+while getopts ':hbpta::u::g::' o; do
+case "${o}" in
   a)  # set arch
       ARCHS=($OPTARG)
       ;;
-  n)  # set release name
+  u)  # set release name
       UBUNTUS=($OPTARG)
       ;;
   g)  # set postgresql version
@@ -37,6 +41,7 @@ case "$o" in
       ;;
 
   b)  # build images
+      work=build
       for postgresql in "${POSTGRESQLS[@]}"; do
         for ubuntu in "${UBUNTUS[@]}"; do
           for arch in "${ARCHS[@]}"; do
@@ -54,6 +59,7 @@ case "$o" in
       ;;
 
   p)  # push images
+      work=push
       for postgresql in "${POSTGRESQLS[@]}"; do
         for ubuntu in "${UBUNTUS[@]}"; do
           for arch in "${ARCHS[@]}"; do
@@ -67,6 +73,7 @@ case "$o" in
       ;;
 
   t)  # run tests
+      work=test
       for postgresql in "${POSTGRESQLS[@]}"; do
         for ubuntu in "${UBUNTUS[@]}"; do
           for arch in "${ARCHS[@]}"; do
@@ -81,14 +88,15 @@ case "$o" in
       done
       ;;
 
-  [?]) # print help
-      help
+  *) # print help
+      printhelp
       exit 1;;
   esac
 done
 
 shift $((OPTIND-1))
 
-if [ -z "${s}" ] || [ -z "${p}" ]; then
-  help
+# print help if no actual work was done
+if [ -z "${work}" ]; then
+  printhelp
 fi

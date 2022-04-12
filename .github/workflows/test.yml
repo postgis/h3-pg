@@ -13,7 +13,7 @@ jobs:
       - run: make docs/api.md
       - run: git diff --exit-code docs
 
-  amd64:
+  installcheck:
     runs-on: ubuntu-latest
     strategy:
       matrix:
