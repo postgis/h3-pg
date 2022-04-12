@@ -81,8 +81,9 @@ case "$o" in
       done
       ;;
 
-  *)  # print help
-      help;;
+  [?]) # print help
+      help
+      exit 1;;
   esac
 done
 
