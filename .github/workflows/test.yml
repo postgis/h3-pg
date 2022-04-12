@@ -17,10 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, i386]
+        postgresql: [14, 13]
+        ubuntu: [impish, focal]
+        arch: [amd64]
     steps:
       - uses: actions/checkout@v2
       - name: Login to repository
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u "$GITHUB_ACTOR" --password-stdin
       - name: Test
-        run: docker run -v ${PWD}:/github/workspace docker.pkg.github.com/bytesandbrains/h3-pg/test:${{ matrix.arch }}
+        run: docker run -v ${PWD}:/github/workspace docker.pkg.github.com/bytesandbrains/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
