@@ -57,7 +57,7 @@ h3_grid_disk(PG_FUNCTION_ARGS)
 
 		/* produce indices into allocated memory */
 		int64_t		maxSize;
-		H3Error 	error = maxGridDiskSize(k, &maxSize);
+		H3Error		error = maxGridDiskSize(k, &maxSize);
 		H3Index    *indices = palloc(maxSize * sizeof(H3Index));
 
 		ASSERT_EXTERNAL(error == 0, "Something went wrong.");
@@ -157,7 +157,8 @@ h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 
 		ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 
-		if (k > 0) {
+		if (k > 0)
+		{
 			error = maxGridDiskSize(k - 1, &innerSize);
 			ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 			maxSize -= innerSize;

@@ -15,8 +15,8 @@ RUN apt-get update && apt-get install -y \
 
 # H3 requires CMake 3.20, which has not landed in ubuntu
 # as of writing. So we setup cmake apt repository
-RUN apt-key adv --fetch-keys https://apt.kitware.com/keys/kitware-archive-latest.asc
-RUN echo "deb https://apt.kitware.com/ubuntu/ ${UBUNTU} main" >> /etc/apt/sources.list.d/pgdg.list
+RUN if [ "$UBUNTU" != "impish" ] ; then apt-key adv --fetch-keys https://apt.kitware.com/keys/kitware-archive-latest.asc ; fi
+RUN if [ "$UBUNTU" != "impish" ] ; then echo "deb https://apt.kitware.com/ubuntu/ ${UBUNTU} main" >> /etc/apt/sources.list.d/pgdg.list ; fi
 RUN apt-get update && apt-get install -y cmake
 # we can remove the block above when 3.20 lands
 

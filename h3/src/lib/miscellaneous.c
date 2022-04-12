@@ -153,9 +153,9 @@ h3_exact_edge_length(PG_FUNCTION_ARGS)
 Datum
 h3_get_num_cells(PG_FUNCTION_ARGS)
 {
-	int64_t numCells;
-	int     resolution = PG_GETARG_INT32(0);
-	H3Error error = getNumCells(resolution, &numCells);
+	int64_t		numCells;
+	int			resolution = PG_GETARG_INT32(0);
+	H3Error		error = getNumCells(resolution, &numCells);
 
 	ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 

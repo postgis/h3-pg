@@ -79,7 +79,7 @@ h3_get_directed_edge_origin(PG_FUNCTION_ARGS)
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 	H3Index		origin;
 
-	H3Error		error  = getDirectedEdgeOrigin(edge, &origin);
+	H3Error		error = getDirectedEdgeOrigin(edge, &origin);
 
 	ASSERT_EXTERNAL(error == 0, "Something went wrong");
 	PG_RETURN_H3INDEX(origin);
@@ -91,7 +91,7 @@ h3_get_directed_edge_destination(PG_FUNCTION_ARGS)
 {
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 	H3Index		destination;
-	
+
 	H3Error		error = getDirectedEdgeDestination(edge, &destination);
 
 	ASSERT_EXTERNAL(error == 0, "Something went wrong");

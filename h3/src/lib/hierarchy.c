@@ -34,7 +34,7 @@ Datum
 h3_cell_to_parent(PG_FUNCTION_ARGS)
 {
 	H3Index		parent;
-	H3Error     error;
+	H3Error		error;
 
 	/* get function arguments */
 	H3Index		origin = PG_GETARG_H3INDEX(0);
@@ -70,7 +70,7 @@ h3_cell_to_children(PG_FUNCTION_ARGS)
 		int64_t		maxSize;
 		int64_t		size;
 		H3Index    *children;
-		H3Error     error;
+		H3Error		error;
 
 		/* create a function context for cross-call persistence */
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();

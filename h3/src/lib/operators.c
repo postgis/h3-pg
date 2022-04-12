@@ -37,7 +37,7 @@ PG_FUNCTION_INFO_V1(h3index_contained_by);
 static int
 containment(H3Index a, H3Index b)
 {
-	H3Error     error;
+	H3Error		error;
 	H3Index		aParent = a;
 	H3Index		bParent = b;
 	int			aRes = getResolution(a);
