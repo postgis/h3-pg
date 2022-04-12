@@ -60,16 +60,14 @@ IS 'Returns the distance in grid cells between the two indices';
 
 --@ availability: 0.2.0
 CREATE OR REPLACE FUNCTION
-    h3_experimental_h3_to_local_ij(origin h3index, index h3index) RETURNS point
+    h3_cell_to_local_ij(origin h3index, index h3index) RETURNS point
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_experimental_h3_to_local_ij(h3index, h3index)
-IS 'Produces local IJ coordinates for an H3 index anchored by an origin.
-This function is experimental, and its output is not guaranteed to be compatible across different versions of H3.';
+    h3_cell_to_local_ij(h3index, h3index)
+IS 'Produces local IJ coordinates for an H3 index anchored by an origin.';
 
 --@ availability: 0.2.0
 CREATE OR REPLACE FUNCTION
-    h3_experimental_local_ij_to_h3(origin h3index, coord point) RETURNS h3index
+    h3_local_ij_to_cell(origin h3index, coord point) RETURNS h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_experimental_local_ij_to_h3(h3index, point)
-IS 'Produces an H3 index from local IJ coordinates anchored by an origin.
-This function is experimental, and its output is not guaranteed to be compatible across different versions of H3.';
+    h3_local_ij_to_cell(h3index, point)
+IS 'Produces an H3 index from local IJ coordinates anchored by an origin.';

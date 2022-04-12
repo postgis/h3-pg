@@ -34,6 +34,7 @@ Datum
 h3_cell_to_parent(PG_FUNCTION_ARGS)
 {
 	H3Index		parent;
+	H3Error     error;
 
 	/* get function arguments */
 	H3Index		origin = PG_GETARG_H3INDEX(0);
@@ -53,8 +54,8 @@ h3_cell_to_parent(PG_FUNCTION_ARGS)
 		);
 
 	/* get parent */
-	parent = cellToParent(origin, parentRes);
-	ASSERT_EXTERNAL(parent, "Could not generate parent");
+	error = cellToParent(origin, parentRes, &parent);
+	ASSERT_EXTERNAL(error == 0, "Could not generate parent");
 
 	PG_RETURN_H3INDEX(parent);
 }
@@ -66,9 +67,10 @@ h3_cell_to_children(PG_FUNCTION_ARGS)
 	/* stuff done only on the first call of the function */
 	if (SRF_IS_FIRSTCALL())
 	{
-		int			maxSize;
-		int			size;
+		int64_t		maxSize;
+		int64_t		size;
 		H3Index    *children;
+		H3Error     error;
 
 		/* create a function context for cross-call persistence */
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
@@ -94,7 +96,9 @@ h3_cell_to_children(PG_FUNCTION_ARGS)
 			   "Maximum resolution exceeded"
 			);
 
-		maxSize = cellToChildrenSize(origin, resolution);
+		error = cellToChildrenSize(origin, resolution, &maxSize);
+		ASSERT_EXTERNAL(error == 0, "Could not generate children");
+
 		size = maxSize * sizeof(H3Index);
 		ASSERT(
 			   AllocSizeIsValid(size),
@@ -122,6 +126,7 @@ Datum
 h3_cell_to_center_child(PG_FUNCTION_ARGS)
 {
 	H3Index		child;
+	H3Error		error;
 
 	/* get function arguments */
 	H3Index		origin = PG_GETARG_H3INDEX(0);
@@ -141,8 +146,8 @@ h3_cell_to_center_child(PG_FUNCTION_ARGS)
 		);
 
 	/* get child */
-	child = cellToCenterChild(origin, childRes);
-	ASSERT_EXTERNAL(child, "Could not generate center child");
+	error = cellToCenterChild(origin, childRes, &child);
+	ASSERT_EXTERNAL(error == 0, "Could not generate center child");
 
 	PG_RETURN_H3INDEX(child);
 }
@@ -189,7 +194,6 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
-		int			result;
 		Datum		value;
 		bool		isnull;
 		bool		error;

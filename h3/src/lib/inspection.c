@@ -89,8 +89,9 @@ h3_get_icosahedron_faces(PG_FUNCTION_ARGS)
 	bool		elmbyval;
 	char		elmalign;
 
+	int			maxFaces;
 	H3Index		hex = PG_GETARG_H3INDEX(0);
-	int			maxFaces = maxFaceCount(hex);
+	H3Error		error = maxFaceCount(hex, &maxFaces);
 
 	ArrayType  *result;
 
@@ -100,6 +101,7 @@ h3_get_icosahedron_faces(PG_FUNCTION_ARGS)
 	int		   *faces = palloc(maxFaces * sizeof(int));
 	Datum	   *elements = palloc(maxFaces * sizeof(Datum));
 
+	ASSERT_EXTERNAL(error == 0, "Something went wrong");
 	getIcosahedronFaces(hex, faces);
 
 	for (int i = 0; i < maxFaces; i++)

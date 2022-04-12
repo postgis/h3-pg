@@ -28,7 +28,7 @@
 #include "extension.h"
 
 PG_FUNCTION_INFO_V1(h3_polygon_to_cells);
-PG_FUNCTION_INFO_V1(h3_set_to_multi_polygon);
+PG_FUNCTION_INFO_V1(h3_cells_to_multi_polygon);
 
 static void
 polygonToGeoLoop(POLYGON *polygon, GeoLoop * geoloop)
@@ -85,8 +85,9 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
 		MemoryContext oldcontext =
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
-		int			maxSize;
+		int64_t		maxSize;
 		H3Index    *indices;
+		H3Error		error;
 		ArrayType  *holes;
 		int			nelems = 0;
 		int			resolution;
@@ -135,10 +136,12 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
 		}
 
 		/* produce hexagons into allocated memory */
-		maxSize = maxPolygonToCellsSize(&polygon, resolution);
+		error = maxPolygonToCellsSize(&polygon, resolution, 0, &maxSize);
+		ASSERT_EXTERNAL(error == 0, "Could not polyfill");
 		indices = palloc_extended(maxSize * sizeof(H3Index),
 								  MCXT_ALLOC_HUGE | MCXT_ALLOC_ZERO);
-		polygonToCells(&polygon, resolution, indices);
+		error = polygonToCells(&polygon, resolution, 0, indices);
+		ASSERT_EXTERNAL(error == 0, "Could not polyfill");
 
 		funcctx->user_fctx = indices;
 		funcctx->max_calls = maxSize;
@@ -154,7 +157,7 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
  * https://stackoverflow.com/questions/51127189/how-to-return-array-into-array-with-custom-type-in-postgres-c-function
  */
 Datum
-h3_set_to_multi_polygon(PG_FUNCTION_ARGS)
+h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 {
 	FuncCallContext *funcctx;
 	TupleDesc	tuple_desc;
@@ -169,6 +172,7 @@ h3_set_to_multi_polygon(PG_FUNCTION_ARGS)
 		int			numHexes;
 		H3Index    *h3Set;
 		H3Index    *idx;
+		H3Error		error;
 
 		funcctx = SRF_FIRSTCALL_INIT();
 		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
@@ -190,7 +194,8 @@ h3_set_to_multi_polygon(PG_FUNCTION_ARGS)
 
 		/* produce hexagons into allocated memory */
 		linkedPolygon = palloc(sizeof(LinkedGeoPolygon));
-		h3SetToLinkedGeo(h3Set, numHexes, linkedPolygon);
+		error = cellsToLinkedMultiPolygon(h3Set, numHexes, linkedPolygon);
+		ASSERT_EXTERNAL(error == 0, "Could not create polygon");
 
 		funcctx->user_fctx = linkedPolygon;
 		funcctx->tuple_desc = BlessTupleDesc(tuple_desc);
@@ -271,7 +276,7 @@ h3_set_to_multi_polygon(PG_FUNCTION_ARGS)
 	}
 	else
 	{
-		destroyLinkedPolygon(linkedPolygon);
+		destroyLinkedMultiPolygon(linkedPolygon);
 		SRF_RETURN_DONE(funcctx);
 	}
 }

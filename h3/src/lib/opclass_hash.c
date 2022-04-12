@@ -37,7 +37,7 @@ Datum
 h3index_hash_extended(PG_FUNCTION_ARGS)
 {
 	H3Index		index = PG_GETARG_H3INDEX(0);
-	uint64		seed = PG_GETARG_INT64(1);
+	int64_t		seed = PG_GETARG_INT64(1);
 	Datum		hash = hash_any_extended((unsigned char *) &index, sizeof(index), seed);
 
 	PG_RETURN_DATUM(hash);

@@ -29,8 +29,8 @@ PG_FUNCTION_INFO_V1(h3_grid_disk_distances);
 PG_FUNCTION_INFO_V1(h3_grid_ring_unsafe);
 PG_FUNCTION_INFO_V1(h3_grid_distance);
 PG_FUNCTION_INFO_V1(h3_grid_path_cells);
-PG_FUNCTION_INFO_V1(h3_experimental_h3_to_local_ij);
-PG_FUNCTION_INFO_V1(h3_experimental_local_ij_to_h3);
+PG_FUNCTION_INFO_V1(h3_cell_to_local_ij);
+PG_FUNCTION_INFO_V1(h3_local_ij_to_cell);
 
 /*
  * k-rings produces indices within k distance of the origin index.
@@ -56,8 +56,11 @@ h3_grid_disk(PG_FUNCTION_ARGS)
 		int			k = PG_GETARG_INT32(1);
 
 		/* produce indices into allocated memory */
-		int			maxSize = maxGridDiskSize(k);
+		int64_t		maxSize;
+		H3Error 	error = maxGridDiskSize(k, &maxSize);
 		H3Index    *indices = palloc(maxSize * sizeof(H3Index));
+
+		ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 
 		gridDisk(origin, k, indices);
 
@@ -98,8 +101,11 @@ h3_grid_disk_distances(PG_FUNCTION_ARGS)
 		 * for
 		 */
 		/* returning */
-		int			maxSize = maxGridDiskSize(k);
+		int64_t		maxSize;
+		H3Error		error = maxGridDiskSize(k, &maxSize);
 		hexDistanceTuple *user_fctx = palloc(sizeof(hexDistanceTuple));
+
+		ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 
 		user_fctx->indices = palloc(maxSize * sizeof(H3Index));
 		user_fctx->distances = palloc(maxSize * sizeof(int));
@@ -145,10 +151,17 @@ h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 		 * If k is larger than 0, the ring is the size of the circle with k,
 		 * minus the circle with k-1
 		 */
-		int			maxSize = maxGridDiskSize(k);
+		int64_t		maxSize;
+		int64_t		innerSize;
+		H3Error		error = maxGridDiskSize(k, &maxSize);
 
-		if (k > 0)
-			maxSize -= maxGridDiskSize(k - 1);
+		ASSERT_EXTERNAL(error == 0, "Something went wrong.");
+
+		if (k > 0) {
+			error = maxGridDiskSize(k - 1, &innerSize);
+			ASSERT_EXTERNAL(error == 0, "Something went wrong.");
+			maxSize -= innerSize;
+		}
 		indices = palloc(maxSize * sizeof(H3Index));
 
 		result = gridRingUnsafe(origin, k, indices);
@@ -176,10 +189,13 @@ h3_grid_distance(PG_FUNCTION_ARGS)
 {
 	H3Index		originIndex = PG_GETARG_H3INDEX(0);
 	H3Index		h3Index = PG_GETARG_H3INDEX(1);
-	int			distance;
+	H3Error		error;
+	int64_t		distance;
 
-	distance = gridDistance(originIndex, h3Index);
-	PG_RETURN_INT32(distance);
+	error = gridDistance(originIndex, h3Index, &distance);
+	ASSERT_EXTERNAL(error == 0, "Could not calculate grid distance.");
+
+	PG_RETURN_INT64(distance);
 }
 
 /*
@@ -199,13 +215,16 @@ h3_grid_path_cells(PG_FUNCTION_ARGS)
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
 		/* get function arguments */
+		int64_t		size;
+
 		H3Index		start = PG_GETARG_H3INDEX(0);
 		H3Index		end = PG_GETARG_H3INDEX(1);
-		int			size = gridPathCellsSize(start, end);
+		H3Error		error = gridPathCellsSize(start, end, &size);
 		H3Index    *indices = palloc(size * sizeof(H3Index));
 
 		int			result = gridPathCells(start, end, indices);
 
+		ASSERT_EXTERNAL(error == 0, "Failed to generate line");
 		ASSERT_EXTERNAL(result == 0, "Failed to generate line");
 
 		funcctx->user_fctx = indices;
@@ -218,20 +237,19 @@ h3_grid_path_cells(PG_FUNCTION_ARGS)
 
 /*
  * Produces local IJ coordinates for an H3 index anchored by an origin.
- *
- * This function is experimental, and its output is not guaranteed to be
- * compatible across different versions of H3.
  */
 Datum
-h3_experimental_h3_to_local_ij(PG_FUNCTION_ARGS)
+h3_cell_to_local_ij(PG_FUNCTION_ARGS)
 {
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	H3Index		index = PG_GETARG_H3INDEX(1);
 
 	Point	   *point = (Point *) palloc(sizeof(Point));
 	CoordIJ		coord;
+	H3Error		error;
 
-	experimentalH3ToLocalIj(origin, index, &coord);
+	error = cellToLocalIj(origin, index, 0, &coord);
+	ASSERT_EXTERNAL(error == 0, "Something went wrong");
 
 	point->x = coord.i;
 	point->y = coord.j;
@@ -240,12 +258,9 @@ h3_experimental_h3_to_local_ij(PG_FUNCTION_ARGS)
 
 /*
  * Produces an H3 index from local IJ coordinates anchored by an origin.
- *
- * This function is experimental, and its output is not guaranteed to be
- * compatible across different versions of H3.
  */
 Datum
-h3_experimental_local_ij_to_h3(PG_FUNCTION_ARGS)
+h3_local_ij_to_cell(PG_FUNCTION_ARGS)
 {
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	Point	   *point = PG_GETARG_POINT_P(1);
@@ -253,11 +268,14 @@ h3_experimental_local_ij_to_h3(PG_FUNCTION_ARGS)
 	H3Index    *index = (H3Index *) palloc(sizeof(H3Index));
 
 	CoordIJ		coord;
+	H3Error		error;
 
 	coord.i = point->x;
 	coord.j = point->y;
 
-	experimentalLocalIjToH3(origin, &coord, index);
+	error = localIjToCell(origin, &coord, 0, index);
+	ASSERT_EXTERNAL(error == 0, "Something went wrong");
+
 	PG_FREE_IF_COPY(point, 1);
 	PG_RETURN_H3INDEX(*index);
 }

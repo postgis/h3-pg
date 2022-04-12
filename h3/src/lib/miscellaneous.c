@@ -68,13 +68,16 @@ h3_get_hexagon_area_avg(PG_FUNCTION_ARGS)
 	int			resolution = PG_GETARG_INT32(0);
 	char	   *unit = text_to_cstring(PG_GETARG_TEXT_PP(1));
 	double		area;
+	H3Error		error;
 
 	if (strcmp(unit, "km") == 0)
-		area = getHexagonAreaAvgKm2(resolution);
+		error = getHexagonAreaAvgKm2(resolution, &area);
 	else if (strcmp(unit, "m") == 0)
-		area = getHexagonAreaAvgM2(resolution);
+		error = getHexagonAreaAvgM2(resolution, &area);
 	else
 		ASSERT_EXTERNAL(0, "Unit must be m or km.");
+
+	ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 
 	PG_RETURN_FLOAT8(area);
 }
@@ -86,15 +89,18 @@ h3_cell_area(PG_FUNCTION_ARGS)
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 	char	   *unit = text_to_cstring(PG_GETARG_TEXT_PP(1));
 	double		area;
+	H3Error		error;
 
 	if (strcmp(unit, "rads^2") == 0)
-		area = cellAreaRads2(cell);
+		error = cellAreaRads2(cell, &area);
 	else if (strcmp(unit, "km^2") == 0)
-		area = cellAreaKm2(cell);
+		error = cellAreaKm2(cell, &area);
 	else if (strcmp(unit, "m^2") == 0)
-		area = cellAreaM2(cell);
+		error = cellAreaM2(cell, &area);
 	else
 		ASSERT_EXTERNAL(0, "Unit must be m^2, km^2 or rads^2.");
+
+	ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 
 	PG_RETURN_FLOAT8(area);
 }
@@ -106,13 +112,16 @@ h3_get_hexagon_edge_length_avg(PG_FUNCTION_ARGS)
 	int			resolution = PG_GETARG_INT32(0);
 	char	   *unit = text_to_cstring(PG_GETARG_TEXT_PP(1));
 	double		length;
+	H3Error		error;
 
 	if (strcmp(unit, "km") == 0)
-		length = getHexagonEdgeLengthAvgKm(resolution);
+		error = getHexagonEdgeLengthAvgKm(resolution, &length);
 	else if (strcmp(unit, "m") == 0)
-		length = getHexagonEdgeLengthAvgM(resolution);
+		error = getHexagonEdgeLengthAvgM(resolution, &length);
 	else
 		ASSERT_EXTERNAL(0, "Unit must be m or km.");
+
+	ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 
 	PG_RETURN_FLOAT8(length);
 }
@@ -124,15 +133,18 @@ h3_exact_edge_length(PG_FUNCTION_ARGS)
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 	char	   *unit = text_to_cstring(PG_GETARG_TEXT_PP(1));
 	double		length;
+	H3Error		error;
 
 	if (strcmp(unit, "rads") == 0)
-		length = exactEdgeLengthRads(edge);
+		error = exactEdgeLengthRads(edge, &length);
 	else if (strcmp(unit, "km") == 0)
-		length = exactEdgeLengthKm(edge);
+		error = exactEdgeLengthKm(edge, &length);
 	else if (strcmp(unit, "m") == 0)
-		length = exactEdgeLengthM(edge);
+		error = exactEdgeLengthM(edge, &length);
 	else
 		ASSERT_EXTERNAL(0, "Unit must be m, km or rads.");
+
+	ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 
 	PG_RETURN_FLOAT8(length);
 }
@@ -141,10 +153,13 @@ h3_exact_edge_length(PG_FUNCTION_ARGS)
 Datum
 h3_get_num_cells(PG_FUNCTION_ARGS)
 {
-	int			resolution = PG_GETARG_INT32(0);
-	unsigned long long retVal = getNumCells(resolution);
+	int64_t numCells;
+	int     resolution = PG_GETARG_INT32(0);
+	H3Error error = getNumCells(resolution, &numCells);
 
-	PG_RETURN_INT64(retVal);
+	ASSERT_EXTERNAL(error == 0, "Something went wrong.");
+
+	PG_RETURN_INT64(numCells);
 }
 
 /* Provides all resolution 0 indexes */

@@ -30,8 +30,12 @@ PG_FUNCTION_INFO_V1(bigint_to_h3index);
 Datum
 h3index_in(PG_FUNCTION_ARGS)
 {
+	H3Index		hex;
+
 	char	   *str = PG_GETARG_CSTRING(0);
-	H3Index		hex = stringToH3(str);
+	H3Error		error = stringToH3(str, &hex);
+
+	ASSERT_EXTERNAL(error == 0, "Could not parse h3index.");
 
 	PG_RETURN_H3INDEX(hex);
 }

@@ -32,9 +32,12 @@ PG_FUNCTION_INFO_V1(h3_is_valid_vertex);
 Datum
 h3_cell_to_vertex(PG_FUNCTION_ARGS)
 {
+	H3Index		vertex;
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 	int			vertexNum = PG_GETARG_INT32(1);
-	H3Index		vertex = cellToVertex(cell, vertexNum);
+	H3Error		error = cellToVertex(cell, vertexNum, &vertex);
+
+	ASSERT_EXTERNAL(error == 0, "Something went wrong.");
 
 	PG_RETURN_H3INDEX(vertex);
 }

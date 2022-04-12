@@ -38,8 +38,11 @@ h3_are_neighbor_cells(PG_FUNCTION_ARGS)
 {
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	H3Index		destination = PG_GETARG_H3INDEX(1);
-	bool		areNeighbors = areNeighborCells(origin, destination);
 
+	int			areNeighbors;
+	H3Error		error = areNeighborCells(origin, destination, &areNeighbors);
+
+	ASSERT_EXTERNAL(error == 0, "Something went wrong");
 	PG_RETURN_BOOL(areNeighbors);
 }
 
@@ -52,9 +55,10 @@ h3_cells_to_directed_edge(PG_FUNCTION_ARGS)
 {
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	H3Index		destination = PG_GETARG_H3INDEX(1);
-	H3Index		edge = cellsToDirectedEdge(origin, destination);
+	H3Index		edge;
+	H3Error		error = cellsToDirectedEdge(origin, destination, &edge);
 
-	ASSERT_EXTERNAL(edge, "Can only create edges between neighbouring indexes");
+	ASSERT_EXTERNAL(error == 0, "Something went wrong");
 	PG_RETURN_H3INDEX(edge);
 }
 
@@ -73,8 +77,11 @@ Datum
 h3_get_directed_edge_origin(PG_FUNCTION_ARGS)
 {
 	H3Index		edge = PG_GETARG_H3INDEX(0);
-	H3Index		origin = getDirectedEdgeOrigin(edge);
+	H3Index		origin;
 
+	H3Error		error  = getDirectedEdgeOrigin(edge, &origin);
+
+	ASSERT_EXTERNAL(error == 0, "Something went wrong");
 	PG_RETURN_H3INDEX(origin);
 }
 
@@ -83,8 +90,11 @@ Datum
 h3_get_directed_edge_destination(PG_FUNCTION_ARGS)
 {
 	H3Index		edge = PG_GETARG_H3INDEX(0);
-	H3Index		destination = getDirectedEdgeDestination(edge);
+	H3Index		destination;
+	
+	H3Error		error = getDirectedEdgeDestination(edge, &destination);
 
+	ASSERT_EXTERNAL(error == 0, "Something went wrong");
 	PG_RETURN_H3INDEX(destination);
 }
 

@@ -56,12 +56,21 @@ SELECT ARRAY(SELECT h3_grid_path_cells('841c023ffffffff', '841c025ffffffff'))
 -- returns 1 for indexes with one index between them
 SELECT h3_grid_distance('880326b881fffff', '880326b885fffff') = 1;
 
--- returns -1 for invalid inputs
-SELECT h3_grid_distance('880326b881fffff', h3_cell_to_parent('880326b885fffff')) = -1;
+-- throws for invalid inputs
+CREATE FUNCTION h3_test_grid_distance_invalid() RETURNS boolean LANGUAGE PLPGSQL
+    AS $$
+        BEGIN
+            PERFORM h3_grid_distance('880326b881fffff', h3_cell_to_parent('880326b885fffff')) = -1;
+            RETURN false;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN true;
+        END;
+    $$;
+SELECT h3_test_grid_distance_invalid();
 
 --
--- TEST h3_experimental_h3_to_local_ij and h3_experimental_local_ij_to_h3
+-- TEST h3_cell_to_local_ij and h3_local_ij_to_cell
 --
 
 -- they are inverse of each others
-SELECT :hexagon = h3_experimental_local_ij_to_h3(:origin, h3_experimental_h3_to_local_ij(:origin, :hexagon));
+SELECT :hexagon = h3_local_ij_to_cell(:origin, h3_cell_to_local_ij(:origin, :hexagon));

@@ -21,8 +21,8 @@ SELECT h3_distance(:lyon, :paris, 'km') = h3_distance(:lyon, :paris);
 -- TEST h3_get_hexagon_area_avg
 --
 
-SELECT h3_get_hexagon_area_avg(10, 'm') = 15047.5;
-SELECT h3_get_hexagon_area_avg(10, 'km') = 0.0150475;
+SELECT abs(h3_get_hexagon_area_avg(10, 'm') - 15047.50190766437) < :epsilon;
+SELECT abs(h3_get_hexagon_area_avg(10, 'km') - 0.01504750190766435) < :epsilon;
 SELECT h3_get_hexagon_area_avg(10, 'km') = h3_get_hexagon_area_avg(10);
 
 --
