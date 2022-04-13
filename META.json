@@ -2,15 +2,15 @@
   "name": "h3",
   "abstract": "PostgreSQL bindings for H3",
   "description": "PostgreSQL bindings for H3, a hierarchical hexagonal geospatial indexing system.",
-  "version": "unreleased",
+  "version": "3.7.2",
   "maintainer": "Bytes & Brains <developers@bytesandbrains.com>",
   "license": "apache_2_0",
   "provides": {
     "h3": {
       "abstract": "PostgreSQL bindings for H3",
-      "file": "sql/h3--unreleased.sql",
+      "file": "sql/h3--3.7.2.sql",
       "docfile": "README.md",
-      "version": "unreleased"
+      "version": "3.7.2"
     }
   },
   "resources": {

@@ -26,9 +26,12 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+</details>
+
+## [3.7.2] - 2022-04-13
+
 - Allow `NULL` in `holes` array for `h3_polyfill` (see [#64], thanks [@mngr777])
 - Allow >1Gb memory allocations for `h3_polyfill` (see [#65], thanks [@mngr777])
-</details>
 
 ## [3.7.1] - 2021-06-23
 

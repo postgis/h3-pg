@@ -1,4 +1,4 @@
 comment = 'H3 bindings for PostgreSQL'
-default_version = 'unreleased'
+default_version = '3.7.2'
 relocatable = true
 requires = 'postgis'
