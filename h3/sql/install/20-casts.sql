@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+--| # Type casts
+
 --@ internal
 CREATE OR REPLACE FUNCTION
     h3index_to_bigint(h3index) RETURNS bigint
@@ -30,7 +32,6 @@ CREATE CAST (bigint AS h3index) WITH FUNCTION bigint_to_h3index(bigint);
 COMMENT ON CAST (h3index AS bigint) IS
     'Convert bigint to H3 index';
 
---@ internal
 CREATE CAST (h3index AS point) WITH FUNCTION h3_cell_to_lat_lng(h3index);
 COMMENT ON CAST (h3index AS point) IS
     'Convert H3 index to point';

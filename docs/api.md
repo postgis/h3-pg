@@ -70,8 +70,10 @@
     - [Operator: `h3index` @> `h3index`](#operator-h3index--h3index)
     - [Operator: `h3index` <@ `h3index`](#operator-h3index--h3index)
     - [Operator: `h3index` <-> `h3index`](#operator-h3index---h3index)
+- [Type casts](#type-casts)
     - [`h3index` :: `bigint`](#h3index--bigint)
     - [`bigint` :: `h3index`](#bigint--h3index)
+    - [`h3index` :: `point`](#h3index--point)
 - [Extension specific functions](#extension-specific-functions)
     - [h3_get_extension_version() ⇒ `text`](#h3_get_extension_version-%E2%87%92-text)
 
@@ -566,6 +568,7 @@ Returns the distance in grid cells between the two indices
 
 
 
+# Type casts
 
 ### `h3index` :: `bigint`
 
@@ -579,6 +582,8 @@ Convert H3 index to bigint, which is useful when you need a decimal representati
 
 Convert bigint to H3 index
 
+
+### `h3index` :: `point`
 
 
 Convert H3 index to point
