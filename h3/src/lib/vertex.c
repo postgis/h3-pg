@@ -35,9 +35,9 @@ h3_cell_to_vertex(PG_FUNCTION_ARGS)
 	H3Index		vertex;
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 	int			vertexNum = PG_GETARG_INT32(1);
-	H3Error		error = cellToVertex(cell, vertexNum, &vertex);
 
-	ASSERT_EXTERNAL(error == 0, "Something went wrong.");
+	H3Error		error = cellToVertex(cell, vertexNum, &vertex);
+	H3_ERROR(error, "cellToVertex");
 
 	PG_RETURN_H3INDEX(vertex);
 }
@@ -52,6 +52,7 @@ h3_cell_to_vertexes(PG_FUNCTION_ARGS)
 		int			maxSize;
 		int			size;
 		H3Index    *vertexes;
+		H3Error		error;
 
 		/* create a function context for cross-call persistence */
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
@@ -68,8 +69,8 @@ h3_cell_to_vertexes(PG_FUNCTION_ARGS)
 		size = maxSize * sizeof(H3Index);
 
 		vertexes = palloc(size);
-		cellToVertexes(cell, vertexes);
-		ASSERT_EXTERNAL(*vertexes, "Could not generate children");
+		error = cellToVertexes(cell, vertexes);
+		H3_ERROR(error, "cellToVertexes");
 
 		funcctx->user_fctx = vertexes;
 		funcctx->max_calls = maxSize;
@@ -91,7 +92,8 @@ h3_vertex_to_lat_lng(PG_FUNCTION_ARGS)
 	Point	   *point = palloc(sizeof(Point));
 	LatLng		latlng;
 
-	vertexToLatLng(vertex, &latlng);
+	H3Error error = vertexToLatLng(vertex, &latlng);
+	H3_ERROR(error, "vertexToLatLng");
 
 	point->x = radsToDegs(latlng.lng);
 	point->y = radsToDegs(latlng.lat);

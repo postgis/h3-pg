@@ -51,21 +51,24 @@ h3_grid_disk(PG_FUNCTION_ARGS)
 		MemoryContext oldcontext =
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
+		int64_t		max;
+		H3Index    *indices;
+		H3Error		error;
+
 		/* get function arguments */
 		H3Index		origin = PG_GETARG_H3INDEX(0);
 		int			k = PG_GETARG_INT32(1);
 
-		/* produce indices into allocated memory */
-		int64_t		maxSize;
-		H3Error		error = maxGridDiskSize(k, &maxSize);
-		H3Index    *indices = palloc(maxSize * sizeof(H3Index));
+		error = maxGridDiskSize(k, &max);
+		H3_ERROR(error, "maxGridDiskSize");
 
-		ASSERT_EXTERNAL(error == 0, "Something went wrong.");
+		indices = palloc(max * sizeof(H3Index));
 
-		gridDisk(origin, k, indices);
+		error = gridDisk(origin, k, indices);
+		H3_ERROR(error, "gridDisk");
 
 		funcctx->user_fctx = indices;
-		funcctx->max_calls = maxSize;
+		funcctx->max_calls = max;
 		MemoryContextSwitchTo(oldcontext);
 	}
 
@@ -102,15 +105,19 @@ h3_grid_disk_distances(PG_FUNCTION_ARGS)
 		 */
 		/* returning */
 		int64_t		maxSize;
-		H3Error		error = maxGridDiskSize(k, &maxSize);
-		hexDistanceTuple *user_fctx = palloc(sizeof(hexDistanceTuple));
+		H3Error		error;
+		hexDistanceTuple *user_fctx;
 
-		ASSERT_EXTERNAL(error == 0, "Something went wrong.");
+		error = maxGridDiskSize(k, &maxSize);
+		H3_ERROR(error, "maxGridDiskSize");
+
+		user_fctx = palloc(sizeof(hexDistanceTuple));
 
 		user_fctx->indices = palloc(maxSize * sizeof(H3Index));
 		user_fctx->distances = palloc(maxSize * sizeof(int));
 
-		gridDiskDistances(origin, k, user_fctx->indices, user_fctx->distances);
+		error = gridDiskDistances(origin, k, user_fctx->indices, user_fctx->distances);
+		H3_ERROR(error, "gridDiskDistances");
 
 		ENSURE_TYPEFUNC_COMPOSITE(get_call_result_type(fcinfo, NULL, &tuple_desc));
 
@@ -153,20 +160,20 @@ h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 		 */
 		int64_t		maxSize;
 		int64_t		innerSize;
-		H3Error		error = maxGridDiskSize(k, &maxSize);
 
-		ASSERT_EXTERNAL(error == 0, "Something went wrong.");
+		H3Error		error = maxGridDiskSize(k, &maxSize);
+		H3_ERROR(error, "maxGridDiskSize");
 
 		if (k > 0)
 		{
 			error = maxGridDiskSize(k - 1, &innerSize);
-			ASSERT_EXTERNAL(error == 0, "Something went wrong.");
+			H3_ERROR(error, "maxGridDiskSize");
 			maxSize -= innerSize;
 		}
 		indices = palloc(maxSize * sizeof(H3Index));
 
-		result = gridRingUnsafe(origin, k, indices);
-		ASSERT_EXTERNAL(result == 0, "Pentagonal distortion encountered, this method is undefined when it encounters pentagons");
+		error = gridRingUnsafe(origin, k, indices);
+		H3_ERROR(error, "gridRingUnsafe");
 
 		funcctx->user_fctx = indices;
 		funcctx->max_calls = maxSize;
@@ -194,7 +201,7 @@ h3_grid_distance(PG_FUNCTION_ARGS)
 	int64_t		distance;
 
 	error = gridDistance(originIndex, h3Index, &distance);
-	ASSERT_EXTERNAL(error == 0, "Could not calculate grid distance.");
+	H3_ERROR(error, "gridDistance");
 
 	PG_RETURN_INT64(distance);
 }
@@ -217,16 +224,18 @@ h3_grid_path_cells(PG_FUNCTION_ARGS)
 
 		/* get function arguments */
 		int64_t		size;
-
+		H3Error		error;
+		H3Index    *indices;
 		H3Index		start = PG_GETARG_H3INDEX(0);
 		H3Index		end = PG_GETARG_H3INDEX(1);
-		H3Error		error = gridPathCellsSize(start, end, &size);
-		H3Index    *indices = palloc(size * sizeof(H3Index));
 
-		int			result = gridPathCells(start, end, indices);
+		error = gridPathCellsSize(start, end, &size);
+		H3_ERROR(error, "gridPathCellsSize");
+		
+		indices = palloc(size * sizeof(H3Index));
 
-		ASSERT_EXTERNAL(error == 0, "Failed to generate line");
-		ASSERT_EXTERNAL(result == 0, "Failed to generate line");
+		error = gridPathCells(start, end, indices);
+		H3_ERROR(error, "gridPathCells");
 
 		funcctx->user_fctx = indices;
 		funcctx->max_calls = size;
@@ -250,7 +259,7 @@ h3_cell_to_local_ij(PG_FUNCTION_ARGS)
 	H3Error		error;
 
 	error = cellToLocalIj(origin, index, 0, &coord);
-	ASSERT_EXTERNAL(error == 0, "Something went wrong");
+	H3_ERROR(error, "cellToLocalIj");
 
 	point->x = coord.i;
 	point->y = coord.j;
@@ -275,7 +284,7 @@ h3_local_ij_to_cell(PG_FUNCTION_ARGS)
 	coord.j = point->y;
 
 	error = localIjToCell(origin, &coord, 0, index);
-	ASSERT_EXTERNAL(error == 0, "Something went wrong");
+	H3_ERROR(error, "localIjToCell");
 
 	PG_FREE_IF_COPY(point, 1);
 	PG_RETURN_H3INDEX(*index);

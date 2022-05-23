@@ -30,24 +30,33 @@ PG_FUNCTION_INFO_V1(h3_cell_to_boundary);
 Datum
 h3_lat_lng_to_cell(PG_FUNCTION_ARGS)
 {
+	H3Index		cell;
+	H3Error		error;
+	LatLng		location;
 	Point	   *point = PG_GETARG_POINT_P(0);
 	int			resolution = PG_GETARG_INT32(1);
 
-	bool		error;
-	H3Index		cell;
-	LatLng		location;
-
 	if (h3_guc_strict)
 	{
-		ASSERT_EXTERNAL(point->x >= -180 && point->x <= 180, "Longitude must be between -180 and 180 degrees inclusive, but got %f.", point->x);
-		ASSERT_EXTERNAL(point->y >= -90 && point->y <= 90, "Latitude must be between -90 and 90 degrees inclusive, but got %f.", point->y);
+		ASSERT(
+			point->x >= -180 && point->x <= 180,
+			ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE,
+			"Longitude must be between -180 and 180 degrees inclusive, but got %f.",
+			point->x
+		);
+		ASSERT(
+			point->y >= -90 && point->y <= 90,
+			ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE,
+			"Latitude must be between -90 and 90 degrees inclusive, but got %f.",
+			point->y
+		);
 	}
 
 	location.lng = degsToRads(point->x);
 	location.lat = degsToRads(point->y);
 
 	error = latLngToCell(&location, resolution, &cell);
-	ASSERT_EXTERNAL(error == 0, "Indexing failed at specified resolution.");
+	H3_ERROR(error, "latLngToCell");
 
 	PG_FREE_IF_COPY(point, 0);
 	PG_RETURN_H3INDEX(cell);
@@ -57,12 +66,12 @@ h3_lat_lng_to_cell(PG_FUNCTION_ARGS)
 Datum
 h3_cell_to_lat_lng(PG_FUNCTION_ARGS)
 {
+	LatLng		center;
+	Point	   *point = palloc(sizeof(Point));
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 
-	Point	   *point = palloc(sizeof(Point));
-	LatLng		center;
-
-	cellToLatLng(cell, &center);
+	H3Error error = cellToLatLng(cell, &center);
+	H3_ERROR(error, "cellToLatLng");
 
 	point->x = radsToDegs(center.lng);
 	point->y = radsToDegs(center.lat);
@@ -86,7 +95,8 @@ h3_cell_to_boundary(PG_FUNCTION_ARGS)
 	POLYGON    *polygon;
 	CellBoundary boundary;
 
-	cellToBoundary(cell, &boundary);
+	H3Error error = cellToBoundary(cell, &boundary);
+	H3_ERROR(error, "cellToBoundary");
 
 	size = offsetof(POLYGON, p) +sizeof(polygon->p[0]) * boundary.numVerts;
 	polygon = (POLYGON *) palloc(size);

@@ -141,11 +141,11 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
 
 		/* produce hexagons into allocated memory */
 		error = maxPolygonToCellsSize(&polygon, resolution, 0, &maxSize);
-		ASSERT_EXTERNAL(error == 0, "Could not polyfill");
+		H3_ERROR(error, "maxPolygonToCellsSize");
 		indices = palloc_extended(maxSize * sizeof(H3Index),
 								  MCXT_ALLOC_HUGE | MCXT_ALLOC_ZERO);
 		error = polygonToCells(&polygon, resolution, 0, indices);
-		ASSERT_EXTERNAL(error == 0, "Could not polyfill");
+		H3_ERROR(error, "polygonToCells");
 
 		funcctx->user_fctx = indices;
 		funcctx->max_calls = maxSize;
@@ -199,7 +199,7 @@ h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 		/* produce hexagons into allocated memory */
 		linkedPolygon = palloc(sizeof(LinkedGeoPolygon));
 		error = cellsToLinkedMultiPolygon(h3Set, numHexes, linkedPolygon);
-		ASSERT_EXTERNAL(error == 0, "Could not create polygon");
+		H3_ERROR(error, "cellsToLinkedMultiPolygon");
 
 		funcctx->user_fctx = linkedPolygon;
 		funcctx->tuple_desc = BlessTupleDesc(tuple_desc);

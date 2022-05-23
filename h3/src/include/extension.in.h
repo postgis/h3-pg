@@ -94,9 +94,6 @@ Datum		srf_return_h3_index_distances_from_user_fctx(PG_FUNCTION_ARGS);
 		errmsg(msg, ##__VA_ARGS__)		   \
 	))
 
-#define ASSERT_EXTERNAL(condition, msg, ...) \
-	ASSERT(condition, ERRCODE_EXTERNAL_ROUTINE_EXCEPTION, msg, ##__VA_ARGS__)
-
 #define ENSURE_TYPEFUNC_COMPOSITE(x)				   \
 	ASSERT(											   \
 		x == TYPEFUNC_COMPOSITE,					   \
