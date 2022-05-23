@@ -56,7 +56,7 @@ REGRESS_OPTS = \
 EXTRA_CLEAN += \
 	$(LIBH3_SOURCE) \
 	$(DATA_built) \
-	src/include/extension.h \
+	h3/src/include/extension.h \
 	$(wildcard h3/test/sql/ci-*.sql) \
 	$(wildcard h3/test/expected/ci-*.out) \
 	$(wildcard *.BAK) \

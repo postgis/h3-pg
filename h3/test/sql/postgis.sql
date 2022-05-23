@@ -19,7 +19,7 @@ SELECT h3_lat_lng_to_cell(:meter, :resolution) <> '8a63a9a99047fff';
 SELECT h3_lat_lng_to_cell(h3_cell_to_geometry(:hexagon), :resolution) = '8a63a9a99047fff';
 
 -- check num points in boundary
-SELECT ST_NPoints(h3_cell_to_geo_boundary_geometry(:hexagon)) = 7;
+SELECT ST_NPoints(h3_cell_to_boundary_geometry(:hexagon)) = 7;
 
 -- test strict h3_lat_lng_to_cell throws for bad latlon
 CREATE FUNCTION h3_test_postgis_nounit() RETURNS boolean LANGUAGE PLPGSQL

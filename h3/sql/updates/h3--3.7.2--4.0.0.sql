@@ -15,7 +15,7 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3 UPDATE TO '4.0.0'" to load this file. \quit
 
 -- Move postgis integration to its own extension
 DROP FUNCTION IF EXISTS h3_lat_lng_to_cell(geometry, resolution integer);
@@ -26,6 +26,5 @@ DROP FUNCTION IF EXISTS h3_cell_to_geo_boundary_geometry(h3index, extend boolean
 DROP FUNCTION IF EXISTS h3_cell_to_geo_boundary_geography(h3index, extend boolean DEFAULT FALSE);
 DROP FUNCTION IF EXISTS h3_polygon_to_cells(multi geometry, resolution integer);
 DROP FUNCTION IF EXISTS h3_polygon_to_cells(multi geography, resolution integer);
-DROP CAST (h3index AS point);
 DROP CAST (h3index AS geometry);
 DROP CAST (h3index AS geography);
