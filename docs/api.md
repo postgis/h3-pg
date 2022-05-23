@@ -4,8 +4,6 @@
 
 - [API Reference](#api-reference)
 - [Base type](#base-type)
-    - [`h3index` :: `bigint`](#h3index--bigint)
-    - [`bigint` :: `h3index`](#bigint--h3index)
 - [Indexing functions](#indexing-functions)
     - [h3_lat_lng_to_cell(latlng `point`, resolution `integer`) ⇒ `h3index`](#h3_lat_lng_to_celllatlng-point-resolution-integer-%E2%87%92-h3index)
     - [h3_cell_to_lat_lng(cell `h3index`) ⇒ `point`](#h3_cell_to_lat_lngcell-h3index-%E2%87%92-point)
@@ -23,18 +21,23 @@
     - [h3_grid_ring_unsafe(origin `h3index`, [k `integer` = 1]) ⇒ `h3index`](#h3_grid_ring_unsafeorigin-h3index-k-integer--1-%E2%87%92-h3index)
     - [h3_grid_path_cells(origin `h3index`, destination `h3index`) ⇒ `h3index`](#h3_grid_path_cellsorigin-h3index-destination-h3index-%E2%87%92-h3index)
     - [h3_grid_distance(origin `h3index`, destination `h3index`) ⇒ `integer`](#h3_grid_distanceorigin-h3index-destination-h3index-%E2%87%92-integer)
-    - [h3_experimental_h3_to_local_ij(origin `h3index`, index `h3index`) ⇒ `point`](#h3_experimental_h3_to_local_ijorigin-h3index-index-h3index-%E2%87%92-point)
-    - [h3_experimental_local_ij_to_h3(origin `h3index`, coord `point`) ⇒ `h3index`](#h3_experimental_local_ij_to_h3origin-h3index-coord-point-%E2%87%92-h3index)
+    - [h3_cell_to_local_ij(origin `h3index`, index `h3index`) ⇒ `point`](#h3_cell_to_local_ijorigin-h3index-index-h3index-%E2%87%92-point)
+    - [h3_local_ij_to_cell(origin `h3index`, coord `point`) ⇒ `h3index`](#h3_local_ij_to_cellorigin-h3index-coord-point-%E2%87%92-h3index)
 - [Hierarchical grid functions](#hierarchical-grid-functions)
-    - [h3_cell_to_parent(cell `h3index`, [parentRes `integer` = -1]) ⇒ `h3index`](#h3_cell_to_parentcell-h3index-parentres-integer---1-%E2%87%92-h3index)
-    - [h3_cell_to_children(cell `h3index`, [childRes `integer` = -1]) ⇒ `h3index`](#h3_cell_to_childrencell-h3index-childres-integer---1-%E2%87%92-h3index)
-    - [h3_cell_to_Center_child(cell `h3index`, [childRes `integer` = -1]) ⇒ `h3index`](#h3_cell_to_center_childcell-h3index-childres-integer---1-%E2%87%92-h3index)
+    - [h3_cell_to_parent(cell `h3index`, resolution `integer`) ⇒ `h3index`](#h3_cell_to_parentcell-h3index-resolution-integer-%E2%87%92-h3index)
+    - [h3_cell_to_children(cell `h3index`, resolution `integer`) ⇒ `h3index`](#h3_cell_to_childrencell-h3index-resolution-integer-%E2%87%92-h3index)
+    - [h3_cell_to_center_child(cell `h3index`, resolution `integer`) ⇒ `h3index`](#h3_cell_to_center_childcell-h3index-resolution-integer-%E2%87%92-h3index)
     - [h3_compact_cells(cells `h3index`) ⇒ `h3index`](#h3_compact_cellscells-h3index-%E2%87%92-h3index)
-    - [h3_uncompact_cells(cells `h3index`, [resolution `integer` = -1]) ⇒ `h3index`](#h3_uncompact_cellscells-h3index-resolution-integer---1-%E2%87%92-h3index)
-    - [h3_cell_to_children_slow(index `h3index`, [resolution `integer` = -1]) ⇒ `h3index`](#h3_cell_to_children_slowindex-h3index-resolution-integer---1-%E2%87%92-h3index)
+    - [h3_uncompact_cells(cells `h3index`, resolution `integer`) ⇒ `h3index`](#h3_uncompact_cellscells-h3index-resolution-integer-%E2%87%92-h3index)
+    - [h3_cell_to_parent(cell `h3index`) ⇒ `h3index`](#h3_cell_to_parentcell-h3index-%E2%87%92-h3index)
+    - [h3_cell_to_children(cell `h3index`) ⇒ `h3index`](#h3_cell_to_childrencell-h3index-%E2%87%92-h3index)
+    - [h3_cell_to_center_child(cell `h3index`) ⇒ `h3index`](#h3_cell_to_center_childcell-h3index-%E2%87%92-h3index)
+    - [h3_uncompact_cells(cells `h3index`) ⇒ `h3index`](#h3_uncompact_cellscells-h3index-%E2%87%92-h3index)
+    - [h3_cell_to_children_slow(index `h3index`, resolution `integer`) ⇒ `h3index`](#h3_cell_to_children_slowindex-h3index-resolution-integer-%E2%87%92-h3index)
+    - [h3_cell_to_children_slow(index `h3index`) ⇒ `h3index`](#h3_cell_to_children_slowindex-h3index-%E2%87%92-h3index)
 - [Region functions](#region-functions)
     - [h3_polygon_to_cells(exterior `polygon`, holes `polygon`, [resolution `integer` = 1]) ⇒ `h3index`](#h3_polygon_to_cellsexterior-polygon-holes-polygon-resolution-integer--1-%E2%87%92-h3index)
-    - [h3_set_to_multi_polygon(`h3index`, exterior `polygon`, holes `polygon`) ⇒ `record`](#h3_set_to_multi_polygonh3index-exterior-polygon-holes-polygon-%E2%87%92-record)
+    - [h3_cells_to_multi_polygon(`h3index`, exterior `polygon`, holes `polygon`) ⇒ `record`](#h3_cells_to_multi_polygonh3index-exterior-polygon-holes-polygon-%E2%87%92-record)
 - [Unidirectional edge functions](#unidirectional-edge-functions)
     - [h3_are_neighbor_cells(origin `h3index`, destination `h3index`) ⇒ `boolean`](#h3_are_neighbor_cellsorigin-h3index-destination-h3index-%E2%87%92-boolean)
     - [h3_cells_to_directed_edge(origin `h3index`, destination `h3index`) ⇒ `h3index`](#h3_cells_to_directed_edgeorigin-h3index-destination-h3index-%E2%87%92-h3index)
@@ -67,21 +70,10 @@
     - [Operator: `h3index` @> `h3index`](#operator-h3index--h3index)
     - [Operator: `h3index` <@ `h3index`](#operator-h3index--h3index)
     - [Operator: `h3index` <-> `h3index`](#operator-h3index---h3index)
+    - [`h3index` :: `bigint`](#h3index--bigint)
+    - [`bigint` :: `h3index`](#bigint--h3index)
 - [Extension specific functions](#extension-specific-functions)
     - [h3_get_extension_version() ⇒ `text`](#h3_get_extension_version-%E2%87%92-text)
-- [PostGIS Functions](#postgis-functions)
-    - [h3_lat_lng_to_cell(`geometry`, resolution `integer`) ⇒ `h3index`](#h3_lat_lng_to_cellgeometry-resolution-integer-%E2%87%92-h3index)
-    - [h3_lat_lng_to_cell(`geography`, resolution `integer`) ⇒ `h3index`](#h3_lat_lng_to_cellgeography-resolution-integer-%E2%87%92-h3index)
-    - [h3_cell_to_geometry(`h3index`) ⇒ `geometry`](#h3_cell_to_geometryh3index-%E2%87%92-geometry)
-    - [h3_cell_to_geography(`h3index`) ⇒ `geography`](#h3_cell_to_geographyh3index-%E2%87%92-geography)
-    - [h3_cell_to_geo_boundary_geometry(`h3index`, [extend `boolean` = `false`]) ⇒ `geometry`](#h3_cell_to_geo_boundary_geometryh3index-extend-boolean--false-%E2%87%92-geometry)
-    - [h3_cell_to_geo_boundary_geography(`h3index`, [extend `boolean` = `false`]) ⇒ `geography`](#h3_cell_to_geo_boundary_geographyh3index-extend-boolean--false-%E2%87%92-geography)
-    - [h3_polygon_to_cells(multi `geometry`, resolution `integer`) ⇒ `h3index`](#h3_polygon_to_cellsmulti-geometry-resolution-integer-%E2%87%92-h3index)
-    - [h3_polygon_to_cells(multi `geography`, resolution `integer`) ⇒ `h3index`](#h3_polygon_to_cellsmulti-geography-resolution-integer-%E2%87%92-h3index)
-  - [PostGIS casts](#postgis-casts)
-    - [`h3index` :: `point`](#h3index--point)
-    - [`h3index` :: `geometry`](#h3index--geometry)
-    - [`h3index` :: `geography`](#h3index--geography)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -97,20 +89,6 @@ represented as a (or 16-character) hexadecimal string, like '8928308280fffff'.
 
 
 
-
-
-
-### `h3index` :: `bigint`
-
-
-Convert H3 index to bigint, which is useful when you need a decimal representation
-
-
-
-### `bigint` :: `h3index`
-
-
-Convert bigint to H3 index
 
 # Indexing functions
 
@@ -240,28 +218,26 @@ Returns the distance in grid cells between the two indices
 
 
 
-### h3_experimental_h3_to_local_ij(origin `h3index`, index `h3index`) ⇒ `point`
+### h3_cell_to_local_ij(origin `h3index`, index `h3index`) ⇒ `point`
 *Since v0.2.0*
 
 
 Produces local IJ coordinates for an H3 index anchored by an origin.
-This function is experimental, and its output is not guaranteed to be compatible across different versions of H3.
 
 
 
-### h3_experimental_local_ij_to_h3(origin `h3index`, coord `point`) ⇒ `h3index`
+### h3_local_ij_to_cell(origin `h3index`, coord `point`) ⇒ `h3index`
 *Since v0.2.0*
 
 
 Produces an H3 index from local IJ coordinates anchored by an origin.
-This function is experimental, and its output is not guaranteed to be compatible across different versions of H3.
 
 # Hierarchical grid functions
 
 These functions permit moving between resolutions in the H3 grid system.
 The functions produce parent (coarser) or children (finer) cells.
 
-### h3_cell_to_parent(cell `h3index`, [parentRes `integer` = -1]) ⇒ `h3index`
+### h3_cell_to_parent(cell `h3index`, resolution `integer`) ⇒ `h3index`
 *Since v4.0.0*
 
 
@@ -269,7 +245,7 @@ Returns the parent of the given index
 
 
 
-### h3_cell_to_children(cell `h3index`, [childRes `integer` = -1]) ⇒ `h3index`
+### h3_cell_to_children(cell `h3index`, resolution `integer`) ⇒ `h3index`
 *Since v4.0.0*
 
 
@@ -277,7 +253,7 @@ Returns the set of children of the given index
 
 
 
-### h3_cell_to_Center_child(cell `h3index`, [childRes `integer` = -1]) ⇒ `h3index`
+### h3_cell_to_center_child(cell `h3index`, resolution `integer`) ⇒ `h3index`
 *Since v4.0.0*
 
 
@@ -293,17 +269,56 @@ Compacts the given array as best as possible
 
 
 
-### h3_uncompact_cells(cells `h3index`, [resolution `integer` = -1]) ⇒ `h3index`
+### h3_uncompact_cells(cells `h3index`, resolution `integer`) ⇒ `h3index`
 *Since v4.0.0*
 
 
-Uncompacts the given array at the given resolution. If no resolution is given, then it is chosen as one higher than the highest resolution in the set
+Uncompacts the given array at the given resolution.
+
+
+
+### h3_cell_to_parent(cell `h3index`) ⇒ `h3index`
+*Since v4.0.0*
+
+
+Returns the parent of the given index
+
+
+
+### h3_cell_to_children(cell `h3index`) ⇒ `h3index`
+*Since v4.0.0*
+
+
+Returns the set of children of the given index
+
+
+
+### h3_cell_to_center_child(cell `h3index`) ⇒ `h3index`
+*Since v4.0.0*
+
+
+Returns the center child (finer) index contained by input index at next resolution
+
+
+
+### h3_uncompact_cells(cells `h3index`) ⇒ `h3index`
+*Since v4.0.0*
+
+
+Uncompacts the given array at the resolution one higher than the highest resolution in the set
 
 
 
 
-### h3_cell_to_children_slow(index `h3index`, [resolution `integer` = -1]) ⇒ `h3index`
-*Since v1.0.0*
+### h3_cell_to_children_slow(index `h3index`, resolution `integer`) ⇒ `h3index`
+*Since v4.0.0*
+
+
+Slower version of H3ToChildren but allocates less memory
+
+
+
+### h3_cell_to_children_slow(index `h3index`) ⇒ `h3index`
 
 
 Slower version of H3ToChildren but allocates less memory
@@ -320,8 +335,8 @@ Takes an exterior polygon [and a set of hole polygon] and returns the set of hex
 
 
 
-### h3_set_to_multi_polygon(`h3index`, exterior `polygon`, holes `polygon`) ⇒ `record`
-*Since v3.5.0*
+### h3_cells_to_multi_polygon(`h3index`, exterior `polygon`, holes `polygon`) ⇒ `record`
+*Since v4.0.0*
 
 
 Create a LinkedGeoPolygon describing the outline(s) of a set of hexagons. Polygon outlines will follow GeoJSON MultiPolygon order: Each polygon will have one outer loop, which is first in the list, followed by any holes
@@ -551,6 +566,23 @@ Returns the distance in grid cells between the two indices
 
 
 
+
+### `h3index` :: `bigint`
+
+
+Convert H3 index to bigint, which is useful when you need a decimal representation
+
+
+
+### `bigint` :: `h3index`
+
+
+Convert bigint to H3 index
+
+
+
+Convert H3 index to point
+
 # Extension specific functions
 
 ### h3_get_extension_version() ⇒ `text`
@@ -558,58 +590,5 @@ Returns the distance in grid cells between the two indices
 
 
 Get the currently installed version of the extension.
-
-# PostGIS Functions
-
-### h3_lat_lng_to_cell(`geometry`, resolution `integer`) ⇒ `h3index`
-*Since v0.3.0*
-
-
-
-### h3_lat_lng_to_cell(`geography`, resolution `integer`) ⇒ `h3index`
-*Since v0.3.0*
-
-
-
-### h3_cell_to_geometry(`h3index`) ⇒ `geometry`
-*Since v1.0.0*
-
-
-
-### h3_cell_to_geography(`h3index`) ⇒ `geography`
-*Since v1.0.0*
-
-
-
-### h3_cell_to_geo_boundary_geometry(`h3index`, [extend `boolean` = `false`]) ⇒ `geometry`
-*Since v1.0.0*
-
-
-
-### h3_cell_to_geo_boundary_geography(`h3index`, [extend `boolean` = `false`]) ⇒ `geography`
-*Since v1.0.0*
-
-
-
-### h3_polygon_to_cells(multi `geometry`, resolution `integer`) ⇒ `h3index`
-*Since v0.3.0*
-
-
-
-### h3_polygon_to_cells(multi `geography`, resolution `integer`) ⇒ `h3index`
-*Since v0.3.0*
-
-
-## PostGIS casts
-### `h3index` :: `point`
-*Since v0.3.0*
-
-
-### `h3index` :: `geometry`
-*Since v0.3.0*
-
-
-### `h3index` :: `geography`
-*Since v0.3.0*
 
 
