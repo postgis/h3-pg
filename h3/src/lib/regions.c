@@ -96,7 +96,7 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
 		bool		isnull;
 
 		if (PG_ARGISNULL(0))
-			ASSERT_EXTERNAL(0, "No polygon given to polyfill");
+			ASSERT(0, ERRCODE_INVALID_PARAMETER_VALUE, "No polygon given to polyfill");
 
 		/* get function arguments */
 		POLYGON    *exterior = PG_GETARG_POLYGON_P(0);

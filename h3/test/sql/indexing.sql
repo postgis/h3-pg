@@ -55,3 +55,4 @@ CREATE FUNCTION h3_fail_indexing_cell_to_parent() RETURNS boolean LANGUAGE PLPGS
         END;
     $$;
 SELECT h3_fail_indexing_cell_to_parent();
+DROP FUNCTION h3_fail_indexing_cell_to_parent;
