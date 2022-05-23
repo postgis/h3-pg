@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-EXTENSION = h3 h3-postgis
+EXTENSION = h3 h3_postgis
 
 # extract extension version from .control file
 EXTVERSION = $(shell grep default_version h3.control | \
@@ -31,8 +31,8 @@ SQL_TESTS = $(wildcard h3/test/sql/*.sql)
 SQL_FULLINSTALL = h3--$(EXTVERSION).sql
 
 # postgis extension
-SQL_INSTALLS_H3_POSTGIS = $(wildcard h3-postgis/sql/install/*.sql)
-SQL_FULLINSTALL_H3_POSTGIS = h3-postgis--$(EXTVERSION).sql
+SQL_INSTALLS_H3_POSTGIS = $(wildcard h3_postgis/sql/install/*.sql)
+SQL_FULLINSTALL_H3_POSTGIS = h3_postgis--$(EXTVERSION).sql
 
 # a shared library to build from multiple source files
 MODULE_big = h3
@@ -51,9 +51,7 @@ REGRESS = $(basename $(notdir $(SQL_TESTS)))
 REGRESS_OPTS = \
 	--inputdir=h3/test \
 	--outputdir=h3/test \
-	--load-extension=postgis \
-	--load-extension=h3 \
-	--load-extension=h3-postgis
+	--load-extension=h3
 # extra files to remove in make clean
 EXTRA_CLEAN += \
 	$(LIBH3_SOURCE) \
