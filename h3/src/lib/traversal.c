@@ -141,7 +141,6 @@ h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
-		int			result;
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
 		MemoryContext oldcontext =
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);

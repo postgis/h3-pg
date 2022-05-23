@@ -77,7 +77,7 @@ Datum		srf_return_h3_index_distances_from_user_fctx(PG_FUNCTION_ARGS);
 
 /* use origin resolution minus one when no resolution is given */
 #define PG_GETARG_OPTIONAL_RES(n, cell, offset) \
-	PG_NARGS() == (n + 1) ? PG_GETARG_INT32(1) : getResolution(cell) + offset;
+	PG_NARGS() == (n + 1) ? PG_GETARG_INT32(1) : getResolution(cell) + offset
 
 /*error reporting*/
 

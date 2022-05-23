@@ -114,7 +114,6 @@ h3_compact_cells(PG_FUNCTION_ARGS)
 	if (SRF_IS_FIRSTCALL())
 	{
 		H3Error		error;
-		int			result;
 		Datum		value;
 		bool		isnull;
 		int			i = 0;
