@@ -39,17 +39,17 @@ h3_lat_lng_to_cell(PG_FUNCTION_ARGS)
 	if (h3_guc_strict)
 	{
 		ASSERT(
-			point->x >= -180 && point->x <= 180,
-			ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE,
-			"Longitude must be between -180 and 180 degrees inclusive, but got %f.",
-			point->x
-		);
+			   point->x >= -180 && point->x <= 180,
+			   ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE,
+			   "Longitude must be between -180 and 180 degrees inclusive, but got %f.",
+			   point->x
+			);
 		ASSERT(
-			point->y >= -90 && point->y <= 90,
-			ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE,
-			"Latitude must be between -90 and 90 degrees inclusive, but got %f.",
-			point->y
-		);
+			   point->y >= -90 && point->y <= 90,
+			   ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE,
+		"Latitude must be between -90 and 90 degrees inclusive, but got %f.",
+			   point->y
+			);
 	}
 
 	location.lng = degsToRads(point->x);
@@ -67,10 +67,11 @@ Datum
 h3_cell_to_lat_lng(PG_FUNCTION_ARGS)
 {
 	LatLng		center;
+	H3Error		error;
 	Point	   *point = palloc(sizeof(Point));
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 
-	H3Error error = cellToLatLng(cell, &center);
+	error = cellToLatLng(cell, &center);
 	H3_ERROR(error, "cellToLatLng");
 
 	point->x = radsToDegs(center.lng);
@@ -90,12 +91,12 @@ h3_cell_to_boundary(PG_FUNCTION_ARGS)
 				firstLon,
 				lon,
 				lat;
-
+	H3Error		error;
 	int			size;
 	POLYGON    *polygon;
 	CellBoundary boundary;
 
-	H3Error error = cellToBoundary(cell, &boundary);
+	error = cellToBoundary(cell, &boundary);
 	H3_ERROR(error, "cellToBoundary");
 
 	size = offsetof(POLYGON, p) +sizeof(polygon->p[0]) * boundary.numVerts;

@@ -187,7 +187,7 @@ h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 		array = PG_GETARG_ARRAYTYPE_P(0);
 
 		numHexes = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
-		h3Set = palloc(sizeof(H3Index) * numHexes);
+		h3Set = palloc(numHexes * sizeof(H3Index));
 		idx = (H3Index *) ARR_DATA_PTR(array);
 
 		for (int i = 0; i < numHexes; i++)

@@ -159,8 +159,9 @@ h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 		 */
 		int64_t		maxSize;
 		int64_t		innerSize;
+		H3Error		error;
 
-		H3Error		error = maxGridDiskSize(k, &maxSize);
+		error = maxGridDiskSize(k, &maxSize);
 		H3_ERROR(error, "maxGridDiskSize");
 
 		if (k > 0)
@@ -230,7 +231,7 @@ h3_grid_path_cells(PG_FUNCTION_ARGS)
 
 		error = gridPathCellsSize(start, end, &size);
 		H3_ERROR(error, "gridPathCellsSize");
-		
+
 		indices = palloc(size * sizeof(H3Index));
 
 		error = gridPathCells(start, end, indices);

@@ -33,8 +33,8 @@ PG_FUNCTION_INFO_V1(h3_uncompact_cells);
 Datum
 h3_cell_to_parent(PG_FUNCTION_ARGS)
 {
-	H3Error		error;
 	H3Index		parent;
+	H3Error		error;
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	int			resolution = PG_GETARG_OPTIONAL_RES(1, origin, -1);
 
@@ -99,10 +99,11 @@ Datum
 h3_cell_to_center_child(PG_FUNCTION_ARGS)
 {
 	H3Index		child;
+	H3Error		error;
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	int			resolution = PG_GETARG_OPTIONAL_RES(1, origin, 1);
 
-	H3Error error = cellToCenterChild(origin, resolution, &child);
+	error = cellToCenterChild(origin, resolution, &child);
 	H3_ERROR(error, "cellToCenterChild");
 
 	PG_RETURN_H3INDEX(child);
@@ -166,7 +167,7 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 
 		int			numCompacted = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
 		ArrayIterator iterator = array_create_iterator(array, 0, NULL);
-		H3Index    *compactedSet = palloc(sizeof(H3Index) * numCompacted);
+		H3Index    *compactedSet = palloc(numCompacted * sizeof(H3Index));
 
 		/*
 		 * Extract data from array into compactedSet, and wipe compactedSet
@@ -179,7 +180,7 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 
 		if (PG_NARGS() == 2)
 		{
-		    resolution = PG_GETARG_INT32(1);
+			resolution = PG_GETARG_INT32(1);
 		}
 		else
 		{
@@ -205,6 +206,7 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 
 		error = uncompactCellsSize(compactedSet, numCompacted, resolution, &max);
 		H3_ERROR(error, "uncompactCellsSize");
+
 		uncompactedSet = palloc0(max * sizeof(H3Index));
 
 		error = uncompactCells(compactedSet, numCompacted, uncompactedSet, max, resolution);

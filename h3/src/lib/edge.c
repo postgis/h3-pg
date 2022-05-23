@@ -37,10 +37,11 @@ Datum
 h3_are_neighbor_cells(PG_FUNCTION_ARGS)
 {
 	int			neighboring;
+	H3Error		error;
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	H3Index		destination = PG_GETARG_H3INDEX(1);
 
-	H3Error		error = areNeighborCells(origin, destination, &neighboring);
+	error = areNeighborCells(origin, destination, &neighboring);
 	H3_ERROR(error, "areNeighborCells");
 
 	PG_RETURN_BOOL(neighboring);
@@ -51,10 +52,11 @@ Datum
 h3_cells_to_directed_edge(PG_FUNCTION_ARGS)
 {
 	H3Index		edge;
+	H3Error		error;
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	H3Index		destination = PG_GETARG_H3INDEX(1);
 
-	H3Error		error = cellsToDirectedEdge(origin, destination, &edge);
+	error = cellsToDirectedEdge(origin, destination, &edge);
 	H3_ERROR(error, "cellsToDirectedEdge");
 
 	PG_RETURN_H3INDEX(edge);
@@ -75,9 +77,10 @@ Datum
 h3_get_directed_edge_origin(PG_FUNCTION_ARGS)
 {
 	H3Index		origin;
+	H3Error		error;
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 
-	H3Error		error = getDirectedEdgeOrigin(edge, &origin);
+	error = getDirectedEdgeOrigin(edge, &origin);
 	H3_ERROR(error, "getDirectedEdgeOrigin");
 
 	PG_RETURN_H3INDEX(origin);
@@ -88,9 +91,10 @@ Datum
 h3_get_directed_edge_destination(PG_FUNCTION_ARGS)
 {
 	H3Index		destination;
+	H3Error		error;
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 
-	H3Error		error = getDirectedEdgeDestination(edge, &destination);
+	error = getDirectedEdgeDestination(edge, &destination);
 	H3_ERROR(error, "getDirectedEdgeDestination");
 
 	PG_RETURN_H3INDEX(destination);
@@ -106,10 +110,11 @@ h3_directed_edge_to_cells(PG_FUNCTION_ARGS)
 	HeapTuple	tuple;
 	Datum		result;
 
+	H3Error		error;
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 	H3Index    *cells = palloc(2 * sizeof(H3Index));
 
-	H3Error		error = directedEdgeToCells(edge, cells);
+	error = directedEdgeToCells(edge, cells);
 	H3_ERROR(error, "directedEdgeToCells");
 
 	ENSURE_TYPEFUNC_COMPOSITE(get_call_result_type(fcinfo, NULL, &tuple_desc));
@@ -134,10 +139,11 @@ h3_origin_to_directed_edges(PG_FUNCTION_ARGS)
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
 		int			max = 6;
+		H3Error		error;
 		H3Index		origin = PG_GETARG_H3INDEX(0);
-		H3Index    *edges = palloc(sizeof(H3Index) * max);
+		H3Index    *edges = palloc(max * sizeof(H3Index));
 
-		H3Error		error = originToDirectedEdges(origin, edges);
+		error = originToDirectedEdges(origin, edges);
 		H3_ERROR(error, "originToDirectedEdges");
 
 		funcctx->user_fctx = edges;
@@ -155,9 +161,10 @@ h3_directed_edge_to_boundary(PG_FUNCTION_ARGS)
 	CellBoundary boundary;
 	POLYGON    *polygon;
 	int			size;
+	H3Error		error;
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 
-	H3Error		error = directedEdgeToBoundary(edge, &boundary);
+	error = directedEdgeToBoundary(edge, &boundary);
 	H3_ERROR(error, "directedEdgeToBoundary");
 
 	size = offsetof(POLYGON, p[0]) +sizeof(polygon->p[0]) * boundary.numVerts;

@@ -168,10 +168,11 @@ h3_get_res_0_cells(PG_FUNCTION_ARGS)
 		MemoryContext oldcontext =
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
+		H3Error		error;
 		int			count = res0CellCount();
-		H3Index    *indexes = palloc(sizeof(H3Index) * count);
+		H3Index    *indexes = palloc(count * sizeof(H3Index));
 
-		H3Error error = getRes0Cells(indexes);
+		error = getRes0Cells(indexes);
 		H3_ERROR(error, "getRes0Cells");
 
 		funcctx->user_fctx = indexes;
@@ -192,11 +193,12 @@ h3_get_pentagons(PG_FUNCTION_ARGS)
 		MemoryContext oldcontext =
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
+		H3Error		error;
 		int			resolution = PG_GETARG_INT32(0);
 		int			count = pentagonCount();
-		H3Index    *indexes = palloc(sizeof(H3Index) * count);
+		H3Index    *indexes = palloc(count * sizeof(H3Index));
 
-		H3Error error = getPentagons(resolution, indexes);
+		error = getPentagons(resolution, indexes);
 		H3_ERROR(error, "getPentagons");
 
 		funcctx->user_fctx = indexes;

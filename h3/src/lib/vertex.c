@@ -33,10 +33,11 @@ Datum
 h3_cell_to_vertex(PG_FUNCTION_ARGS)
 {
 	H3Index		vertex;
+	H3Error		error;
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 	int			vertexNum = PG_GETARG_INT32(1);
 
-	H3Error		error = cellToVertex(cell, vertexNum, &vertex);
+	error = cellToVertex(cell, vertexNum, &vertex);
 	H3_ERROR(error, "cellToVertex");
 
 	PG_RETURN_H3INDEX(vertex);
@@ -89,10 +90,11 @@ h3_vertex_to_lat_lng(PG_FUNCTION_ARGS)
 {
 	H3Index		vertex = PG_GETARG_H3INDEX(0);
 
+	H3Error		error;
 	Point	   *point = palloc(sizeof(Point));
 	LatLng		latlng;
 
-	H3Error error = vertexToLatLng(vertex, &latlng);
+	error = vertexToLatLng(vertex, &latlng);
 	H3_ERROR(error, "vertexToLatLng");
 
 	point->x = radsToDegs(latlng.lng);
