@@ -34,10 +34,9 @@ export CMAKE_OSX_ARCHITECTURES="arm64;x86_64"
 pgxn install h3
 ```
 
-
 ## Usage
 
-Generally, all functions have been renamed from camelCase in H3 to snake*case in SQL with an added `h3*`prefix (except when that would result in a double`h3\_`prefix). For example`geoToH3`becomes`h3_geo_to_h3`and`h3ToChildren`becomes`h3_cell_to_children`.
+Generally, all functions have been renamed from camelCase in H3 to snake*case in SQL with an added `h3*` prefix.
 
 See [API reference](docs/api.md) for all provided functions.
 
