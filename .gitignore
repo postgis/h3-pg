@@ -8,7 +8,7 @@ h3/test/regression.*
 h3/test/results
 
 # Generated
-/h3--*.sql
+/h3*.sql
 /h3/src/include/extension.h
 /h3/test/expected/ci-*.out
 /h3/test/sql/ci-*.sql

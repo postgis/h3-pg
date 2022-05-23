@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-EXTENSION = h3
+EXTENSION = h3 h3-postgis
 
 # extract extension version from .control file
-EXTVERSION = $(shell grep default_version $(EXTENSION).control | \
+EXTVERSION = $(shell grep default_version h3.control | \
 	sed -e "s/default_version[[:space:]]*=[[:space:]]*'\([^']*\)'/\1/")
 
 # h3 core library version to clone and statically link
@@ -28,15 +28,19 @@ LIBH3_BUILD = $(LIBH3_SOURCE)/build
 SQL_INSTALLS = $(wildcard h3/sql/install/*.sql)
 SQL_UPDATES = $(wildcard h3/sql/updates/*.sql)
 SQL_TESTS = $(wildcard h3/test/sql/*.sql)
-SQL_FULLINSTALL = $(EXTENSION)--$(EXTVERSION).sql
+SQL_FULLINSTALL = h3--$(EXTVERSION).sql
+
+# postgis extension
+SQL_INSTALLS_H3_POSTGIS = $(wildcard h3-postgis/sql/install/*.sql)
+SQL_FULLINSTALL_H3_POSTGIS = h3-postgis--$(EXTVERSION).sql
 
 # a shared library to build from multiple source files
-MODULE_big = $(EXTENSION)
+MODULE_big = h3
 # object files to be linked together
 OBJS = $(patsubst %.c,%.o,$(wildcard h3/src/lib/*.c))
 # random files to install into $PREFIX/share/$MODULEDIR
 DATA = $(SQL_UPDATES)
-DATA_built = $(SQL_FULLINSTALL)
+DATA_built = $(SQL_FULLINSTALL) $(SQL_FULLINSTALL_H3_POSTGIS)
 # will be added to MODULE_big link line
 SHLIB_LINK += -lh3 -L$(LIBH3_BUILD)/lib
 # will be added to CPPFLAGS
@@ -48,7 +52,8 @@ REGRESS_OPTS = \
 	--inputdir=h3/test \
 	--outputdir=h3/test \
 	--load-extension=postgis \
-	--load-extension=h3
+	--load-extension=h3 \
+	--load-extension=h3-postgis
 # extra files to remove in make clean
 EXTRA_CLEAN += \
 	$(LIBH3_SOURCE) \
@@ -100,10 +105,16 @@ h3/src/include/extension.h: h3/src/include/extension.in.h
 # generate full installation sql (from uninstalled to latest)
 $(SQL_FULLINSTALL): $(sort $(SQL_INSTALLS))
 	cat $^ > $@
+$(SQL_FULLINSTALL_H3_POSTGIS): $(sort $(SQL_INSTALLS_H3_POSTGIS))
+	cat $^ > $@
 
 # package for distribution
-dist: $(SQL_FULLINSTALL)
-	git archive --prefix=h3-$(EXTVERSION)/ --output h3-${EXTVERSION}.zip --add-file=$(SQL_FULLINSTALL) HEAD
+dist: $(SQL_FULLINSTALL) $(SQL_FULLINSTALL_H3_POSTGIS)
+	git archive --prefix=h3-$(EXTVERSION)/ \
+				--output h3-${EXTVERSION}.zip \
+				--add-file=$(SQL_FULLINSTALL) \
+				--add-file=$(SQL_FULLINSTALL_H3_POSTGIS) \
+				HEAD
 
 ###########################################################################
 # Extra CI testing targets
