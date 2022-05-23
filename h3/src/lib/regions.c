@@ -121,10 +121,14 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
 
 			while (array_iterate(iterator, &value, &isnull))
 			{
-				if (isnull) {
+				if (isnull)
+				{
 					polygon.numHoles--;
-				} else {
-					POLYGON *hole = DatumGetPolygonP(value);
+				}
+				else
+				{
+					POLYGON    *hole = DatumGetPolygonP(value);
+
 					polygonToGeoLoop(hole, &(polygon.holes[i]));
 					i++;
 				}

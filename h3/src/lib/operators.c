@@ -37,7 +37,7 @@ PG_FUNCTION_INFO_V1(h3index_contained_by);
 static int
 containment(H3Index a, H3Index b)
 {
-	H3Error		error;
+	H3Error		error = 0;
 	H3Index		aParent = a;
 	H3Index		bParent = b;
 	int			aRes = getResolution(a);
@@ -48,7 +48,7 @@ containment(H3Index a, H3Index b)
 	else if (aRes < bRes)
 		error = cellToParent(b, aRes, &bParent);
 
-	ASSERT_EXTERNAL(error == 0, "Could not find parent a for containment. err: %i= %i, %i", error, E_RES_MISMATCH, bRes);
+	H3_ERROR(error, "cellToParent");
 
 	/* a contains b */
 	if (a == bParent)

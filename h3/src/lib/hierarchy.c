@@ -33,29 +33,13 @@ PG_FUNCTION_INFO_V1(h3_uncompact_cells);
 Datum
 h3_cell_to_parent(PG_FUNCTION_ARGS)
 {
-	H3Index		parent;
 	H3Error		error;
-
-	/* get function arguments */
+	H3Index		parent;
 	H3Index		origin = PG_GETARG_H3INDEX(0);
-	int			parentRes = PG_GETARG_INT32(1);
-	int			childRes = getResolution(origin);
+	int			resolution = PG_GETARG_OPTIONAL_RES(1, origin, -1);
 
-	if (parentRes == -1)
-	{
-		/* resolution parameter not set */
-		parentRes = childRes - 1;
-	}
-	ASSERT(
-		   parentRes <= childRes,
-		   ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE,
-	"Requested parent resolution %d is finer than input index resolution %d",
-		   parentRes, childRes
-		);
-
-	/* get parent */
-	error = cellToParent(origin, parentRes, &parent);
-	ASSERT_EXTERNAL(error == 0, "Could not generate parent");
+	error = cellToParent(origin, resolution, &parent);
+	H3_ERROR(error, "cellToParent");
 
 	PG_RETURN_H3INDEX(parent);
 }
@@ -67,7 +51,7 @@ h3_cell_to_children(PG_FUNCTION_ARGS)
 	/* stuff done only on the first call of the function */
 	if (SRF_IS_FIRSTCALL())
 	{
-		int64_t		maxSize;
+		int64_t		max;
 		int64_t		size;
 		H3Index    *children;
 		H3Error		error;
@@ -83,35 +67,24 @@ h3_cell_to_children(PG_FUNCTION_ARGS)
 
 		/* ensure valid resolution target */
 		H3Index		origin = PG_GETARG_H3INDEX(0);
-		int			resolution = PG_GETARG_INT32(1);
+		int			resolution = PG_GETARG_OPTIONAL_RES(1, origin, 1);
 
-		if (resolution == -1)
-		{
-			/* resolution parameter not set */
-			resolution = getResolution(origin) + 1;
-		}
-		ASSERT(
-			   resolution <= MAX_H3_RES,
-			   ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE,
-			   "Maximum resolution exceeded"
-			);
+		error = cellToChildrenSize(origin, resolution, &max);
+		H3_ERROR(error, "cellToChildrenSize");
 
-		error = cellToChildrenSize(origin, resolution, &maxSize);
-		ASSERT_EXTERNAL(error == 0, "Could not generate children");
-
-		size = maxSize * sizeof(H3Index);
+		size = max * sizeof(H3Index);
 		ASSERT(
 			   AllocSizeIsValid(size),
 			   ERRCODE_OUT_OF_MEMORY,
 			   "Cannot allocate necessary amount memory, try using h3_cell_to_children_slow()"
 			);
-
 		children = palloc(size);
-		cellToChildren(origin, resolution, children);
-		ASSERT_EXTERNAL(*children, "Could not generate children");
+
+		error = cellToChildren(origin, resolution, children);
+		H3_ERROR(error, "cellToChildren");
 
 		funcctx->user_fctx = children;
-		funcctx->max_calls = maxSize;
+		funcctx->max_calls = max;
 
 		/* END One-time setup code */
 
@@ -126,28 +99,11 @@ Datum
 h3_cell_to_center_child(PG_FUNCTION_ARGS)
 {
 	H3Index		child;
-	H3Error		error;
-
-	/* get function arguments */
 	H3Index		origin = PG_GETARG_H3INDEX(0);
-	int			childRes = PG_GETARG_INT32(1);
-	int			parentRes = getResolution(origin);
+	int			resolution = PG_GETARG_OPTIONAL_RES(1, origin, 1);
 
-	if (childRes == -1)
-	{
-		/* resolution parameter not set */
-		childRes = parentRes + 1;
-	}
-	ASSERT(
-		   childRes >= parentRes,
-		   ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE,
-	"Requested child resolution %d is coarser than input index resolution %d",
-		   childRes, parentRes
-		);
-
-	/* get child */
-	error = cellToCenterChild(origin, childRes, &child);
-	ASSERT_EXTERNAL(error == 0, "Could not generate center child");
+	H3Error error = cellToCenterChild(origin, resolution, &child);
+	H3_ERROR(error, "cellToCenterChild");
 
 	PG_RETURN_H3INDEX(child);
 }
@@ -157,6 +113,7 @@ h3_compact_cells(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
+		H3Error		error;
 		int			result;
 		Datum		value;
 		bool		isnull;
@@ -167,10 +124,10 @@ h3_compact_cells(PG_FUNCTION_ARGS)
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
 		ArrayType  *array = PG_GETARG_ARRAYTYPE_P(0);
-		int			maxSize = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
+		int			max = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
 		ArrayIterator iterator = array_create_iterator(array, 0, NULL);
-		H3Index    *h3set = palloc(sizeof(H3Index) * maxSize);
-		H3Index    *compactedSet = palloc0(maxSize * sizeof(H3Index));
+		H3Index    *h3set = palloc(max * sizeof(H3Index));
+		H3Index    *compactedSet = palloc0(max * sizeof(H3Index));
 
 		/* Extract data from array into h3set, and wipe compactedSet memory */
 		while (array_iterate(iterator, &value, &isnull))
@@ -178,11 +135,11 @@ h3_compact_cells(PG_FUNCTION_ARGS)
 			h3set[i++] = DatumGetH3Index(value);
 		}
 
-		result = compactCells(h3set, compactedSet, maxSize);
-		ASSERT_EXTERNAL(result == 0, "Could not compact input array");
+		error = compactCells(h3set, compactedSet, max);
+		H3_ERROR(error, "compactCells");
 
 		funcctx->user_fctx = compactedSet;
-		funcctx->max_calls = maxSize;
+		funcctx->max_calls = max;
 		MemoryContextSwitchTo(oldcontext);
 	}
 
@@ -194,11 +151,12 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
+		H3Error		error;
+		int			resolution;
 		Datum		value;
 		bool		isnull;
-		bool		error;
 		int			i = 0;
-		int64_t		maxSize;
+		int64_t		max;
 		H3Index    *uncompactedSet;
 
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
@@ -206,7 +164,6 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
 		ArrayType  *array = PG_GETARG_ARRAYTYPE_P(0);
-		int			resolution = PG_GETARG_INT32(1);
 
 		int			numCompacted = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
 		ArrayIterator iterator = array_create_iterator(array, 0, NULL);
@@ -221,7 +178,11 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 			compactedSet[i++] = DatumGetH3Index(value);
 		}
 
-		if (resolution == -1)
+		if (PG_NARGS() == 2)
+		{
+		    resolution = PG_GETARG_INT32(1);
+		}
+		else
 		{
 			/* resolution parameter not set */
 			int			highRes = 0;
@@ -243,19 +204,15 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 			resolution = (highRes == 15 ? highRes : highRes + 1);
 		}
 
-		error = uncompactCellsSize(compactedSet, numCompacted, resolution, &maxSize);
-		ASSERT_EXTERNAL(error == 0,
-						"Could not uncompact input array. This may be caused by choosing a lower resolution than some of the indexes"
-			);
-		uncompactedSet = palloc0(maxSize * sizeof(H3Index));
+		error = uncompactCellsSize(compactedSet, numCompacted, resolution, &max);
+		H3_ERROR(error, "uncompactCellsSize");
+		uncompactedSet = palloc0(max * sizeof(H3Index));
 
-		error = uncompactCells(compactedSet, numCompacted, uncompactedSet, maxSize, resolution);
-		ASSERT_EXTERNAL(error == 0,
-						"Could not uncompact input array. This may be caused by choosing a lower resolution than some of the indexes"
-			);
+		error = uncompactCells(compactedSet, numCompacted, uncompactedSet, max, resolution);
+		H3_ERROR(error, "uncompactCells");
 
 		funcctx->user_fctx = uncompactedSet;
-		funcctx->max_calls = maxSize;
+		funcctx->max_calls = max;
 		MemoryContextSwitchTo(oldcontext);
 	}
 

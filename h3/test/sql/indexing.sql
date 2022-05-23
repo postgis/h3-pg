@@ -43,3 +43,15 @@ SELECT h3_polygon_to_cells(h3_cell_to_boundary(:pentagon), null, :resolution) = 
 -- the boundary of an edgecrossing index is different with flag set to true
 SELECT h3_cell_to_boundary(:hexagon) ~= h3_cell_to_boundary(:hexagon, true)
 AND NOT h3_cell_to_boundary(:edgecross) ~= h3_cell_to_boundary(:edgecross, true);
+
+-- cell to parent RES_MISMATCH
+CREATE FUNCTION h3_fail_indexing_cell_to_parent() RETURNS boolean LANGUAGE PLPGSQL
+    AS $$
+        BEGIN
+            PERFORM h3_cell_to_parent('831c02fffffffff', 10);
+            RETURN false;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN true;
+        END;
+    $$;
+SELECT h3_fail_indexing_cell_to_parent();

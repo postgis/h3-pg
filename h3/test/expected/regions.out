@@ -40,8 +40,8 @@ SELECT COUNT(*) = 48 FROM (
 
 -- h3_polyfill doesn't segfault on NULL value in holes
 SELECT TRUE FROM (
-    SELECT h3_polyfill(exterior, ARRAY[NULL::POLYGON], 1) result FROM (
-        SELECT exterior, holes FROM h3_set_to_multi_polygon(
+    SELECT h3_polygon_to_cells(exterior, ARRAY[NULL::POLYGON], 1) result FROM (
+        SELECT exterior, holes FROM h3_cells_to_multi_polygon(
             ARRAY[:pentagon]::H3Index[]
         )
     ) qq
