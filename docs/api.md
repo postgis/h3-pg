@@ -53,11 +53,11 @@
     - [h3_vertex_to_lat_lng(vertex `h3index`) ⇒ `point`](#h3_vertex_to_lat_lngvertex-h3index-%E2%87%92-point)
     - [h3_is_valid_vertex(vertex `h3index`) ⇒ `boolean`](#h3_is_valid_vertexvertex-h3index-%E2%87%92-boolean)
 - [Miscellaneous H3 functions](#miscellaneous-h3-functions)
-    - [h3_distance(a `point`, b `point`, [unit `text` = km]) ⇒ `double`](#h3_distancea-point-b-point-unit-text--km-%E2%87%92-double)
+    - [h3_great_circle_distance(a `point`, b `point`, [unit `text` = km]) ⇒ `double`](#h3_great_circle_distancea-point-b-point-unit-text--km-%E2%87%92-double)
     - [h3_get_hexagon_area_avg(resolution `integer`, [unit `text` = km]) ⇒ `double`](#h3_get_hexagon_area_avgresolution-integer-unit-text--km-%E2%87%92-double)
     - [h3_cell_area(cell `h3index`, [unit `text` = km^2]) ⇒ `double`](#h3_cell_areacell-h3index-unit-text--km%5E2-%E2%87%92-double)
     - [h3_get_hexagon_edge_length_avg(resolution `integer`, [unit `text` = km]) ⇒ `double`](#h3_get_hexagon_edge_length_avgresolution-integer-unit-text--km-%E2%87%92-double)
-    - [h3_exact_edge_length(edge `h3index`, [unit `text` = km]) ⇒ `double`](#h3_exact_edge_lengthedge-h3index-unit-text--km-%E2%87%92-double)
+    - [h3_edge_length(edge `h3index`, [unit `text` = km]) ⇒ `double`](#h3_edge_lengthedge-h3index-unit-text--km-%E2%87%92-double)
     - [h3_get_num_cells(resolution `integer`) ⇒ `bigint`](#h3_get_num_cellsresolution-integer-%E2%87%92-bigint)
     - [h3_get_res_0_cells() ⇒ `h3index`](#h3_get_res_0_cells-%E2%87%92-h3index)
     - [h3_get_pentagons(resolution `integer`) ⇒ `h3index`](#h3_get_pentagonsresolution-integer-%E2%87%92-h3index)
@@ -448,7 +448,7 @@ Whether the input is a valid H3 vertex
 
 These functions include descriptions of the H3 grid system.
 
-### h3_distance(a `point`, b `point`, [unit `text` = km]) ⇒ `double`
+### h3_great_circle_distance(a `point`, b `point`, [unit `text` = km]) ⇒ `double`
 *Since v4.0.0*
 
 
@@ -480,7 +480,7 @@ Average hexagon edge length in (kilo)meters at the given resolution
 
 
 
-### h3_exact_edge_length(edge `h3index`, [unit `text` = km]) ⇒ `double`
+### h3_edge_length(edge `h3index`, [unit `text` = km]) ⇒ `double`
 *Since v4.0.0*
 
 

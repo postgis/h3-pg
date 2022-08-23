@@ -32,7 +32,7 @@ jobs:
     strategy:
       matrix:
         postgresql: [12]
-        ubuntu: [bionic]
+        ubuntu: [focal]
         arch: [i386]
     steps:
       - uses: actions/checkout@v2
