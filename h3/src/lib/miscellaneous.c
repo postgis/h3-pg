@@ -26,11 +26,11 @@
 PG_FUNCTION_INFO_V1(h3_get_hexagon_area_avg);
 PG_FUNCTION_INFO_V1(h3_cell_area);
 PG_FUNCTION_INFO_V1(h3_get_hexagon_edge_length_avg);
-PG_FUNCTION_INFO_V1(h3_exact_edge_length);
+PG_FUNCTION_INFO_V1(h3_edge_length);
 PG_FUNCTION_INFO_V1(h3_get_num_cells);
 PG_FUNCTION_INFO_V1(h3_get_res_0_cells);
 PG_FUNCTION_INFO_V1(h3_get_pentagons);
-PG_FUNCTION_INFO_V1(h3_distance);
+PG_FUNCTION_INFO_V1(h3_great_circle_distance);
 
 /* Average hexagon area in square (kilo)meters at the given resolution */
 Datum
@@ -115,7 +115,7 @@ h3_get_hexagon_edge_length_avg(PG_FUNCTION_ARGS)
 
 /* Exact length for a specific unidirectional edge */
 Datum
-h3_exact_edge_length(PG_FUNCTION_ARGS)
+h3_edge_length(PG_FUNCTION_ARGS)
 {
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 	char	   *unit = text_to_cstring(PG_GETARG_TEXT_PP(1));
@@ -211,7 +211,7 @@ h3_get_pentagons(PG_FUNCTION_ARGS)
 
 /* The great circle distance in radians between two spherical coordinates */
 Datum
-h3_distance(PG_FUNCTION_ARGS)
+h3_great_circle_distance(PG_FUNCTION_ARGS)
 {
 	Point	   *aPoint = PG_GETARG_POINT_P(0);
 	Point	   *bPoint = PG_GETARG_POINT_P(1);

@@ -20,9 +20,9 @@
 
 --@ availability: 4.0.0
 CREATE OR REPLACE FUNCTION
-    h3_distance(a point, b point, unit text DEFAULT 'km') RETURNS double precision
+    h3_great_circle_distance(a point, b point, unit text DEFAULT 'km') RETURNS double precision
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_distance(point, point, text)
+    h3_great_circle_distance(point, point, text)
 IS 'The great circle distance in radians between two spherical coordinates';
 
 --@ availability: 4.0.0
@@ -48,9 +48,9 @@ IS 'Average hexagon edge length in (kilo)meters at the given resolution';
 
 --@ availability: 4.0.0
 CREATE OR REPLACE FUNCTION
-    h3_exact_edge_length(edge h3index, unit text DEFAULT 'km') RETURNS double precision
+    h3_edge_length(edge h3index, unit text DEFAULT 'km') RETURNS double precision
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_exact_edge_length(h3index, text)
+    h3_edge_length(h3index, text)
 IS 'Exact length for a specific unidirectional edge';
 
 --@ availability: 4.0.0

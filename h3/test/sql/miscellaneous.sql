@@ -5,17 +5,17 @@
 \set edge '\'1180326b885fffff\'::h3index'
 
 --
--- TEST h3_distance
+-- TEST h3_great_circle_distance
 --
 
 \set lyon POINT(4.8422, 45.7597)
 \set paris POINT(2.3508, 48.8567)
-SELECT h3_distance(:lyon, :paris, 'rads') - 0.0615628186794217 < :epsilon;
-SELECT h3_distance(:lyon, :paris, 'm') - 392217.1598841777 < :epsilon;
-SELECT h3_distance(:lyon, :paris, 'km') - 392.21715988417765 < :epsilon;
+SELECT h3_great_circle_distance(:lyon, :paris, 'rads') - 0.0615628186794217 < :epsilon;
+SELECT h3_great_circle_distance(:lyon, :paris, 'm') - 392217.1598841777 < :epsilon;
+SELECT h3_great_circle_distance(:lyon, :paris, 'km') - 392.21715988417765 < :epsilon;
 
 -- test that 'km' is the default unit
-SELECT h3_distance(:lyon, :paris, 'km') = h3_distance(:lyon, :paris);
+SELECT h3_great_circle_distance(:lyon, :paris, 'km') = h3_great_circle_distance(:lyon, :paris);
 
 --
 -- TEST h3_get_hexagon_area_avg
@@ -46,14 +46,14 @@ SELECT h3_get_hexagon_edge_length_avg(10, 'km') = 0.065907807;
 SELECT h3_get_hexagon_edge_length_avg(10, 'km') = h3_get_hexagon_edge_length_avg(10);
 
 --
--- TEST h3_exact_edge_length
+-- TEST h3_edge_length
 --
 
-SELECT h3_exact_edge_length(:edge, 'rads') > 0;
-SELECT h3_exact_edge_length(:edge, 'km') > h3_exact_edge_length(:edge, 'rads');
-SELECT h3_exact_edge_length(:edge, 'm') > h3_exact_edge_length(:edge, 'km');
+SELECT h3_edge_length(:edge, 'rads') > 0;
+SELECT h3_edge_length(:edge, 'km') > h3_edge_length(:edge, 'rads');
+SELECT h3_edge_length(:edge, 'm') > h3_edge_length(:edge, 'km');
 
-SELECT h3_exact_edge_length(:edge) = h3_exact_edge_length(:edge, 'km');
+SELECT h3_edge_length(:edge) = h3_edge_length(:edge, 'km');
 
 
 --
