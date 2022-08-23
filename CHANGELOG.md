@@ -28,6 +28,7 @@ avoid adding features or APIs which do not map onto the
 
 - ⚠️ Almost all functions have been renamed to align with `h3` core `v4`. Please take care when updating.
 - Update `h3` core library to `v4.0.0`
+- Enable link time optimization (see [#75], thanks [@mngr777])
 - Handle non-polygons for `h3_polyfill` (see [#55], thanks [@Lokks])
 - Take advantage of the new v4 error codes (fixes [#71], thanks [@kalenikaliaksandr])
 
@@ -195,6 +196,7 @@ avoid adding features or APIs which do not map onto the
 [#64]: https://github.com/bytesandbrains/h3-pg/issues/64
 [#65]: https://github.com/bytesandbrains/h3-pg/pull/65
 [#71]: https://github.com/bytesandbrains/h3-pg/issues/71
+[#75]: https://github.com/bytesandbrains/h3-pg/pull/75
 [@abelvm]: https://github.com/AbelVM
 [@kalenikaliaksandr]: https://github.com/kalenikaliaksandr
 [@kmacdough]: https://github.com/kmacdough
