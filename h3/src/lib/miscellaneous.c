@@ -124,18 +124,18 @@ h3_exact_edge_length(PG_FUNCTION_ARGS)
 
 	if (strcmp(unit, "rads") == 0)
 	{
-		error = exactEdgeLengthRads(edge, &length);
-		H3_ERROR(error, "exactEdgeLengthRads");
+		error = edgeLengthRads(edge, &length);
+		H3_ERROR(error, "edgeLengthRads");
 	}
 	else if (strcmp(unit, "km") == 0)
 	{
-		error = exactEdgeLengthKm(edge, &length);
-		H3_ERROR(error, "exactEdgeLengthKm");
+		error = edgeLengthKm(edge, &length);
+		H3_ERROR(error, "edgeLengthKm");
 	}
 	else if (strcmp(unit, "m") == 0)
 	{
-		error = exactEdgeLengthM(edge, &length);
-		H3_ERROR(error, "exactEdgeLengthM");
+		error = edgeLengthM(edge, &length);
+		H3_ERROR(error, "edgeLengthM");
 	}
 	else
 	{
@@ -227,11 +227,11 @@ h3_distance(PG_FUNCTION_ARGS)
 	b.lat = degsToRads(bPoint->y);
 
 	if (strcmp(unit, "rads") == 0)
-		distance = distanceRads(&a, &b);
+		distance = greatCircleDistanceRads(&a, &b);
 	else if (strcmp(unit, "km") == 0)
-		distance = distanceKm(&a, &b);
+		distance = greatCircleDistanceKm(&a, &b);
 	else if (strcmp(unit, "m") == 0)
-		distance = distanceM(&a, &b);
+		distance = greatCircleDistanceM(&a, &b);
 	else
 		ASSERT(0, ERRCODE_INVALID_PARAMETER_VALUE, "Unit must be m, km or rads.");
 
