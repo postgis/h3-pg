@@ -27,6 +27,7 @@ avoid adding features or APIs which do not map onto the
   </summary>
 
 - ⚠️ Almost all functions have been renamed to align with `h3` core `v4`. Please take care when updating.
+- ⚠️ The PostGIS functions has been extracted into a separate extension `h3_postgis`.
 - Update `h3` core library to `v4.0.0`
 - Enable link time optimization (see [#75], thanks [@mngr777])
 - Handle non-polygons for `h3_polyfill` (see [#55], thanks [@Lokks])
