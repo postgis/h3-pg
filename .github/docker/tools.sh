@@ -2,12 +2,12 @@
 set -e
 
 BASEDIR=$(dirname $(realpath "$0"))
-REPOSITORY="docker.pkg.github.com/bytesandbrains/h3-pg"
+REPOSITORY="ghcr.io/bytesandbrains/h3-pg"
 
 # i386 being phased out from postgres apt :-(
 #ARCHS=(amd64 i386)
 ARCHS=(amd64)
-UBUNTUS=(impish focal) # latest and LTS
+UBUNTUS=(jammy focal) # latest and LTS
 POSTGRESQLS=(14 13) # two latest
 
 cd $BASEDIR

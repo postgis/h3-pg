@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   docs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -14,21 +14,21 @@ jobs:
       - run: git diff --exit-code docs
 
   installcheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         postgresql: [14, 13]
-        ubuntu: [impish, focal]
+        ubuntu: [jammy, focal]
         arch: [amd64]
     steps:
       - uses: actions/checkout@v2
       - name: Login to repository
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u "$GITHUB_ACTOR" --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Test
-        run: docker run -v ${PWD}:/github/workspace docker.pkg.github.com/bytesandbrains/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
+        run: docker run -v ${PWD}:/github/workspace ghcr.io/bytesandbrains/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
 
   i386:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         postgresql: [12]
@@ -37,6 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Login to repository
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u "$GITHUB_ACTOR" --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Test
-        run: docker run -v ${PWD}:/github/workspace docker.pkg.github.com/bytesandbrains/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
+        run: docker run -v ${PWD}:/github/workspace ghcr.io/bytesandbrains/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
