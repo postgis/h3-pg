@@ -49,6 +49,7 @@ case "${o}" in
             echo "$postgresql-$ubuntu-$arch"
             docker build \
               --tag $REPOSITORY/test:$postgresql-$ubuntu-$arch \
+              --platform linux/$arch \
               --build-arg POSTGRESQL=$postgresql \
               --build-arg UBUNTU=$ubuntu \
               --build-arg ARCH=$arch \
@@ -81,6 +82,7 @@ case "${o}" in
             echo "$postgresql-$ubuntu-$arch"
             docker run \
               --rm \
+              --platform linux/$arch \
               -v "$PWD"/../..:/github/workspace \
               $REPOSITORY/test:$postgresql-$ubuntu-$arch
           done

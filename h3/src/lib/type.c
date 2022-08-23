@@ -65,7 +65,7 @@ h3index_to_bigint(PG_FUNCTION_ARGS)
 Datum
 bigint_to_h3index(PG_FUNCTION_ARGS)
 {
-	int64		bigint = PG_GETARG_INT64(0);
+	int64_t		bigint = PG_GETARG_INT64(0);
 
 	PG_RETURN_H3INDEX(bigint);
 }
