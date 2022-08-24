@@ -18,16 +18,18 @@
 \echo Use "ALTER EXTENSION h3 UPDATE TO '4.0.0'" to load this file. \quit
 
 -- Move postgis integration to its own extension
-DROP FUNCTION IF EXISTS h3_lat_lng_to_cell(geometry, resolution integer);
-DROP FUNCTION IF EXISTS h3_lat_lng_to_cell(geography, resolution integer);
-DROP FUNCTION IF EXISTS h3_cell_to_geometry(h3index);
-DROP FUNCTION IF EXISTS h3_cell_to_geography(h3index);
-DROP FUNCTION IF EXISTS h3_cell_to_geo_boundary_geometry(h3index, extend boolean);
-DROP FUNCTION IF EXISTS h3_cell_to_geo_boundary_geography(h3index, extend boolean);
-DROP FUNCTION IF EXISTS h3_polygon_to_cells(multi geometry, resolution integer);
-DROP FUNCTION IF EXISTS h3_polygon_to_cells(multi geography, resolution integer);
+DROP FUNCTION IF EXISTS h3_geo_to_h3(geometry, resolution integer);
+DROP FUNCTION IF EXISTS h3_geo_to_h3(geography, resolution integer);
+DROP FUNCTION IF EXISTS h3_to_geo_boundary_geometry(h3index);
+DROP FUNCTION IF EXISTS h3_to_geo_boundary_geography(h3index);
+DROP FUNCTION IF EXISTS h3_to_geo_boundary_geometry(h3index, extend boolean);
+DROP FUNCTION IF EXISTS h3_to_geo_boundary_geography(h3index, extend boolean);
+DROP FUNCTION IF EXISTS h3_polyfill(multi geometry, resolution integer);
+DROP FUNCTION IF EXISTS h3_polyfill(multi geography, resolution integer);
 DROP CAST (h3index AS geometry);
 DROP CAST (h3index AS geography);
+DROP FUNCTION IF EXISTS h3_to_geometry(h3index);
+DROP FUNCTION IF EXISTS h3_to_geography(h3index);
 
 -- H3 Core v4 renames
 
@@ -57,6 +59,7 @@ ALTER FUNCTION h3_to_children(h3index, resolution integer) RENAME TO h3_cell_to_
 ALTER FUNCTION h3_to_center_child(h3index, resolution integer) RENAME TO h3_cell_to_center_child;
 ALTER FUNCTION h3_compact(h3index[]) RENAME TO h3_compact_cells;
 ALTER FUNCTION h3_uncompact(h3index[], resolution integer) RENAME TO h3_uncompact_cells;
+ALTER FUNCTION h3_to_children_slow(index h3index, resolution integer) RENAME TO h3_cell_to_children_slow;
 
 -- regions
 ALTER FUNCTION h3_polyfill(exterior polygon, holes polygon[], resolution integer) RENAME TO h3_polygon_to_cells;
@@ -76,7 +79,37 @@ ALTER FUNCTION h3_get_h3_unidirectional_edge_boundary(edge h3index) RENAME TO h3
 ALTER FUNCTION h3_point_dist(a point, b point, unit text) RENAME TO h3_great_circle_distance;
 ALTER FUNCTION h3_hex_area(resolution integer, unit text) RENAME TO h3_get_hexagon_area_avg;
 ALTER FUNCTION h3_edge_length(resolution integer, unit text) RENAME TO h3_get_hexagon_edge_length_avg;
+ALTER FUNCTION h3_exact_edge_length(edge h3index, unit text) RENAME TO h3_edge_length;
+ALTER FUNCTION h3_num_hexagons(resolution integer) RENAME TO h3_get_num_cells;
+ALTER FUNCTION h3_get_res_0_indexes() RENAME TO h3_get_res_0_cells;
+ALTER FUNCTION h3_get_pentagon_indexes(resolution integer) RENAME TO h3_get_pentagons;
 
 -- deprecated
 DROP FUNCTION IF EXISTS h3_hex_area(integer, boolean);
 DROP FUNCTION IF EXISTS h3_edge_length(integer, boolean);
+
+
+-- copied from 07-vertex.sql
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_vertex(cell h3index, vertexNum integer) RETURNS h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_vertex(cell h3index, vertexNum integer)
+IS 'Returns a single vertex for a given cell, as an H3 index';
+
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_vertexes(cell h3index) RETURNS SETOF h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_vertexes(cell h3index)
+IS 'Returns all vertexes for a given cell, as H3 indexes';
+
+CREATE OR REPLACE FUNCTION
+    h3_vertex_to_lat_lng(vertex h3index) RETURNS point
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_vertex_to_lat_lng(vertex h3index)
+IS 'Get the geocoordinates of an H3 vertex';
+
+CREATE OR REPLACE FUNCTION
+    h3_is_valid_vertex(vertex h3index) RETURNS boolean
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_is_valid_vertex(vertex h3index)
+IS 'Whether the input is a valid H3 vertex';
