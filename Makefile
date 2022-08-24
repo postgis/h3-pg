@@ -152,7 +152,7 @@ EXTRA_BINDING_FUNCTIONS = \
 PRINT_TYPES_SQL = "SELECT typname, typlen, typbyval, typalign FROM pg_type WHERE typname LIKE '%h3index' ORDER BY typname;"
 PRINT_FUNCTIONS_SQL = "\df *h3*"
 PRINT_FUNCFLAGS_SQL = "SELECT proname, proisstrict, provolatile, proparallel, prosrc FROM pg_proc WHERE proname LIKE '%h3%' ORDER BY proname, prosrc;"
-PRINT_OPERATORS_SQL = "\do"
+PRINT_OPERATORS_SQL = "\do *h3*"
 
 # rules for testing the update path against full install
 h3/test/sql/ci-install.sql: $(SQL_FULLINSTALL)
