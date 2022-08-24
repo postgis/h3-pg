@@ -20,7 +20,7 @@
     - [h3_grid_disk_distances(origin `h3index`, [k `integer` = 1], index `h3index`, distance `int`) ⇒ `record`](#h3_grid_disk_distancesorigin-h3index-k-integer--1-index-h3index-distance-int-%E2%87%92-record)
     - [h3_grid_ring_unsafe(origin `h3index`, [k `integer` = 1]) ⇒ `h3index`](#h3_grid_ring_unsafeorigin-h3index-k-integer--1-%E2%87%92-h3index)
     - [h3_grid_path_cells(origin `h3index`, destination `h3index`) ⇒ `h3index`](#h3_grid_path_cellsorigin-h3index-destination-h3index-%E2%87%92-h3index)
-    - [h3_grid_distance(origin `h3index`, destination `h3index`) ⇒ `integer`](#h3_grid_distanceorigin-h3index-destination-h3index-%E2%87%92-integer)
+    - [h3_grid_distance(origin `h3index`, destination `h3index`) ⇒ `bigint`](#h3_grid_distanceorigin-h3index-destination-h3index-%E2%87%92-bigint)
     - [h3_cell_to_local_ij(origin `h3index`, index `h3index`) ⇒ `point`](#h3_cell_to_local_ijorigin-h3index-index-h3index-%E2%87%92-point)
     - [h3_local_ij_to_cell(origin `h3index`, coord `point`) ⇒ `h3index`](#h3_local_ij_to_cellorigin-h3index-coord-point-%E2%87%92-h3index)
 - [Hierarchical grid functions](#hierarchical-grid-functions)
@@ -212,7 +212,7 @@ distances for indexes on opposite sides of a pentagon.
 
 
 
-### h3_grid_distance(origin `h3index`, destination `h3index`) ⇒ `integer`
+### h3_grid_distance(origin `h3index`, destination `h3index`) ⇒ `bigint`
 *Since v4.0.0*
 
 
