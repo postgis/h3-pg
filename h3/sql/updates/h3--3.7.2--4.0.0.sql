@@ -76,3 +76,7 @@ ALTER FUNCTION h3_get_h3_unidirectional_edge_boundary(edge h3index) RENAME TO h3
 ALTER FUNCTION h3_point_dist(a point, b point, unit text) RENAME TO h3_great_circle_distance;
 ALTER FUNCTION h3_hex_area(resolution integer, unit text) RENAME TO h3_get_hexagon_area_avg;
 ALTER FUNCTION h3_edge_length(resolution integer, unit text) RENAME TO h3_get_hexagon_edge_length_avg;
+
+-- deprecated
+DROP FUNCTION IF EXISTS h3_hex_area(integer, boolean);
+DROP FUNCTION IF EXISTS h3_edge_length(integer, boolean);

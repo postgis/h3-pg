@@ -20,7 +20,7 @@
 -- Custom helper functions
 
 CREATE OR REPLACE FUNCTION h3_basecells() RETURNS SETOF h3index
-    AS 'h3', 'h3_get_res_0_indexes' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    AS 'h3', 'h3_get_res_0_cells' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_basecells() IS
     'Returns all 122 basecells.';
 
