@@ -53,7 +53,7 @@ distances for indexes on opposite sides of a pentagon.';
 
 --@ availability: 4.0.0
 CREATE OR REPLACE FUNCTION
-    h3_grid_distance(origin h3index, destination h3index) RETURNS integer
+    h3_grid_distance(origin h3index, destination h3index) RETURNS bigint
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_grid_distance(h3index, h3index)
 IS 'Returns the distance in grid cells between the two indices';    

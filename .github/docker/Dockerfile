@@ -1,11 +1,8 @@
-ARG ARCH=amd64
 ARG UBUNTU=focal
-FROM $ARCH/ubuntu:$UBUNTU
+FROM ubuntu:$UBUNTU
 
-ARG ARCH
 ARG UBUNTU
 ENV DEBIAN_FRONTEND=noninteractive
-ENV ARCH=$ARCH
 
 RUN apt-get update && apt-get install -y \
     build-essential \

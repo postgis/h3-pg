@@ -94,12 +94,13 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
 		GeoPolygon	polygon;
 		Datum		value;
 		bool		isnull;
+		POLYGON    *exterior;
 
 		if (PG_ARGISNULL(0))
 			ASSERT(0, ERRCODE_INVALID_PARAMETER_VALUE, "No polygon given to polyfill");
 
 		/* get function arguments */
-		POLYGON    *exterior = PG_GETARG_POLYGON_P(0);
+		exterior = PG_GETARG_POLYGON_P(0);
 
 		if (!PG_ARGISNULL(1))
 		{
@@ -171,35 +172,32 @@ h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 
 	if (SRF_IS_FIRSTCALL())
 	{
-		MemoryContext oldcontext;
-		ArrayType  *array;
-		int			numHexes;
-		H3Index    *h3Set;
-		H3Index    *idx;
 		H3Error		error;
+		Datum		value;
+		bool		isnull;
+		int			i = 0;
 
-		funcctx = SRF_FIRSTCALL_INIT();
-		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
+		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
+		MemoryContext oldcontext =
+		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
-		ENSURE_TYPEFUNC_COMPOSITE(get_call_result_type(fcinfo, NULL, &tuple_desc));
+		ArrayType  *array = PG_GETARG_ARRAYTYPE_P(0);
+		int			numHexes = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
+		ArrayIterator iterator = array_create_iterator(array, 0, NULL);
+		H3Index    *h3set = palloc(numHexes * sizeof(H3Index));
 
-		/* get function arguments */
-		array = PG_GETARG_ARRAYTYPE_P(0);
-
-		numHexes = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
-		h3Set = palloc(numHexes * sizeof(H3Index));
-		idx = (H3Index *) ARR_DATA_PTR(array);
-
-		for (int i = 0; i < numHexes; i++)
+		/* Extract data from array into h3set, and wipe compactedSet memory */
+		while (array_iterate(iterator, &value, &isnull))
 		{
-			h3Set[i] = fetch_att(idx, true, sizeof(H3Index));
-			idx++;
+			h3set[i++] = DatumGetH3Index(value);
 		}
 
 		/* produce hexagons into allocated memory */
 		linkedPolygon = palloc(sizeof(LinkedGeoPolygon));
-		error = cellsToLinkedMultiPolygon(h3Set, numHexes, linkedPolygon);
+		error = cellsToLinkedMultiPolygon(h3set, numHexes, linkedPolygon);
 		H3_ERROR(error, "cellsToLinkedMultiPolygon");
+
+		ENSURE_TYPEFUNC_COMPOSITE(get_call_result_type(fcinfo, NULL, &tuple_desc));
 
 		funcctx->user_fctx = linkedPolygon;
 		funcctx->tuple_desc = BlessTupleDesc(tuple_desc);

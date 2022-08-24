@@ -35,7 +35,7 @@ Datum
 h3_get_resolution(PG_FUNCTION_ARGS)
 {
 	H3Index		hex = PG_GETARG_H3INDEX(0);
-	int			resolution = getResolution(hex);
+	int32_t		resolution = getResolution(hex);
 
 	PG_RETURN_INT32(resolution);
 }
@@ -45,7 +45,7 @@ Datum
 h3_get_base_cell_number(PG_FUNCTION_ARGS)
 {
 	H3Index		hex = PG_GETARG_H3INDEX(0);
-	int			result = getBaseCellNumber(hex);
+	int32_t		result = getBaseCellNumber(hex);
 
 	PG_RETURN_INT32(result);
 }
