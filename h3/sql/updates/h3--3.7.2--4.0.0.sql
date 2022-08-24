@@ -22,9 +22,57 @@ DROP FUNCTION IF EXISTS h3_lat_lng_to_cell(geometry, resolution integer);
 DROP FUNCTION IF EXISTS h3_lat_lng_to_cell(geography, resolution integer);
 DROP FUNCTION IF EXISTS h3_cell_to_geometry(h3index);
 DROP FUNCTION IF EXISTS h3_cell_to_geography(h3index);
-DROP FUNCTION IF EXISTS h3_cell_to_geo_boundary_geometry(h3index, extend boolean DEFAULT FALSE);
-DROP FUNCTION IF EXISTS h3_cell_to_geo_boundary_geography(h3index, extend boolean DEFAULT FALSE);
+DROP FUNCTION IF EXISTS h3_cell_to_geo_boundary_geometry(h3index, extend boolean);
+DROP FUNCTION IF EXISTS h3_cell_to_geo_boundary_geography(h3index, extend boolean);
 DROP FUNCTION IF EXISTS h3_polygon_to_cells(multi geometry, resolution integer);
 DROP FUNCTION IF EXISTS h3_polygon_to_cells(multi geography, resolution integer);
 DROP CAST (h3index AS geometry);
 DROP CAST (h3index AS geography);
+
+-- H3 Core v4 renames
+
+-- indexing
+ALTER FUNCTION h3_geo_to_h3(point, resolution integer) RENAME TO h3_lat_lng_to_cell;
+ALTER FUNCTION h3_to_geo(h3index) RENAME TO h3_cell_to_lat_lng;
+ALTER FUNCTION h3_to_geo_boundary(h3index, extend_at_meridian BOOLEAN) RENAME TO h3_cell_to_boundary;
+
+-- inspection
+
+ALTER FUNCTION h3_get_base_cell(h3index) RENAME TO h3_get_base_cell_number;
+ALTER FUNCTION h3_is_valid(h3index) RENAME TO h3_is_valid_cell;
+ALTER FUNCTION h3_get_faces(h3index) RENAME TO h3_get_icosahedron_faces;
+
+-- traversal
+ALTER FUNCTION h3_k_ring(h3index, k integer) RENAME TO h3_grid_disk;
+ALTER FUNCTION h3_k_ring_distances(h3index, k integer, OUT index h3index, OUT distance int) RENAME TO h3_grid_disk_distances;
+ALTER FUNCTION h3_hex_ring(h3index, k integer) RENAME TO h3_grid_ring_unsafe;
+ALTER FUNCTION h3_line(h3index, h3index) RENAME TO h3_grid_path_cells;
+ALTER FUNCTION h3_distance(h3index, h3index) RENAME TO h3_grid_distance;
+ALTER FUNCTION h3_experimental_h3_to_local_ij(origin h3index, index h3index) RENAME TO h3_cell_to_local_ij;
+ALTER FUNCTION h3_experimental_local_ij_to_h3(origin h3index, coord POINT) RENAME TO h3_local_ij_to_cell;
+
+-- hierarchy
+ALTER FUNCTION h3_to_parent(h3index, resolution integer) RENAME TO h3_cell_to_parent;
+ALTER FUNCTION h3_to_children(h3index, resolution integer) RENAME TO h3_cell_to_children;
+ALTER FUNCTION h3_to_center_child(h3index, resolution integer) RENAME TO h3_cell_to_center_child;
+ALTER FUNCTION h3_compact(h3index[]) RENAME TO h3_compact_cells;
+ALTER FUNCTION h3_uncompact(h3index[], resolution integer) RENAME TO h3_uncompact_cells;
+
+-- regions
+ALTER FUNCTION h3_polyfill(exterior polygon, holes polygon[], resolution integer) RENAME TO h3_polygon_to_cells;
+ALTER FUNCTION h3_set_to_multi_polygon(h3index[], OUT exterior polygon, OUT holes polygon[]) RENAME TO h3_cells_to_multi_polygon;
+
+-- edge
+ALTER FUNCTION h3_indexes_are_neighbors(h3index, h3index) RENAME TO h3_are_neighbor_cells;
+ALTER FUNCTION h3_get_h3_unidirectional_edge(origin h3index, destination h3index) RENAME TO h3_cells_to_directed_edge;
+ALTER FUNCTION h3_unidirectional_edge_is_valid(edge h3index) RENAME TO h3_is_valid_directed_edge;
+ALTER FUNCTION h3_get_origin_h3_index_from_unidirectional_edge(edge h3index) RENAME TO h3_get_directed_edge_origin;
+ALTER FUNCTION h3_get_destination_h3_index_from_unidirectional_edge(edge h3index) RENAME TO h3_get_directed_edge_destination;
+ALTER FUNCTION h3_get_h3_indexes_from_unidirectional_edge(edge h3index, OUT origin h3index, OUT destination h3index) RENAME TO h3_directed_edge_to_cells;
+ALTER FUNCTION h3_get_h3_unidirectional_edges_from_hexagon(h3index) RENAME TO h3_origin_to_directed_edges;
+ALTER FUNCTION h3_get_h3_unidirectional_edge_boundary(edge h3index) RENAME TO h3_directed_edge_to_boundary;
+
+-- miscellaneous
+ALTER FUNCTION h3_point_dist(a point, b point, unit text) RENAME TO h3_great_circle_distance;
+ALTER FUNCTION h3_hex_area(resolution integer, unit text) RENAME TO h3_get_hexagon_area_avg;
+ALTER FUNCTION h3_edge_length(resolution integer, unit text) RENAME TO h3_get_hexagon_edge_length_avg;

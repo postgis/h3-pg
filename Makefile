@@ -163,9 +163,8 @@ h3/test/sql/ci-install.sql: $(SQL_FULLINSTALL)
 h3/test/expected/ci-install.out: $(SQL_UPDATES)
 	psql -c "DROP DATABASE IF EXISTS pg_regress;"
 	psql -c "CREATE DATABASE pg_regress;"
-#	psql -d pg_regress -c "CREATE EXTENSION postgis;"
-#	psql -d pg_regress -c "CREATE EXTENSION h3 VERSION '0.1.0';"
-	psql -d pg_regress -c "CREATE EXTENSION h3;"
+	psql -d pg_regress -c "CREATE EXTENSION postgis;"
+	psql -d pg_regress -c "CREATE EXTENSION h3 VERSION '0.1.0';"
 	psql -d pg_regress -c "ALTER EXTENSION h3 UPDATE;"
 	echo $(PRINT_TYPES_SQL) > $@
 	psql -d pg_regress -c $(PRINT_TYPES_SQL) >> $@
