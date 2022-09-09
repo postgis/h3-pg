@@ -49,7 +49,6 @@ Datum
 h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 {
 	H3Index		cell = PG_GETARG_H3INDEX(0);
-	bool		split = PG_GETARG_BOOL(1);
 
 	H3Error		error;
 	bytea	   *wkb;
@@ -58,7 +57,7 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 	error = cellToBoundary(cell, &boundary);
 	H3_ERROR(error, "cellToBoundary");
 
-	if (split && boundary_crosses_180(&boundary))
+	if (h3_guc_split_antimeridian && boundary_crosses_180(&boundary))
 	{
 		CellBoundary parts[2];
 

@@ -32,19 +32,21 @@ CREATE OR REPLACE FUNCTION h3_cell_to_geometry(h3index) RETURNS geometry
 CREATE OR REPLACE FUNCTION h3_cell_to_geography(h3index) RETURNS geography
   AS $$ SELECT h3_cell_to_geometry($1)::geography $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 
---@ availability: unreleased
-CREATE OR REPLACE FUNCTION
-    h3_cell_to_boundary_wkb(cell h3index, split_at_meridian boolean DEFAULT FALSE) RETURNS bytea
-AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_boundary_wkb(h3index, boolean)
-IS 'Finds the boundary of the index, converts to EWKB, second argument splits polygon when crossing 180th meridian.
-
-This function has to return WKB since Postgres does not provide multipolygon type.';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index, extend_at_antimeridian boolean DEFAULT FALSE) RETURNS geometry
+  AS $$ IF extend_at_antimeridian THEN
+          RAISE NOTICE 'extend flag is deprecated, please use GUC variable h3.extend_antimeridian.'
+          SELECT ST_SetSRID(h3_cell_to_boundary($1, TRUE)::geometry, 4326)
+        ELSE
+          SELECT h3_cell_to_boundary_wkb($1, $2)::geometry
+        END if $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 
 --@ availability: 4.0.0
-CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index, split boolean DEFAULT FALSE) RETURNS geometry
-  AS $$ SELECT h3_cell_to_boundary_wkb($1, $2)::geometry $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index, extend_at_antimeridian boolean DEFAULT FALSE) RETURNS geography
+  AS $$ IF extend_at_antimeridian THEN
+          RAISE NOTICE 'extend flag is deprecated, please use GUC variable h3.extend_antimeridian.'
+          SELECT ST_SetSRID(h3_cell_to_boundary($1, TRUE)::geometry, 4326)
+        ELSE
+          SELECT h3_cell_to_boundary_wkb($1, $2)::geography
+        END if $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 
---@ availability: 4.0.0
-CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index, split boolean DEFAULT FALSE) RETURNS geography
-  AS $$ SELECT h3_cell_to_boundary_wkb($1, $2)::geography $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;

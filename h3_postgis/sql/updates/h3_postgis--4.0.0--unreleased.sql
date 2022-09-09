@@ -17,14 +17,18 @@
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "ALTER EXTENSION h3_postgis UPDATE TO 'unreleased'" to load this file. \quit
 
-CREATE OR REPLACE FUNCTION
-    h3_cell_to_boundary_wkb(cell h3index, split_at_meridian boolean DEFAULT FALSE) RETURNS bytea
-AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_boundary_wkb(h3index, boolean)
-IS 'Finds the boundary of the index, returns EWKB, second argument splits polygon when crossing 180th meridian';
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index, extend_at_antimeridian boolean DEFAULT FALSE) RETURNS geometry
+  AS $$ IF extend_at_antimeridian THEN
+          RAISE NOTICE 'extend flag is deprecated, please use GUC variable h3.extend_antimeridian.'
+          SELECT ST_SetSRID(h3_cell_to_boundary($1, TRUE)::geometry, 4326)
+        ELSE
+          SELECT h3_cell_to_boundary_wkb($1, $2)::geometry
+        END if $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index, split boolean DEFAULT FALSE) RETURNS geometry
-  AS $$ SELECT ST_SetSRID(h3_cell_to_boundary_wkb($1, $2)::geometry, 4326) $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
-
-CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index, split boolean DEFAULT FALSE) RETURNS geography
-  AS $$ SELECT h3_cell_to_boundary_geometry_wkb($1, $2)::geography $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index, extend_at_antimeridian boolean DEFAULT FALSE) RETURNS geography
+  AS $$ IF extend_at_antimeridian THEN
+          RAISE NOTICE 'extend flag is deprecated, please use GUC variable h3.extend_antimeridian.'
+          SELECT ST_SetSRID(h3_cell_to_boundary($1, TRUE)::geometry, 4326)
+        ELSE
+          SELECT h3_cell_to_boundary_wkb($1, $2)::geography
+        END if $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;

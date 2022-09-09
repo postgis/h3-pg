@@ -40,6 +40,8 @@ h3_get_extension_version(PG_FUNCTION_ARGS)
 }
 
 bool		h3_guc_strict = false;
+bool		h3_guc_split_antimeridian = false;
+bool		h3_guc_extend_antimeridian = false;
 
 void
 _PG_init(void)
@@ -48,6 +50,28 @@ _PG_init(void)
 						 "Enable strict indexing (fail on invalid lng/lat).",
 							 NULL,
 							 &h3_guc_strict,
+							 false,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 NULL,
+							 NULL);
+
+	DefineCustomBoolVariable("h3.split_antimeridian",
+						 "Split boundaries by 180th meridian, when possible.",
+							 NULL,
+							 &h3_guc_split_antimeridian,
+							 false,
+							 PGC_USERSET,
+							 0,
+							 NULL,
+							 NULL,
+							 NULL);
+
+	DefineCustomBoolVariable("h3.extend_antimeridian",
+						 "Extend boundaries by 180th meridian, when possible, unless h3.split_antimeridian is enabled.",
+							 NULL,
+							 &h3_guc_extend_antimeridian,
 							 false,
 							 PGC_USERSET,
 							 0,

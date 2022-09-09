@@ -86,6 +86,7 @@ h3_cell_to_boundary(PG_FUNCTION_ARGS)
 {
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 	bool		extend = PG_GETARG_BOOL(1);
+	// TODO: Add deprecation warning if this is set
 
 	double		delta,
 				firstLon,
@@ -120,7 +121,7 @@ h3_cell_to_boundary(PG_FUNCTION_ARGS)
 		lat = boundary.verts[v].lat;
 
 		/* check if different sign */
-		if (extend && fabs(lon - firstLon) > M_PI)
+		if (h3_guc_extend_antimeridian && fabs(lon - firstLon) > M_PI)
 			lon = lon + delta;
 
 		polygon->p[v].x = radsToDegs(lon);

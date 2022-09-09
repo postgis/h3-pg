@@ -27,6 +27,7 @@ avoid adding features or APIs which do not map onto the
   </summary>
 
 - Bump `h3` to `v4.0.1` (was locked on `rc5` for the previous release)
+- Add `h3.split_antimeridian` GUC variable to control splitting (builds on [#76])
 - Add compile flag support check (see [#78], thanks [@mngr777])
 - Allow splitting polygons by 180th meridian (see [#76], thanks [@mngr777])
 
