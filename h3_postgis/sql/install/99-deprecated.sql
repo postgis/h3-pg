@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
---| # WKB indexing functions
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index, extend_antimeridian boolean) RETURNS geometry
+  AS $$ SELECT ST_SetSRID(h3_cell_to_boundary($1, extend_antimeridian)::geometry, 4326) $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 
---@ availability: unreleased
-CREATE OR REPLACE FUNCTION
-    h3_cell_to_boundary_wkb(cell h3index) RETURNS bytea
-AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_boundary_wkb(h3index)
-IS 'Finds the boundary of the index, converts to EWKB.
-
-Splits polygons when crossing 180th meridian.
-
-This function has to return WKB since Postgres does not provide multipolygon type.';
+--@ availability: 4.0.0
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index, extend_antimeridian boolean) RETURNS geography
+  AS $$ SELECT ST_SetSRID(h3_cell_to_boundary($1, extend_antimeridian)::geometry, 4326) $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;

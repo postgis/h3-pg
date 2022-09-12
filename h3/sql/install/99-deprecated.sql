@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
---| # WKB indexing functions
+--| # Deprecated functions
 
---@ availability: unreleased
 CREATE OR REPLACE FUNCTION
-    h3_cell_to_boundary_wkb(cell h3index) RETURNS bytea
+    h3_cell_to_boundary(cell h3index, extend_antimeridian boolean) RETURNS polygon
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_boundary_wkb(h3index)
-IS 'Finds the boundary of the index, converts to EWKB.
-
-Splits polygons when crossing 180th meridian.
-
-This function has to return WKB since Postgres does not provide multipolygon type.';
+    h3_cell_to_boundary(h3index, boolean)
+IS 'DEPRECATED: Use `SET h3.extend_antimeridian TO true` instead.';

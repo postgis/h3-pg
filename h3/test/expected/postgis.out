@@ -68,19 +68,11 @@ SELECT h3_polygon_to_cells(h3_cell_to_boundary(:hexagon)::geometry::polygon, nul
  t
 
 -- the boundary of of a non-edgecrossing index is a polygon
-SET h3.split_antimeridian TO true;
 SELECT GeometryType(h3_cell_to_boundary_wkb(:hexagon)::geometry) LIKE 'POLYGON';
  t
 
-SET h3.split_antimeridian TO false;
 -- the boundary of an edgecrossing index is a multipolygon when split
-SET h3.split_antimeridian TO true;
 SELECT GeometryType(h3_cell_to_boundary_wkb(:edgecross)::geometry) LIKE 'MULTIPOLYGON';
- t
-
-SET h3.split_antimeridian TO false;
--- the boundary of an edgecrossing index is a polygon when not split
-SELECT GeometryType(h3_cell_to_boundary_wkb(:edgecross)::geometry) LIKE 'POLYGON';
  t
 
 -- check latitude of antimeridian crossing points
@@ -94,4 +86,3 @@ FROM (
 WHERE ABS(ABS(ST_X(p)) - 180) < :epsilon;
  t
 
-SET h3.split_antimeridian TO false;

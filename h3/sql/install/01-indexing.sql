@@ -35,9 +35,9 @@ IS 'Finds the centroid of the index';
 
 --@ availability: 4.0.0
 CREATE OR REPLACE FUNCTION
-    h3_cell_to_boundary(cell h3index, extend_at_antimeridian boolean DEFAULT FALSE) RETURNS polygon
+    h3_cell_to_boundary(cell h3index) RETURNS polygon
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_boundary(h3index, boolean)
+    h3_cell_to_boundary(h3index)
 IS 'Finds the boundary of the index.
 
 Use `SET h3.extend_antimeridian TO true` to extend coordinates when crossing 180th meridian.';

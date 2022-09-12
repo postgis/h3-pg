@@ -33,20 +33,9 @@ CREATE OR REPLACE FUNCTION h3_cell_to_geography(h3index) RETURNS geography
   AS $$ SELECT h3_cell_to_geometry($1)::geography $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 
 --@ availability: 4.0.0
-CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index, extend_at_antimeridian boolean DEFAULT FALSE) RETURNS geometry
-  AS $$ IF extend_at_antimeridian THEN
-          RAISE NOTICE 'extend flag is deprecated, please use GUC variable h3.extend_antimeridian.'
-          SELECT ST_SetSRID(h3_cell_to_boundary($1, TRUE)::geometry, 4326)
-        ELSE
-          SELECT h3_cell_to_boundary_wkb($1, $2)::geometry
-        END if $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index) RETURNS geometry
+  AS $$ SELECT h3_cell_to_boundary_wkb($1)::geometry $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 
 --@ availability: 4.0.0
-CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index, extend_at_antimeridian boolean DEFAULT FALSE) RETURNS geography
-  AS $$ IF extend_at_antimeridian THEN
-          RAISE NOTICE 'extend flag is deprecated, please use GUC variable h3.extend_antimeridian.'
-          SELECT ST_SetSRID(h3_cell_to_boundary($1, TRUE)::geometry, 4326)
-        ELSE
-          SELECT h3_cell_to_boundary_wkb($1, $2)::geography
-        END if $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
-
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index) RETURNS geography
+  AS $$ SELECT h3_cell_to_boundary_wkb($1)::geography $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;

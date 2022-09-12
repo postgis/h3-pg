@@ -23,15 +23,22 @@ AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_cell_to_boundary_wkb(h3index)
 IS 'Finds the boundary of the index, converts to EWKB.
 
-Use `SET h3.split_antimeridian TO true` to split when crossing 180th meridian;
+Splits polygons when crossing 180th meridian.
 
 This function has to return WKB since Postgres does not provide multipolygon type.';
 
--- update comment and arg name
+-- deprecate extend flag
+DROP FUNCTION IF EXISTS h3_cell_to_boundary(cell h3index, extend_at_meridian boolean);
 CREATE OR REPLACE FUNCTION
-    h3_cell_to_boundary(cell h3index, extend_at_antimeridian boolean DEFAULT FALSE) RETURNS polygon
+    h3_cell_to_boundary(cell h3index, extend_antimeridian boolean) RETURNS polygon
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_cell_to_boundary(h3index, boolean)
+IS 'DEPRECATED: Use `SET h3.extend_antimeridian TO true` instead';
+
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_boundary(cell h3index) RETURNS polygon
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_boundary(h3index)
 IS 'Finds the boundary of the index.
 
 Use `SET h3.extend_antimeridian TO true` to extend coordinates when crossing 180th meridian.';

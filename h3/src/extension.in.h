@@ -21,7 +21,6 @@
 
 void		_PG_init(void);
 extern bool h3_guc_strict;
-extern bool h3_guc_split_antimeridian;
 extern bool h3_guc_extend_antimeridian;
 
 typedef struct
@@ -103,6 +102,11 @@ Datum		srf_return_h3_index_distances_from_user_fctx(PG_FUNCTION_ARGS);
 		"Function returning record called in context " \
 		"that cannot accept type record"			   \
 	)
+
+#define H3_DEPRECATION(msg)           \
+	ereport(WARNING, (			      \
+		errmsg("Deprecated: %s", msg) \
+	))
 
 #define DEBUG(msg, ...)			   \
 	ereport(NOTICE, (			   \

@@ -44,7 +44,7 @@ static void
 static double
 			split_180_lat(const LatLng * coord1, const LatLng * coord2);
 
-/* Finds the boundary of the index, converts to EWKB, optionally splits the boundary by 180 meridian */
+/* Finds the boundary of the index, converts to EWKB, splits the boundary by 180 meridian */
 Datum
 h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 {
@@ -57,7 +57,7 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 	error = cellToBoundary(cell, &boundary);
 	H3_ERROR(error, "cellToBoundary");
 
-	if (h3_guc_split_antimeridian && boundary_crosses_180(&boundary))
+	if (boundary_crosses_180(&boundary))
 	{
 		CellBoundary parts[2];
 

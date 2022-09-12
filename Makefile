@@ -32,6 +32,7 @@ SQL_FULLINSTALL = h3--$(EXTVERSION).sql
 
 # postgis extension
 SQL_INSTALLS_H3_POSTGIS = $(wildcard h3_postgis/sql/install/*.sql)
+SQL_UPDATES_H3_POSTGIS = $(wildcard h3_postgis/sql/updates/*.sql)
 SQL_FULLINSTALL_H3_POSTGIS = h3_postgis--$(EXTVERSION).sql
 
 # a shared library to build from multiple source files
@@ -39,7 +40,7 @@ MODULE_big = h3
 # object files to be linked together
 OBJS = $(patsubst %.c,%.o,$(wildcard h3/src/*.c))
 # random files to install into $PREFIX/share/$MODULEDIR
-DATA = $(SQL_UPDATES)
+DATA = $(SQL_UPDATES) $(SQL_UPDATES_H3_POSTGIS)
 DATA_built = $(SQL_FULLINSTALL) $(SQL_FULLINSTALL_H3_POSTGIS)
 # will be added to MODULE_big link line
 SHLIB_LINK += -lh3 -L$(LIBH3_BUILD)/lib
