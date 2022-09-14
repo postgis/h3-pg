@@ -25,7 +25,7 @@ jobs:
       - name: Login to repository
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Test
-        run: docker run -v ${PWD}:/github/workspace ghcr.io/bytesandbrains/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
+        run: docker run -v ${PWD}:/github/workspace ghcr.io/zachasme/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
 
   i386:
     runs-on: ubuntu-20.04
@@ -39,4 +39,4 @@ jobs:
       - name: Login to repository
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Test
-        run: docker run -v ${PWD}:/github/workspace ghcr.io/bytesandbrains/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
+        run: docker run -v ${PWD}:/github/workspace ghcr.io/zachasme/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}

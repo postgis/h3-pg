@@ -3,7 +3,7 @@
   "abstract": "PostgreSQL bindings for H3",
   "description": "PostgreSQL bindings for H3, a hierarchical hexagonal geospatial indexing system.",
   "version": "4.0.0",
-  "maintainer": "Bytes & Brains <developers@bytesandbrains.com>",
+  "maintainer": "Zacharias Knudsen <z@chari.as>",
   "license": "apache_2_0",
   "provides": {
     "h3": {
@@ -14,13 +14,13 @@
     }
   },
   "resources": {
-    "homepage": "https://github.com/bytesandbrains/h3-pg",
+    "homepage": "https://github.com/zachasme/h3-pg",
     "bugtracker": {
-      "web": "https://github.com/bytesandbrains/h3-pg/issues"
+      "web": "https://github.com/zachasme/h3-pg/issues"
     },
     "repository": {
-      "url": "https://github.com/bytesandbrains/h3-pg.git",
-      "web": "https://github.com/bytesandbrains/h3-pg",
+      "url": "https://github.com/zachasme/h3-pg.git",
+      "web": "https://github.com/zachasme/h3-pg",
       "type": "git"
     }
   },

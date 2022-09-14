@@ -2,7 +2,7 @@
 set -e
 
 BASEDIR=$(dirname $(realpath "$0"))
-REPOSITORY="ghcr.io/bytesandbrains/h3-pg"
+REPOSITORY="ghcr.io/zachasme/h3-pg"
 
 # i386 being phased out from postgres apt :-(
 #ARCHS=(amd64 i386)

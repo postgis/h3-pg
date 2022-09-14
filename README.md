@@ -38,7 +38,7 @@ pgxn install h3
 
 > :tada: **Note:** The following usage docs apply to **H3 v4**, which was released on August 23, 2022.
 >
-> - For v3 docs, [see the latest v3.x.x release](https://github.com/bytesandbrains/h3-pg/blob/v3.7.2/README.md).
+> - For v3 docs, [see the latest v3.x.x release](https://github.com/zachasme/h3-pg/blob/v3.7.2/README.md).
 > - For breaking changes in v4, [see the CHANGELOG](./CHANGELOG.md). In particular, most [function names have changed](https://h3geo.org/docs/library/migration-3.x/functions).
 
 Generally, all functions have been renamed from camelCase in H3 to snake*case in SQL with an added `h3*` prefix.
