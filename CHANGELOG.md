@@ -26,11 +26,13 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+</details>
+
+## [4.0.1] - 2022-09-19
+
 - Bump `h3` to `v4.0.1` (was locked on `rc5` for the previous release)
 - Add compile flag support check (see [#78], thanks [@mngr777])
 - Split polygons by 180th meridian (see [#76], thanks [@mngr777])
-
-</details>
 
 ## [4.0.0] - 2022-08-24
 
@@ -163,7 +165,8 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.0.0...HEAD
+[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.0.1...HEAD
+[4.0.1]: https://github.com/zachasme/h3-pg/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/zachasme/h3-pg/compare/v3.7.2...v4.0.0
 [3.7.2]: https://github.com/zachasme/h3-pg/compare/v3.7.1...v3.7.2
 [3.7.1]: https://github.com/zachasme/h3-pg/compare/v3.7.0...v3.7.1

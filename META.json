@@ -2,21 +2,21 @@
   "name": "h3",
   "abstract": "PostgreSQL bindings for H3",
   "description": "PostgreSQL bindings for H3, a hierarchical hexagonal geospatial indexing system.",
-  "version": "unreleased",
+  "version": "4.0.1",
   "maintainer": "Zacharias Knudsen <z@chari.as>",
   "license": "apache_2_0",
   "provides": {
     "h3": {
       "abstract": "PostgreSQL bindings for H3",
-      "file": "h3--unreleased.sql",
+      "file": "h3--4.0.1.sql",
       "docfile": "README.md",
-      "version": "unreleased"
+      "version": "4.0.1"
     },
     "h3_postgis": {
       "abstract": "H3 PostGIS integration",
-      "file": "h3_postgis--unreleased.sql",
+      "file": "h3_postgis--4.0.1.sql",
       "docfile": "README.md",
-      "version": "unreleased"
+      "version": "4.0.1"
     }
   },
   "resources": {

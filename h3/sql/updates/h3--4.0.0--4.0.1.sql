@@ -15,7 +15,7 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3 UPDATE TO '4.0.1'" to load this file. \quit
 
 CREATE OR REPLACE FUNCTION
     h3_cell_to_boundary_wkb(cell h3index) RETURNS bytea

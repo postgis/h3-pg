@@ -1,4 +1,4 @@
 comment = 'H3 PostGIS integration'
-default_version = 'unreleased'
+default_version = '4.0.1'
 relocatable = true
 requires = 'h3, postgis'

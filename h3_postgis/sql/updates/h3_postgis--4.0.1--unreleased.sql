@@ -14,15 +14,7 @@
  * limitations under the License.
  */
 
---| # WKB indexing functions
+-- complain if script is sourced in psql, rather than via CREATE EXTENSION
+\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
 
---@ availability: 4.0.1
-CREATE OR REPLACE FUNCTION
-    h3_cell_to_boundary_wkb(cell h3index) RETURNS bytea
-AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_boundary_wkb(h3index)
-IS 'Finds the boundary of the index, converts to EWKB.
-
-Splits polygons when crossing 180th meridian.
-
-This function has to return WKB since Postgres does not provide multipolygon type.';
+-- no changes

@@ -605,7 +605,7 @@ Get the currently installed version of the extension.
 # WKB indexing functions
 
 ### h3_cell_to_boundary_wkb(cell `h3index`) ⇒ `bytea`
-*Since vunreleased*
+*Since v4.0.1*
 
 
 Finds the boundary of the index, converts to EWKB.
