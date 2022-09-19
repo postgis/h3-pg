@@ -163,33 +163,6 @@ EXTRA_BINDING_FUNCTIONS = \
 /tmp/extra-functions:
 	echo "$(EXTRA_BINDING_FUNCTIONS)" | tr " " "\n" > $@
 
-PRINT_TYPES_SQL = "SELECT typname, typlen, typbyval, typalign FROM pg_type WHERE typname LIKE '%h3index' ORDER BY typname;"
-PRINT_FUNCTIONS_SQL = "\df *h3*"
-PRINT_FUNCFLAGS_SQL = "SELECT proname, proisstrict, provolatile, proparallel, prosrc FROM pg_proc WHERE proname LIKE '%h3%' ORDER BY proname, prosrc;"
-PRINT_OPERATORS_SQL = "\do *h3*"
-
-# rules for testing the update path against full install
-h3/test/sql/ci-install.sql: $(SQL_FULLINSTALL)
-	echo $(PRINT_TYPES_SQL) > $@
-	echo $(PRINT_FUNCTIONS_SQL) >> $@
-	echo $(PRINT_FUNCFLAGS_SQL) >> $@
-	echo $(PRINT_OPERATORS_SQL) >> $@
-h3/test/expected/ci-install.out: $(SQL_UPDATES)
-	psql -c "DROP DATABASE IF EXISTS pg_regress;"
-	psql -c "CREATE DATABASE pg_regress;"
-	psql -d pg_regress -c "CREATE EXTENSION postgis;"
-	psql -d pg_regress -c "CREATE EXTENSION h3 VERSION '0.1.0';"
-	psql -d pg_regress -c "ALTER EXTENSION h3 UPDATE;"
-	echo $(PRINT_TYPES_SQL) > $@
-	psql -d pg_regress -c $(PRINT_TYPES_SQL) >> $@
-	echo $(PRINT_FUNCTIONS_SQL) >> $@
-	psql -d pg_regress -c $(PRINT_FUNCTIONS_SQL) >> $@
-	echo $(PRINT_FUNCFLAGS_SQL) >> $@
-	psql -d pg_regress -c $(PRINT_FUNCFLAGS_SQL) >> $@
-	echo $(PRINT_OPERATORS_SQL) >> $@
-	psql -d pg_regress -c $(PRINT_OPERATORS_SQL) >> $@
-	psql -c "DROP DATABASE pg_regress;"
-
 ARCH_SQL = "SELECT typbyval FROM pg_type WHERE typname = 'h3index';"
 
 ifeq ($(ARCH),amd64)
@@ -239,5 +212,5 @@ h3/test/sql/ci-bindings.sql: h3/test/expected/ci-install.out /tmp/extra-function
 		| sort | uniq \
 	)'" > $@
 
-ci: h3/test/sql/ci-arch-$(ARCH).sql h3/test/expected/ci-arch-$(ARCH).out h3/test/sql/ci-install.sql h3/test/expected/ci-install.out h3/test/sql/ci-bindings.sql h3/test/expected/ci-bindings.out
+ci: h3/test/sql/ci-arch-$(ARCH).sql h3/test/expected/ci-arch-$(ARCH).out h3/test/sql/ci-bindings.sql h3/test/expected/ci-bindings.out
 .PHONY: ci format
