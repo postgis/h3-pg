@@ -1,6 +1,10 @@
 name: Test
 
-on: [push, pull_request]
+on:
+  push:
+    branches: main
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   docs:
@@ -26,6 +30,15 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Test
         run: docker run -v ${PWD}:/github/workspace ghcr.io/zachasme/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
+
+  extupgrade:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to repository
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Test
+        run: docker run -v ${PWD}:/github/workspace ghcr.io/zachasme/h3-pg/test:14-jammy-amd64 "pg_validate_extupgrade --config h3/pg_validate_extupgrade.toml && pg_validate_extupgrade --config h3_postgis/pg_validate_extupgrade.toml"
 
   i386:
     runs-on: ubuntu-20.04
