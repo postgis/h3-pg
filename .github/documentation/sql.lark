@@ -117,6 +117,7 @@ argument: "OUT"? [CNAME] datatype "[]"? ("DEFAULT" expr)?
         | "float"
         | "geography"
         | "geometry"
+        | "bytea"
         | "int"
         | "int32"
         | "int8"

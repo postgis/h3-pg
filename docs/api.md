@@ -7,7 +7,7 @@
 - [Indexing functions](#indexing-functions)
     - [h3_lat_lng_to_cell(latlng `point`, resolution `integer`) ⇒ `h3index`](#h3_lat_lng_to_celllatlng-point-resolution-integer-%E2%87%92-h3index)
     - [h3_cell_to_lat_lng(cell `h3index`) ⇒ `point`](#h3_cell_to_lat_lngcell-h3index-%E2%87%92-point)
-    - [h3_cell_to_boundary(cell `h3index`, [extend_at_meridian `boolean` = `false`]) ⇒ `polygon`](#h3_cell_to_boundarycell-h3index-extend_at_meridian-boolean--false-%E2%87%92-polygon)
+    - [h3_cell_to_boundary(cell `h3index`) ⇒ `polygon`](#h3_cell_to_boundarycell-h3index-%E2%87%92-polygon)
 - [Index inspection functions](#index-inspection-functions)
     - [h3_get_resolution(`h3index`) ⇒ `integer`](#h3_get_resolutionh3index-%E2%87%92-integer)
     - [h3_get_base_cell_number(`h3index`) ⇒ `integer`](#h3_get_base_cell_numberh3index-%E2%87%92-integer)
@@ -76,6 +76,10 @@
     - [`h3index` :: `point`](#h3index--point)
 - [Extension specific functions](#extension-specific-functions)
     - [h3_get_extension_version() ⇒ `text`](#h3_get_extension_version-%E2%87%92-text)
+- [WKB indexing functions](#wkb-indexing-functions)
+    - [h3_cell_to_boundary_wkb(cell `h3index`) ⇒ `bytea`](#h3_cell_to_boundary_wkbcell-h3index-%E2%87%92-bytea)
+- [Deprecated functions](#deprecated-functions)
+    - [h3_cell_to_boundary(cell `h3index`, extend_antimeridian `boolean`) ⇒ `polygon`](#h3_cell_to_boundarycell-h3index-extend_antimeridian-boolean-%E2%87%92-polygon)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -113,11 +117,13 @@ Finds the centroid of the index
 
 
 
-### h3_cell_to_boundary(cell `h3index`, [extend_at_meridian `boolean` = `false`]) ⇒ `polygon`
+### h3_cell_to_boundary(cell `h3index`) ⇒ `polygon`
 *Since v4.0.0*
 
 
-Finds the boundary of the index, second argument extends coordinates when crossing 180th meridian to help visualization
+Finds the boundary of the index.
+
+Use `SET h3.extend_antimeridian TO true` to extend coordinates when crossing 180th meridian.
 
 # Index inspection functions
 
@@ -595,5 +601,24 @@ Convert H3 index to point
 
 
 Get the currently installed version of the extension.
+
+# WKB indexing functions
+
+### h3_cell_to_boundary_wkb(cell `h3index`) ⇒ `bytea`
+*Since vunreleased*
+
+
+Finds the boundary of the index, converts to EWKB.
+
+Splits polygons when crossing 180th meridian.
+
+This function has to return WKB since Postgres does not provide multipolygon type.
+
+# Deprecated functions
+
+### h3_cell_to_boundary(cell `h3index`, extend_antimeridian `boolean`) ⇒ `polygon`
+
+
+DEPRECATED: Use `SET h3.extend_antimeridian TO true` instead.
 
 
