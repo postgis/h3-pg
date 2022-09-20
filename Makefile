@@ -184,6 +184,18 @@ h3/test/expected/ci-arch-$(ARCH).out: $(SQL_UPDATES)
 	psql -d pg_regress -c $(ARCH_SQL) | sed '3 s/.*/ ${ARCH_BOOL}/' -   >> $@
 	psql -c "DROP DATABASE pg_regress;"
 
+
+PRINT_FUNCTIONS_SQL = "SELECT proname, proisstrict, provolatile, proparallel, prosrc FROM pg_proc WHERE proname LIKE '%h3%' ORDER BY proname, prosrc;"
+
+# rules for testing the update path against full install
+h3/test/expected/ci-install.out: $(SQL_UPDATES)
+	psql -c "DROP DATABASE IF EXISTS pg_regress;"
+	psql -c "CREATE DATABASE pg_regress;"
+	psql -d pg_regress -c "CREATE EXTENSION h3;"
+	echo $(PRINT_FUNCTIONS_SQL) >> $@
+	psql -d pg_regress -c $(PRINT_FUNCTIONS_SQL) >> $@
+	psql -c "DROP DATABASE pg_regress;"
+
 # generate expected bindings from h3 generated binding function list
 h3/test/expected/ci-bindings.out: $(LIBH3_BUILD)/binding-functions /tmp/excluded-functions
 	psql -c "DROP DATABASE IF EXISTS pg_regress;"
