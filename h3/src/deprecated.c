@@ -28,7 +28,7 @@
 			errcode(ERRCODE_FEATURE_NOT_SUPPORTED), \
 			errmsg("A stored procedure tried to use deprecated C function '%s'", \
 			       __func__), \
-			errdetail("Library function '%s' was deprecated in PostGIS %s", \
+			errdetail("Library function '%s' was deprecated in h3 %s", \
 			          __func__, version), \
 			errhint("Consider running: ALTER EXTENSION h3 UPDATE") \
 		)); \
