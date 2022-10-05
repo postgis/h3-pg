@@ -32,7 +32,7 @@ CREATE OPERATOR <-> (
 
 -- New functions in core v3.7.0
 CREATE OR REPLACE FUNCTION h3_point_dist(a point, b point, unit text DEFAULT 'km') RETURNS float
-    AS 'h3', 'h3_great_circle_distance' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_point_dist(point, point, text) IS
 'The great circle distance in radians between two spherical coordinates.';
 
@@ -42,13 +42,13 @@ CREATE OR REPLACE FUNCTION h3_cell_area(cell h3index, unit text DEFAULT 'km^2') 
 'Exact area for a specific cell (hexagon or pentagon).';
 
 CREATE OR REPLACE FUNCTION h3_exact_edge_length(edge h3index, unit text DEFAULT 'km') RETURNS float
-    AS 'h3', 'h3_edge_length' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_exact_edge_length(h3index, text) IS
 'Exact length for a specific unidirectional edge.';
 
 -- New call signatures for hexarea and edgelength, using string instead of boolean
 CREATE OR REPLACE FUNCTION h3_hex_area(resolution integer, unit text DEFAULT 'km') RETURNS float
-    AS 'h3', 'h3_get_hexagon_area_avg' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_hex_area(integer, text) IS
 'Average hexagon area in square (kilo)meters at the given resolution.';
 

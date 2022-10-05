@@ -20,7 +20,7 @@
 -- Custom helper functions
 
 CREATE OR REPLACE FUNCTION h3_basecells() RETURNS SETOF h3index
-    AS 'h3', 'h3_get_res_0_cells' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_basecells() IS
     'Returns all 122 basecells.';
 
@@ -97,4 +97,4 @@ CREATE CAST (h3index AS point) WITH FUNCTION h3_h3_to_geo(h3index);
 
 -- DEPRECATED in v1.0.0
 CREATE OR REPLACE FUNCTION h3_haversine_distance(h3index, h3index) RETURNS double precision
-    AS 'h3', 'h3index_in' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;

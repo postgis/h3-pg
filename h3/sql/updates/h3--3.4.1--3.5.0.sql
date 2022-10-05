@@ -18,7 +18,7 @@
 \echo Use "ALTER EXTENSION h3 UPDATE TO '3.5.0'" to load this file. \quit
 
 CREATE OR REPLACE FUNCTION h3_get_faces(h3index) RETURNS integer[]
-    AS 'h3', 'h3_get_icosahedron_faces' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_get_faces(h3index) IS
 'Find all icosahedron faces intersected by a given H3 index';
 
@@ -35,7 +35,7 @@ CREATE OR REPLACE FUNCTION h3_edge_length(resolution integer, km boolean DEFAULT
 DROP FUNCTION IF EXISTS h3_hex_area_km2(integer);
 DROP FUNCTION IF EXISTS h3_hex_area_m2(integer);
 CREATE OR REPLACE FUNCTION h3_hex_area(resolution integer, km boolean DEFAULT FALSE) RETURNS float
-    AS 'h3', 'h3_get_hexagon_area_avg' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_hex_area(integer, boolean) IS
 'Average hexagon area in square (kilo)meters at the given resolution.';
 
