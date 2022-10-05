@@ -26,6 +26,8 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+- Fix broken function renames (see [#87], thanks [@Kompza], [@mngr777])
+
 </details>
 
 ## [4.0.1] - 2022-09-19
@@ -209,6 +211,7 @@ avoid adding features or APIs which do not map onto the
 [#75]: https://github.com/zachasme/h3-pg/pull/75
 [#76]: https://github.com/zachasme/h3-pg/pull/76
 [#78]: https://github.com/zachasme/h3-pg/pull/78
+[#87]: https://github.com/zachasme/h3-pg/pull/87
 [@abelvm]: https://github.com/AbelVM
 [@kalenikaliaksandr]: https://github.com/kalenikaliaksandr
 [@kmacdough]: https://github.com/kmacdough
