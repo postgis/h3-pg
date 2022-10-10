@@ -15,7 +15,7 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3 UPDATE TO '4.0.2'" to load this file. \quit
 
 -- Due to mishandling of C-level renames in previous releases,
 --   this upgrade attempts to align user-installations as much as possible
