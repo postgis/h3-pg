@@ -1,0 +1,47 @@
+name: test-macos
+
+on: [push]
+
+jobs:
+  macos:
+    strategy:
+      matrix:
+        config: [Release, Debug]
+
+    runs-on: macos-12
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo
+          key: ${{ runner.os }}-cargo-2022
+
+      - name: Install pg_validate_extupgrade
+        run: cargo install --locked --git https://github.com/rjuju/pg_validate_extupgrade.git
+
+      - name: Install PostgreSQL server dependencies
+        run: brew install postgis
+
+      - name: Generate
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.config }}
+
+      - name: Install
+        run: sudo cmake --install build --component h3-pg --config ${{ matrix.config }}
+
+      - name: Prepare PostgreSQL
+        run: |
+          pg_ctl start -D /usr/local/var/postgresql@14 --wait
+          createdb runner
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --build-config ${{ matrix.config }}
+
+      - name: Print regression diffs
+        if: ${{ failure() }}
+        run: cat build/*/regression.diffs

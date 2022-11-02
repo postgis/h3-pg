@@ -23,14 +23,14 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3_are_neighbor_cells);
-PG_FUNCTION_INFO_V1(h3_cells_to_directed_edge);
-PG_FUNCTION_INFO_V1(h3_is_valid_directed_edge);
-PG_FUNCTION_INFO_V1(h3_get_directed_edge_origin);
-PG_FUNCTION_INFO_V1(h3_get_directed_edge_destination);
-PG_FUNCTION_INFO_V1(h3_directed_edge_to_cells);
-PG_FUNCTION_INFO_V1(h3_origin_to_directed_edges);
-PG_FUNCTION_INFO_V1(h3_directed_edge_to_boundary);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_are_neighbor_cells);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cells_to_directed_edge);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_is_valid_directed_edge);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_directed_edge_origin);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_directed_edge_destination);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_directed_edge_to_cells);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_origin_to_directed_edges);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_directed_edge_to_boundary);
 
 /* Returns whether or not the provided H3 cell indexes are neighbors. */
 Datum

@@ -1,0 +1,40 @@
+name: test-linux
+
+on: [push]
+
+jobs:
+  linux:
+    strategy:
+      matrix:
+        config: [Release, Debug]
+
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install pg_validate_extupgrade
+        run: cargo install --locked --git https://github.com/rjuju/pg_validate_extupgrade.git
+
+      - name: Install PostgreSQL server dependencies
+        run: sudo apt install postgresql-server-dev-14 postgis
+
+      - name: Generate
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Install
+        run: sudo cmake --install build --component h3-pg
+
+      - name: Prepare PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres -i createuser --superuser runner
+          sudo -u postgres -i createdb runner
+
+      - name: Test
+        env:
+          PGHOST: /var/run/postgresql
+        run: ctest --test-dir build --output-on-failure --build-config ${{ matrix.config }}

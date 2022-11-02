@@ -21,17 +21,17 @@
 #include "extension.h"
 
 /* b-tree */
-PG_FUNCTION_INFO_V1(h3index_eq);
-PG_FUNCTION_INFO_V1(h3index_ne);
-PG_FUNCTION_INFO_V1(h3index_lt);
-PG_FUNCTION_INFO_V1(h3index_le);
-PG_FUNCTION_INFO_V1(h3index_gt);
-PG_FUNCTION_INFO_V1(h3index_ge);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_eq);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_ne);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_lt);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_le);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gt);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_ge);
 
 /* r-tree */
-PG_FUNCTION_INFO_V1(h3index_overlaps);
-PG_FUNCTION_INFO_V1(h3index_contains);
-PG_FUNCTION_INFO_V1(h3index_contained_by);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_overlaps);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_contains);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_contained_by);
 
 /* static helpers */
 static int

@@ -24,13 +24,13 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3_grid_disk);
-PG_FUNCTION_INFO_V1(h3_grid_disk_distances);
-PG_FUNCTION_INFO_V1(h3_grid_ring_unsafe);
-PG_FUNCTION_INFO_V1(h3_grid_distance);
-PG_FUNCTION_INFO_V1(h3_grid_path_cells);
-PG_FUNCTION_INFO_V1(h3_cell_to_local_ij);
-PG_FUNCTION_INFO_V1(h3_local_ij_to_cell);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_disk);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_disk_distances);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_ring_unsafe);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_distance);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_path_cells);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_local_ij);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_local_ij_to_cell);
 
 /*
  * k-rings produces indices within k distance of the origin index.

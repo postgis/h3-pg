@@ -23,12 +23,12 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3_get_resolution);
-PG_FUNCTION_INFO_V1(h3_get_base_cell_number);
-PG_FUNCTION_INFO_V1(h3_is_valid_cell);
-PG_FUNCTION_INFO_V1(h3_is_res_class_iii);
-PG_FUNCTION_INFO_V1(h3_is_pentagon);
-PG_FUNCTION_INFO_V1(h3_get_icosahedron_faces);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_resolution);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_base_cell_number);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_is_valid_cell);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_is_res_class_iii);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_is_pentagon);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_icosahedron_faces);
 
 /* Returns the resolution of the index */
 Datum

@@ -27,7 +27,7 @@
 #define SIGN(x) ((x < 0) ? -1 : (x > 0) ? 1 \
 										: 0)
 
-PG_FUNCTION_INFO_V1(h3_cell_to_boundary_wkb);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_boundary_wkb);
 
 /* Converts CellBoundary coordinates to degrees in place */
 static void

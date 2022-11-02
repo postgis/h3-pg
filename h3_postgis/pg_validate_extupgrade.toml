@@ -1,6 +1,0 @@
-extname = 'h3_postgis'
-from = '4.0.0'
-to = 'unreleased'
-extra_queries = [
-    "SELECT COUNT(*) FROM pg_class WHERE relname = 'dump_0'"
-]

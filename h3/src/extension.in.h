@@ -31,8 +31,12 @@ typedef struct
 
 #define MAX_H3_RES 15
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 /*	configure extension version in makefile */
-#define EXTVERSION "@EXTVERSION@"
+#define EXTVERSION "@PROJECT_VERSION@"
 
 /*
  * DatumGetH3Index

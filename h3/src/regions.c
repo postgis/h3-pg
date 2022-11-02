@@ -27,8 +27,8 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3_polygon_to_cells);
-PG_FUNCTION_INFO_V1(h3_cells_to_multi_polygon);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_polygon_to_cells);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cells_to_multi_polygon);
 
 static void
 polygonToGeoLoop(POLYGON *polygon, GeoLoop * geoloop)

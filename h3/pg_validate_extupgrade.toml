@@ -1,6 +1,0 @@
-extname = 'h3'
-from = '0.1.0'
-to = 'unreleased'
-extra_queries = [
-    "SELECT COUNT(*) FROM pg_class WHERE relname = 'dump_0'"
-]

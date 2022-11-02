@@ -21,7 +21,7 @@
 // https://github.com/postgis/postgis/blob/master/postgis/postgis_legacy.c
 
 #define H3_DEPRECATE(version, funcname) \
-	PG_FUNCTION_INFO_V1(funcname); \
+	PGDLLEXPORT PG_FUNCTION_INFO_V1(funcname); \
 	Datum funcname(PG_FUNCTION_ARGS) \
 	{ \
 		ereport(ERROR, (\

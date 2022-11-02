@@ -21,8 +21,8 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3index_hash);
-PG_FUNCTION_INFO_V1(h3index_hash_extended);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_hash);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_hash_extended);
 
 Datum
 h3index_hash(PG_FUNCTION_ARGS)

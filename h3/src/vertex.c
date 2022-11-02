@@ -23,10 +23,10 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3_cell_to_vertex);
-PG_FUNCTION_INFO_V1(h3_cell_to_vertexes);
-PG_FUNCTION_INFO_V1(h3_vertex_to_lat_lng);
-PG_FUNCTION_INFO_V1(h3_is_valid_vertex);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_vertex);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_vertexes);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_vertex_to_lat_lng);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_is_valid_vertex);
 
 /* Returns a single vertex for a given cell, as an H3 index */
 Datum

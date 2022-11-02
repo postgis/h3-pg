@@ -21,10 +21,10 @@
 #include "extension.h"
 
 /* conversion */
-PG_FUNCTION_INFO_V1(h3index_in);
-PG_FUNCTION_INFO_V1(h3index_out);
-PG_FUNCTION_INFO_V1(h3index_to_bigint);
-PG_FUNCTION_INFO_V1(bigint_to_h3index);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_in);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_out);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_to_bigint);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(bigint_to_h3index);
 
 /* textual input/output functions */
 Datum

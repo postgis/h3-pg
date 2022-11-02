@@ -23,11 +23,11 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3_cell_to_parent);
-PG_FUNCTION_INFO_V1(h3_cell_to_children);
-PG_FUNCTION_INFO_V1(h3_cell_to_center_child);
-PG_FUNCTION_INFO_V1(h3_compact_cells);
-PG_FUNCTION_INFO_V1(h3_uncompact_cells);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_parent);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_children);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_center_child);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_compact_cells);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_uncompact_cells);
 
 /* Returns the parent (coarser) index containing given index */
 Datum

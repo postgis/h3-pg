@@ -23,14 +23,14 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3_get_hexagon_area_avg);
-PG_FUNCTION_INFO_V1(h3_cell_area);
-PG_FUNCTION_INFO_V1(h3_get_hexagon_edge_length_avg);
-PG_FUNCTION_INFO_V1(h3_edge_length);
-PG_FUNCTION_INFO_V1(h3_get_num_cells);
-PG_FUNCTION_INFO_V1(h3_get_res_0_cells);
-PG_FUNCTION_INFO_V1(h3_get_pentagons);
-PG_FUNCTION_INFO_V1(h3_great_circle_distance);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_hexagon_area_avg);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_area);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_hexagon_edge_length_avg);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_edge_length);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_num_cells);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_res_0_cells);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_pentagons);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_great_circle_distance);
 
 /* Average hexagon area in square (kilo)meters at the given resolution */
 Datum

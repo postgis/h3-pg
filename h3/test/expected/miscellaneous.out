@@ -1,7 +1,7 @@
 \pset tuples_only on
 \set degs 90.45
 \set rads 1.57865030842887
-\set epsilon 0.0000000000001
+\set epsilon 0.000000001
 \set edge '\'1180326b885fffff\'::h3index'
 --
 -- TEST h3_great_circle_distance

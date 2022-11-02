@@ -1,5 +1,10 @@
 # h3-pg: Uber's H3 Hexagonal Hierarchical Geospatial Indexing System in PostgreSQL
 
+[![test-linux](https://github.com/zachasme/postgresql-extensions-cmake/workflows/test-linux/badge.svg)](https://github.com/zachasme/postgresql-extensions-cmake/actions)
+[![test-macos](https://github.com/zachasme/postgresql-extensions-cmake/workflows/test-macos/badge.svg)](https://github.com/zachasme/postgresql-extensions-cmake/actions/workflows/test-macos.yml)
+[![test-windows](https://github.com/zachasme/postgresql-extensions-cmake/workflows/test-windows/badge.svg)](https://github.com/zachasme/postgresql-extensions-cmake/actions/workflows/test-windows.yml)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 This library provides PostgreSQL bindings for the [H3 Core Library](https://github.com/uber/h3). For API reference, please see the [H3 Documentation](https://uber.github.io/h3).
 
 Developed in collaboration with [Scandinavian Highlands](http://www.scandinavian-highlands.com).
@@ -41,14 +46,17 @@ Generally, all functions have been renamed from camelCase in H3 to snake\_case i
 
 See [API reference](docs/api.md) for all provided functions.
 
-## Advanced Install
+## Building
 
-### On macOS with the Postgres.app Universal Binary
+```bash
+# Generate native build system
+cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-```shell
-brew install pgxnclient make cmake
-export CMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-pgxn install h3
+# Build extension(s)
+cmake --build build
+
+# Install extensions (might require sudo)
+cmake --install build --component h3-pg
 ```
 
 ## Contributing

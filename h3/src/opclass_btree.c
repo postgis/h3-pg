@@ -21,7 +21,7 @@
 #include <h3api.h> // Main H3 include
 #include "extension.h"
 
-PG_FUNCTION_INFO_V1(h3index_cmp);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_cmp);
 
 Datum
 h3index_cmp(PG_FUNCTION_ARGS)
@@ -81,7 +81,7 @@ h3index_abbrev_convert(Datum original, SortSupport ssup)
 /*
  * Sort support strategy routine
  */
-PG_FUNCTION_INFO_V1(h3index_sortsupport);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_sortsupport);
 Datum
 h3index_sortsupport(PG_FUNCTION_ARGS)
 {

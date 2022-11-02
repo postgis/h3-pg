@@ -9,7 +9,7 @@
 #include "wkb_split.h"
 #include "wkb.h"
 
-PG_FUNCTION_INFO_V1(h3_cells_to_multi_polygon_wkb);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cells_to_multi_polygon_wkb);
 
 /* Converts LinkedGeoPolygon vertex coordinates to degrees in place */
 static void
