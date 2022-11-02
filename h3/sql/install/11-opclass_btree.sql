@@ -27,7 +27,7 @@ CREATE OR REPLACE FUNCTION h3index_sortsupport(internal)
 	LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 --@ internal
-CREATE OPERATOR CLASS btree_h3index_ops DEFAULT FOR TYPE h3index USING btree AS
+CREATE OPERATOR CLASS h3index_ops DEFAULT FOR TYPE h3index USING btree AS
     OPERATOR  1  <  ,
     OPERATOR  2  <= ,
     OPERATOR  3   = ,

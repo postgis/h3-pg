@@ -37,3 +37,9 @@ CREATE OPERATOR CLASS h3index_minmax_ops DEFAULT FOR TYPE h3index USING brin AS
     FUNCTION  2  brin_minmax_add_value(internal, internal, internal, internal),
     FUNCTION  3  brin_minmax_consistent(internal, internal, internal),
     FUNCTION  4  brin_minmax_union(internal, internal, internal);
+
+ALTER OPERATOR FAMILY btree_h3index_ops USING btree RENAME TO h3index_ops;
+ALTER OPERATOR CLASS  btree_h3index_ops USING btree RENAME TO h3index_ops;
+
+ALTER OPERATOR FAMILY hash_h3index_ops USING hash RENAME TO h3index_ops;
+ALTER OPERATOR CLASS  hash_h3index_ops USING hash RENAME TO h3index_ops;

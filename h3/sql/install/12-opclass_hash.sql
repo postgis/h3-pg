@@ -25,7 +25,7 @@ CREATE OR REPLACE FUNCTION h3index_hash_extended(h3index, int8) RETURNS int8
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 --@ internal
-CREATE OPERATOR CLASS hash_h3index_ops DEFAULT FOR TYPE h3index USING hash AS
+CREATE OPERATOR CLASS h3index_ops DEFAULT FOR TYPE h3index USING hash AS
     OPERATOR  1  = ,
     FUNCTION  1  h3index_hash(h3index),
     FUNCTION  2  h3index_hash_extended(h3index, int8);
