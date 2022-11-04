@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    paths:
+      - CMakeLists.txt
+      - cmake
+      - h3*
 
 jobs:
   linux:
