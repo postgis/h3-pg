@@ -16,7 +16,8 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     sql/updates/h3_postgis--4.0.0.sql
     sql/updates/h3_postgis--4.0.0--4.0.1.sql
     sql/updates/h3_postgis--4.0.1--4.0.2.sql
-    sql/updates/h3_postgis--4.0.2--unreleased.sql
+    sql/updates/h3_postgis--4.0.2--4.0.3.sql
+    sql/updates/h3_postgis--4.0.3--unreleased.sql
 )
 
 if(BUILD_TESTING)

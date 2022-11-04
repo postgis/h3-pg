@@ -29,7 +29,7 @@ endif()
 # Listing the version is nice here since it sets lots of useful variables
 project(
   h3-pg
-  VERSION 4.0.2
+  VERSION 4.0.3
   LANGUAGES C
 )
 
