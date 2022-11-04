@@ -15,7 +15,7 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3 UPDATE TO '4.0.3'" to load this file. \quit
 
 CREATE OR REPLACE FUNCTION
     h3_cells_to_multi_polygon_geometry(h3index[]) RETURNS geometry
@@ -75,4 +75,3 @@ BEGIN
     END IF;
 END;
 $$ LANGUAGE 'plpgsql' IMMUTABLE STRICT PARALLEL SAFE;
-

@@ -26,12 +26,14 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+</details>
+
+## [4.0.3] - 2022-11-04
+
 - Add BRIN operator class (see [#97], thanks [@mngr777])
 - Split PostGIS multipolygons by 180th meridian (see [#90], thanks [@mngr777])
 - Add aggregate functions for `h3_postgis` (see [#91], thanks [@mngr777])
 - Add recursive `h3_grid_path_cells` (see [#93], thanks [@mngr777])
-
-</details>
 
 ## [4.0.2] - 2022-09-19
 
@@ -174,7 +176,8 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.0.2...HEAD
+[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.0.3...HEAD
+[4.0.3]: https://github.com/zachasme/h3-pg/compare/v4.0.2...v4.0.3
 [4.0.2]: https://github.com/zachasme/h3-pg/compare/v4.0.1...v4.0.2
 [4.0.1]: https://github.com/zachasme/h3-pg/compare/v4.0.0...v4.0.1
 [4.0.0]: https://github.com/zachasme/h3-pg/compare/v3.7.2...v4.0.0
