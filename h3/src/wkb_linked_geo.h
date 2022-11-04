@@ -23,7 +23,7 @@
 #define FOREACH_LINKED_LAT_LNG(loop, latlng)				\
 	_FOREACH_LINKED_ITEM(loop->first, latlng, const LinkedLatLng)
 
-#define FOREACH_LINKED_LAT_LNG_NOCONST(loop, latlng) 	\
+#define FOREACH_LINKED_LAT_LNG_NOCONST(loop, latlng)	\
 	_FOREACH_LINKED_ITEM(loop->first, latlng, LinkedLatLng)
 
 /* NOTE: loop must contain at least 2 points */
@@ -33,30 +33,30 @@
 		 cur = cur->next, next = next->next ? next->next : loop->first)
 
 int
-count_linked_polygons(const LinkedGeoPolygon * multiPolygon);
+			count_linked_polygons(const LinkedGeoPolygon * multiPolygon);
 
 int
-count_linked_geo_loops(const LinkedGeoPolygon * polygon);
+			count_linked_geo_loops(const LinkedGeoPolygon * polygon);
 
 int
-count_linked_lat_lng(const LinkedGeoLoop * loop);
+			count_linked_lat_lng(const LinkedGeoLoop * loop);
 
-LinkedGeoPolygon*
-copy_linked_geo_polygon(const LinkedGeoPolygon * polygon);
+LinkedGeoPolygon *
+			copy_linked_geo_polygon(const LinkedGeoPolygon * polygon);
 
-LinkedGeoLoop*
-copy_linked_geo_loop(const LinkedGeoLoop * loop);
+LinkedGeoLoop *
+			copy_linked_geo_loop(const LinkedGeoLoop * loop);
 
-LinkedLatLng*
-copy_linked_lat_lng(const LinkedLatLng * latlng);
-
-void
-add_linked_geo_loop(LinkedGeoPolygon * polygon, LinkedGeoLoop * loop);
+LinkedLatLng *
+			copy_linked_lat_lng(const LinkedLatLng * latlng);
 
 void
-add_linked_lat_lng(LinkedGeoLoop * loop, LinkedLatLng * latlng);
+			add_linked_geo_loop(LinkedGeoPolygon * polygon, LinkedGeoLoop * loop);
 
 void
-free_linked_geo_polygon(LinkedGeoPolygon * multiPolygon);
+			add_linked_lat_lng(LinkedGeoLoop * loop, LinkedLatLng * latlng);
+
+void
+			free_linked_geo_polygon(LinkedGeoPolygon * multiPolygon);
 
 #endif

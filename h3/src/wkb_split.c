@@ -15,16 +15,16 @@ After intersections are found and sorted by latitude,
 intersection pairs 0-1 and 2-3 become segments in
 exterior rings of the polygons in result.
 
-          |
+		  |
   +------(0)------+
-  |       |       |
+  |		  |		  |
   |  +---(1)---+  |
-  |  |    |    |  |
-  |  |    |    |  |
+  |  |	  |    |  |
+  |  |	  |    |  |
   |  +---(2)---+  |
-  |       |       |
+  |		  |		  |
   +------(3)------+
-          |
+		  |
 
 
 Algorithm overview:
@@ -36,13 +36,13 @@ Algorithm overview:
 
 2. Processing polygon rings:
   for each ring in the polygon:
-    if ring is crossed by prime or antimeridian:
-      for each segment in the ring:
-        - add first endpoint to array of vertices
-        if segment crosses antimeridian:
-          - add an intersection, link to first endpoint
-    else:
-      - add ring to array of non-split holes
+	if ring is crossed by prime or antimeridian:
+	  for each segment in the ring:
+		- add first endpoint to array of vertices
+		if segment crosses antimeridian:
+		  - add an intersection, link to first endpoint
+	else:
+	  - add ring to array of non-split holes
 
 3. Preparing data:
   - sort intersections by latitude
@@ -50,20 +50,20 @@ Algorithm overview:
 
 4. Building multipolygon:
   while there are unused vertices:
-    - create empty exterior ring
-    - start traversing vertex array forward starting from next unused vertex
-    while current vertex is unused:
-      - add current vertex to exterior ring
-      - get next vertex (depends on traversal direction)
-      if there is an intersection between vertices:
-        - add intersection point to exterior ring
-        - get adjacent intersection from sorted array
-        - add next intersection point to exterior ring
-        - update traversal direction based on intersection direction value
-        - get next vertex
-      - move to text vertex
-    - check which non-split holes are inside the exterior ring and add them to polygon
-    - add polygon to result
+	- create empty exterior ring
+	- start traversing vertex array forward starting from next unused vertex
+	while current vertex is unused:
+	  - add current vertex to exterior ring
+	  - get next vertex (depends on traversal direction)
+	  if there is an intersection between vertices:
+		- add intersection point to exterior ring
+		- get adjacent intersection from sorted array
+		- add next intersection point to exterior ring
+		- update traversal direction based on intersection direction value
+		- get next vertex
+	  - move to text vertex
+	- check which non-split holes are inside the exterior ring and add them to polygon
+	- add polygon to result
 
  */
 
@@ -85,117 +85,122 @@ Algorithm overview:
 
 /* Direction of segment intersecting antimeridian: */
 /* West-to-East or East-to-West */
-typedef enum {
+typedef enum
+{
 	SplitIntersectDir_None = 0,
 	SplitIntersectDir_WE,
 	SplitIntersectDir_EW
-} SplitIntersectDir;
+}	SplitIntersectDir;
 
-typedef struct {
+typedef struct
+{
 	SplitIntersectDir dir;
-	bool isPrime;
-	double lat;
-	int vertexIdx;
-	int sortOrder;
-} SplitIntersect;
+	bool		isPrime;
+	double		lat;
+	int			vertexIdx;
+	int			sortOrder;
+}	SplitIntersect;
 
-typedef struct {
+typedef struct
+{
 	const LatLng *latlngPtr;
-	int intersectIdx;
-	short sign; /* longitude sign is set explicitly in case longitude of the vertex itself is zero */
-	int link;   /* links first and last vertices in a ring */
-} SplitVertex;
+	int			intersectIdx;
+	short		sign;			/* longitude sign is set explicitly in case
+								 * longitude of the vertex itself is zero */
+	int			link;			/* links first and last vertices in a ring */
+}	SplitVertex;
 
-typedef struct {
-	/* Vertices*/
-	int vertexNum;
+typedef struct
+{
+	/* Vertices */
+	int			vertexNum;
 	SplitVertex *vertices;
 
 	/* Intersections */
-	int maxIntersectNum;
-	int intersectNum;
+	int			maxIntersectNum;
+	int			intersectNum;
 	SplitIntersect *intersects;
 	SplitIntersect **sortedIntersects;
 
 	/* Non-split holes */
-	int holeNum;
+	int			holeNum;
 	const LinkedGeoLoop **holes;
-} Split;
+}	Split;
 
 static bool
-is_polygon_crossed(const LinkedGeoPolygon* polygon);
+			is_polygon_crossed(const LinkedGeoPolygon * polygon);
 
-static LinkedGeoPolygon*
-split_polygon(const LinkedGeoPolygon * polygon);
+static LinkedGeoPolygon *
+			split_polygon(const LinkedGeoPolygon * polygon);
 
 static bool
-is_ring_crossed(const LinkedGeoLoop * ring);
+			is_ring_crossed(const LinkedGeoLoop * ring);
 
 static void
-split_init(Split * split, int ringNum, int vertexNum);
+			split_init(Split * split, int ringNum, int vertexNum);
 
 static void
-split_cleanup(Split * split);
+			split_cleanup(Split * split);
 
 static void
-split_process_ring(Split * split, const LinkedGeoLoop * ring);
+			split_process_ring(Split * split, const LinkedGeoLoop * ring);
 
 static void
-split_prepare(Split * split);
+			split_prepare(Split * split);
 
-static LinkedGeoPolygon*
-split_create_multi_polygon(Split * split);
+static LinkedGeoPolygon *
+			split_create_multi_polygon(Split * split);
 
 static int
-split_add_vertex(Split * split, const LatLng * latlng);
+			split_add_vertex(Split * split, const LatLng * latlng);
 
 static void
-split_add_intersect_after(Split * split, int vertexIdx, SplitIntersectDir dir, bool isPrime, double lat);
+			split_add_intersect_after(Split * split, int vertexIdx, SplitIntersectDir dir, bool isPrime, double lat);
 
 static int
-split_add_intersect(Split * split, SplitIntersectDir dir, bool isPrime, double lat);
+			split_add_intersect(Split * split, SplitIntersectDir dir, bool isPrime, double lat);
 
 static void
-split_link_vertices(Split * split, int idx1, int idx2);
+			split_link_vertices(Split * split, int idx1, int idx2);
 
 static void
-split_add_hole(Split * split, const LinkedGeoLoop * hole);
+			split_add_hole(Split * split, const LinkedGeoLoop * hole);
 
 static
-void split_sort_intersects(Split * split);
+void		split_sort_intersects(Split * split);
 
 static int
-split_intersect_ptr_cmp(const void * a, const void * b);
+			split_intersect_ptr_cmp(const void *a, const void *b);
 
 static int
-split_find_next_vertex(Split * split, int * start);
+			split_find_next_vertex(Split * split, int *start);
 
-static LinkedGeoPolygon*
-split_create_polygon_vertex(Split * split, int vertexIdx);
-
-static void
-split_polygon_assign_holes(Split * split, short sign, LinkedGeoPolygon * polygon);
-
-static const SplitIntersect*
-split_get_intersect_after(Split * split, int vertexIdx);
+static LinkedGeoPolygon *
+			split_create_polygon_vertex(Split * split, int vertexIdx);
 
 static void
-split_intersect_get_lat_lng(const SplitIntersect * intersect, short sign, LatLng * latlng);
+			split_polygon_assign_holes(Split * split, short sign, LinkedGeoPolygon * polygon);
+
+static const SplitIntersect *
+			split_get_intersect_after(Split * split, int vertexIdx);
+
+static void
+			split_intersect_get_lat_lng(const SplitIntersect * intersect, short sign, LatLng * latlng);
 
 static int
-count_polygon_vertices(const LinkedGeoPolygon * polygon, int * ringNum);
+			count_polygon_vertices(const LinkedGeoPolygon * polygon, int *ringNum);
 
 static short
-lat_lng_ring_pos(const LinkedGeoLoop * ring, short sign, const Bbox3 * bbox, const LatLng* latlng);
+			lat_lng_ring_pos(const LinkedGeoLoop * ring, short sign, const Bbox3 * bbox, const LatLng * latlng);
 
 static short
-segment_intersect(const Vect3 * v1, const Vect3 * v2, const Vect3 * u1, const Vect3 * u2);
+			segment_intersect(const Vect3 * v1, const Vect3 * v2, const Vect3 * u1, const Vect3 * u2);
 
 static short
-point_segment_pos(const Vect3 * v1, const Vect3 * v2, const Vect3 * p);
+			point_segment_pos(const Vect3 * v1, const Vect3 * v2, const Vect3 * p);
 
 static void
-add_lat_lng(LinkedGeoLoop * loop, const LatLng * latlng);
+			add_lat_lng(LinkedGeoLoop * loop, const LatLng * latlng);
 
 bool
 is_linked_polygon_crossed_by_180(const LinkedGeoPolygon * multiPolygon)
@@ -208,7 +213,7 @@ is_linked_polygon_crossed_by_180(const LinkedGeoPolygon * multiPolygon)
 	return false;
 }
 
-LinkedGeoPolygon*
+LinkedGeoPolygon *
 split_linked_polygon_by_180(const LinkedGeoPolygon * multiPolygon)
 {
 	LinkedGeoPolygon *result = NULL;
@@ -218,8 +223,8 @@ split_linked_polygon_by_180(const LinkedGeoPolygon * multiPolygon)
 	{
 		/* Split or copy next polygon */
 		LinkedGeoPolygon *nextResult = is_polygon_crossed(polygon)
-			? split_polygon(polygon)
-			: copy_linked_geo_polygon(polygon);
+		? split_polygon(polygon)
+		: copy_linked_geo_polygon(polygon);
 
 		/* Add to result */
 		if (!result)
@@ -238,7 +243,8 @@ split_linked_polygon_by_180(const LinkedGeoPolygon * multiPolygon)
 	return result;
 }
 
-double split_180_lat(const LatLng * coord1, const LatLng * coord2)
+double
+split_180_lat(const LatLng * coord1, const LatLng * coord2)
 {
 	Vect3		p1,
 				p2,
@@ -272,11 +278,12 @@ is_polygon_crossed(const LinkedGeoPolygon * polygon)
 		: false;
 }
 
-LinkedGeoPolygon*
+LinkedGeoPolygon *
 split_polygon(const LinkedGeoPolygon * polygon)
 {
-	int ringNum, vertexNum;
-	Split split;
+	int			ringNum,
+				vertexNum;
+	Split		split;
 	LinkedGeoPolygon *result;
 
 	/* Init data */
@@ -304,15 +311,17 @@ split_polygon(const LinkedGeoPolygon * polygon)
 	return result;
 }
 
-bool is_ring_crossed(const LinkedGeoLoop * ring)
+bool
+is_ring_crossed(const LinkedGeoLoop * ring)
 {
 	if (!ring->first || !ring->first->next)
 		return false;
 
 	FOREACH_LINKED_LAT_LNG_PAIR(ring, cur, next)
 	{
-		double lng = cur->vertex.lng;
-		double nextLng = next->vertex.lng;
+		double		lng = cur->vertex.lng;
+		double		nextLng = next->vertex.lng;
+
 		if (SIGN(lng) != SIGN(nextLng)
 			&& fabs(lng - nextLng) > M_PI)
 		{
@@ -326,7 +335,10 @@ bool is_ring_crossed(const LinkedGeoLoop * ring)
 void
 split_init(Split * split, int ringNum, int vertexNum)
 {
-	*split = (Split){0};
+	*split = (Split)
+	{
+		0
+	};
 
 	split->vertices = palloc0(vertexNum * sizeof(SplitVertex));
 
@@ -334,7 +346,7 @@ split_init(Split * split, int ringNum, int vertexNum)
 	split->intersects = palloc0(split->maxIntersectNum * sizeof(SplitIntersect));
 
 	if (ringNum > 1)
-		split->holes = palloc0((ringNum - 1) * sizeof(LinkedGeoLoop*));
+		split->holes = palloc0((ringNum - 1) * sizeof(LinkedGeoLoop *));
 }
 
 void
@@ -349,22 +361,26 @@ split_cleanup(Split * split)
 	if (split->holes)
 		pfree(split->holes);
 
-	*split = (Split){0};
+	*split = (Split)
+	{
+		0
+	};
 }
 
 void
 split_process_ring(Split * split, const LinkedGeoLoop * ring)
 {
-	short sign = 0;
-	int vertexIdx = -1;
-	int firstVertexIdx = -1;
+	short		sign = 0;
+	int			vertexIdx = -1;
+	int			firstVertexIdx = -1;
 
 	SPLIT_ASSERT(ring->first && ring->first->next, "polygon ring must have at least 2 vertices");
 
 	FOREACH_LINKED_LAT_LNG_PAIR(ring, cur, next)
 	{
-		double lng, nextLng;
-		short nextSign;
+		double		lng,
+					nextLng;
+		short		nextSign;
 
 		/* Add vertex */
 		vertexIdx = split_add_vertex(split, &cur->vertex);
@@ -396,8 +412,9 @@ split_process_ring(Split * split, const LinkedGeoLoop * ring)
 			/* Prime or antimeridian crossed */
 			/* Add intersection after current vertex */
 			SplitIntersectDir dir = (sign < 0) ? SplitIntersectDir_WE : SplitIntersectDir_EW;
-			int isPrime = (fabs(lng - nextLng) < M_PI);
-			double lat = split_180_lat(&cur->vertex, &next->vertex);
+			int			isPrime = (fabs(lng - nextLng) < M_PI);
+			double		lat = split_180_lat(&cur->vertex, &next->vertex);
+
 			split_add_intersect_after(split, vertexIdx, dir, isPrime, lat);
 
 			sign = nextSign;
@@ -414,20 +431,22 @@ split_prepare(Split * split)
 	split_sort_intersects(split);
 }
 
-LinkedGeoPolygon*
+LinkedGeoPolygon *
 split_create_multi_polygon(Split * split)
 {
 	LinkedGeoPolygon *multiPolygon = NULL;
 	LinkedGeoPolygon *lastPolygon = NULL;
-	int vertexIdxStart = 0;
+	int			vertexIdxStart = 0;
 
 	while (true)
 	{
 		LinkedGeoPolygon *polygon;
 
 		/* Get next unused vertex */
-		int vertexIdx = split_find_next_vertex(split, &vertexIdxStart);
-		if (vertexIdx < 0) break; /* done */
+		int			vertexIdx = split_find_next_vertex(split, &vertexIdxStart);
+
+		if (vertexIdx < 0)
+			break;				/* done */
 
 		/* Create next polygon */
 		polygon = split_create_polygon_vertex(split, vertexIdx);
@@ -446,8 +465,9 @@ split_create_multi_polygon(Split * split)
 int
 split_add_vertex(Split * split, const LatLng * latlng)
 {
-	int idx = split->vertexNum++;
+	int			idx = split->vertexNum++;
 	SplitVertex *vertex = &split->vertices[idx];
+
 	vertex->latlngPtr = latlng;
 	vertex->intersectIdx = -1;
 	vertex->sign = 0;
@@ -458,8 +478,9 @@ split_add_vertex(Split * split, const LatLng * latlng)
 void
 split_add_intersect_after(Split * split, int vertexIdx, SplitIntersectDir dir, bool isPrime, double lat)
 {
-	int idx = split_add_intersect(split, dir, isPrime, lat);
+	int			idx = split_add_intersect(split, dir, isPrime, lat);
 	SplitIntersect *intersect = &split->intersects[idx];
+
 	intersect->vertexIdx = vertexIdx;
 	split->vertices[vertexIdx].intersectIdx = idx;
 }
@@ -467,13 +488,14 @@ split_add_intersect_after(Split * split, int vertexIdx, SplitIntersectDir dir, b
 int
 split_add_intersect(Split * split, SplitIntersectDir dir, bool isPrime, double lat)
 {
-	int idx;
+	int			idx;
 	SplitIntersect *intersect;
 
 	if (split->intersectNum == split->maxIntersectNum)
 	{
 		/* Reallocate memory for intersections */
-		int maxNum = split->maxIntersectNum * 2;
+		int			maxNum = split->maxIntersectNum * 2;
+
 		if (maxNum > split->vertexNum)
 			maxNum = split->vertexNum;
 		split->intersects = repalloc(split->intersects, maxNum * sizeof(SplitIntersect));
@@ -512,19 +534,20 @@ split_sort_intersects(Split * split)
 	SPLIT_ASSERT(split->intersectNum % 2 == 0, "intersection number must be even");
 
 	/* Collect intesection pointers */
-	split->sortedIntersects = palloc(split->intersectNum * sizeof(SplitIntersect*));
+	split->sortedIntersects = palloc(split->intersectNum * sizeof(SplitIntersect *));
 	for (int i = 0; i < split->intersectNum; ++i)
 	{
-		SplitIntersect* intersect = &split->intersects[i];
+		SplitIntersect *intersect = &split->intersects[i];
+
 		split->sortedIntersects[i] = intersect;
 	}
 
 	/* Sort intersection pointers */
 	qsort(
-		split->sortedIntersects,
-		split->intersectNum,
-		sizeof(SplitIntersect*),
-		&split_intersect_ptr_cmp);
+		  split->sortedIntersects,
+		  split->intersectNum,
+		  sizeof(SplitIntersect *),
+		  &split_intersect_ptr_cmp);
 	/* Assign sort order values to intersections */
 	for (int i = 0; i < split->intersectNum; ++i)
 		split->sortedIntersects[i]->sortOrder = i;
@@ -537,17 +560,18 @@ split_sort_intersects(Split * split)
 	*  180 - lat, if lat >= 0
 	* -180 - lat, if lat < 0
 
-	               -90         0          90
-	          ------*----------+----------*------>
-	meridian:  prime     antimeridian      prime
-	value:   -180-lat         lat         180-lat
+				   -90		   0		  90
+			  ------*----------+----------*------>
+	meridian:  prime	 antimeridian	   prime
+	value:	 -180-lat		  lat		  180-lat
  */
 int
-split_intersect_ptr_cmp(const void * a, const void * b)
+split_intersect_ptr_cmp(const void *a, const void *b)
 {
-	const SplitIntersect* i1 = *((const SplitIntersect**) a);
-	const SplitIntersect* i2 = *((const SplitIntersect**) b);
-	double v1, v2;
+	const SplitIntersect *i1 = *((const SplitIntersect **) a);
+	const SplitIntersect *i2 = *((const SplitIntersect **) b);
+	double		v1,
+				v2;
 
 	v1 = i1->lat;
 	if (i1->isPrime)
@@ -563,7 +587,7 @@ split_intersect_ptr_cmp(const void * a, const void * b)
 }
 
 int
-split_find_next_vertex(Split * split, int * start)
+split_find_next_vertex(Split * split, int *start)
 {
 	for (int i = *start; i < split->vertexNum; ++i)
 	{
@@ -576,15 +600,18 @@ split_find_next_vertex(Split * split, int * start)
 	return -1;
 }
 
-LinkedGeoPolygon*
+LinkedGeoPolygon *
 split_create_polygon_vertex(Split * split, int vertexIdx)
 {
 	LinkedGeoPolygon *polygon;
 	LinkedGeoLoop *loop;
-	int idx, nextIdx, intersectIdx;
-	SplitVertex  *vertex;
+	int			idx,
+				nextIdx,
+				intersectIdx;
+	SplitVertex *vertex;
 	const SplitIntersect *intersect;
-	short sign, step;
+	short		sign,
+				step;
 
 	polygon = palloc0(sizeof(LinkedGeoPolygon));
 
@@ -594,14 +621,17 @@ split_create_polygon_vertex(Split * split, int vertexIdx)
 	idx = vertexIdx;
 	vertex = &split->vertices[idx];
 	sign = vertex->sign;
-	step = 1; /* vertex array traversal direction */
+	step = 1;					/* vertex array traversal direction */
 	while (vertex->latlngPtr)
 	{
 		/* Add vertex */
 		add_lat_lng(loop, vertex->latlngPtr);
 		vertex->latlngPtr = NULL;
 
-		/* Get indices of the other segment endpoint and potential intersection */
+		/*
+		 * Get indices of the other segment endpoint and potential
+		 * intersection
+		 */
 		if (vertex->link > -1 && ((step > 0) == (idx > vertex->link)))
 		{
 			nextIdx = vertex->link;
@@ -620,8 +650,8 @@ split_create_polygon_vertex(Split * split, int vertexIdx)
 		intersect = split_get_intersect_after(split, intersectIdx);
 		if (intersect)
 		{
-			LatLng latlng;
-			int intersectSortOrder;
+			LatLng		latlng;
+			int			intersectSortOrder;
 
 			/* Add intersection vertex */
 			split_intersect_get_lat_lng(intersect, sign, &latlng);
@@ -638,12 +668,16 @@ split_create_polygon_vertex(Split * split, int vertexIdx)
 			split_intersect_get_lat_lng(intersect, sign, &latlng);
 			add_lat_lng(loop, &latlng);
 
-			/* Does intersecting segment end in the same hemisphere where the polygon is located? */
+			/*
+			 * Does intersecting segment end in the same hemisphere where the
+			 * polygon is located?
+			 */
 			step = ((sign > 0) == (intersect->dir == SplitIntersectDir_WE)) ? 1 : -1;
 			if (step > 0)
 			{
 				/* Next vertex is the second endpoint of a segment */
-				const SplitVertex* segmentStart = &split->vertices[intersectIdx];
+				const SplitVertex *segmentStart = &split->vertices[intersectIdx];
+
 				if (segmentStart->link > -1 && intersectIdx > segmentStart->link)
 					nextIdx = segmentStart->link;
 				else
@@ -670,7 +704,7 @@ void
 split_polygon_assign_holes(Split * split, short sign, LinkedGeoPolygon * polygon)
 {
 	const LinkedGeoLoop *outerLoop;
-	Bbox3 bbox;
+	Bbox3		bbox;
 
 	outerLoop = polygon->first;
 	bbox3_from_linked_loop(outerLoop, &bbox);
@@ -678,21 +712,25 @@ split_polygon_assign_holes(Split * split, short sign, LinkedGeoPolygon * polygon
 	for (int i = 0; i < split->holeNum; ++i)
 	{
 		const LinkedGeoLoop *hole;
-		short pos = 0;
+		short		pos = 0;
 
 		hole = split->holes[i];
-		if (!hole) continue;
+		if (!hole)
+			continue;
 
 		/* Check if hole vertices are inside the outher shell of the polygon */
 		FOREACH_LINKED_LAT_LNG(hole, cur)
 		{
 			pos = lat_lng_ring_pos(outerLoop, sign, &bbox, &cur->vertex);
-			if (pos != 0) break; /* vertex is either inside or outside */
+			if (pos != 0)
+				break;			/* vertex is either inside or outside */
 		}
 
-		if (pos != -1) {
+		if (pos != -1)
+		{
 			/* Add hole loop copy to polygon */
 			LinkedGeoLoop *hole_copy = copy_linked_geo_loop(hole);
+
 			add_linked_geo_loop(polygon, hole_copy);
 
 			/* Remove hole from the list */
@@ -701,10 +739,10 @@ split_polygon_assign_holes(Split * split, short sign, LinkedGeoPolygon * polygon
 	}
 }
 
-const SplitIntersect*
+const SplitIntersect *
 split_get_intersect_after(Split * split, int vertexIdx)
 {
-	int idx;
+	int			idx;
 
 	SPLIT_ASSERT_VALID_VERTEX_IDX(split, vertexIdx);
 
@@ -725,14 +763,17 @@ split_intersect_get_lat_lng(const SplitIntersect * intersect, short sign, LatLng
 }
 
 int
-count_polygon_vertices(const LinkedGeoPolygon * polygon, int * ringNum)
+count_polygon_vertices(const LinkedGeoPolygon * polygon, int *ringNum)
 {
-	int num = 0;
-	if (ringNum) *ringNum = 0;
+	int			num = 0;
+
+	if (ringNum)
+		*ringNum = 0;
 
 	FOREACH_LINKED_LOOP(polygon, ring)
 	{
-		if (ringNum) ++(*ringNum);
+		if (ringNum)
+			++(*ringNum);
 		num += count_linked_lat_lng(ring);
 	}
 	return num;
@@ -741,11 +782,13 @@ count_polygon_vertices(const LinkedGeoPolygon * polygon, int * ringNum)
 short
 lat_lng_ring_pos(const LinkedGeoLoop * ring, short sign, const Bbox3 * bbox, const LatLng * latlng)
 {
-	short signLatlng;
-	Vect3 vect, outVect;
-	LatLng out;
-	int intersectNum = 0;
-	Vect3 curVect, nextVect;
+	short		signLatlng;
+	Vect3		vect,
+				outVect;
+	LatLng		out;
+	int			intersectNum = 0;
+	Vect3		curVect,
+				nextVect;
 
 	/* Check longitude sign */
 	signLatlng = SIGN(latlng->lng);
@@ -768,12 +811,15 @@ lat_lng_ring_pos(const LinkedGeoLoop * ring, short sign, const Bbox3 * bbox, con
 	if (!ring->first->next)
 		return true;
 
-	/* Count a number of intersections between the ring and (latlng, out) segment */
+	/*
+	 * Count a number of intersections between the ring and (latlng, out)
+	 * segment
+	 */
 	intersectNum = 0;
 	vect3_from_lat_lng(&ring->first->vertex, &curVect);
 	FOREACH_LINKED_LAT_LNG_PAIR(ring, cur, next)
 	{
-		short intersect;
+		short		intersect;
 
 		/* Check if point matches ring vertex */
 		if (vect3_eq(&vect, &curVect))
@@ -782,10 +828,11 @@ lat_lng_ring_pos(const LinkedGeoLoop * ring, short sign, const Bbox3 * bbox, con
 		/* Next vertex */
 		vect3_from_lat_lng(&next->vertex, &nextVect);
 
-		if (!vect3_eq(&curVect, &nextVect)) {
+		if (!vect3_eq(&curVect, &nextVect))
+		{
 			intersect = segment_intersect(&curVect, &nextVect, &vect, &outVect);
 			if (intersect == 0)
-				return 0; /* point on ring segment */
+				return 0;		/* point on ring segment */
 
 			if (intersect > 0)
 				++intersectNum;
@@ -800,9 +847,13 @@ lat_lng_ring_pos(const LinkedGeoLoop * ring, short sign, const Bbox3 * bbox, con
 short
 segment_intersect(const Vect3 * v1, const Vect3 * v2, const Vect3 * u1, const Vect3 * u2)
 {
-	Vect3 vn, un;
-	short v1Side, v2Side, u1Side, u2Side;
-	double normalDot;
+	Vect3		vn,
+				un;
+	short		v1Side,
+				v2Side,
+				u1Side,
+				u2Side;
+	double		normalDot;
 
 	/* Normals of V and U planes */
 	vect3_cross(v1, v2, &vn);
@@ -814,7 +865,8 @@ segment_intersect(const Vect3 * v1, const Vect3 * v2, const Vect3 * u1, const Ve
 	normalDot = vect3_dot(&vn, &un);
 	if (FP_EQUAL(fabs(normalDot), 1.0))
 	{
-		short ret = point_segment_pos(v1, v2, u1);
+		short		ret = point_segment_pos(v1, v2, u1);
+
 		if (ret == -1)
 			ret = point_segment_pos(v1, v2, u2);
 		if (ret == -1)
@@ -842,7 +894,8 @@ segment_intersect(const Vect3 * v1, const Vect3 * v2, const Vect3 * u1, const Ve
 		&& u1Side != u2Side && (u1Side + u2Side) == 0)
 	{
 		/* Intersection point */
-		Vect3 intersect;
+		Vect3		intersect;
+
 		vect3_cross(&vn, &un, &intersect);
 		vect3_normalize(&intersect);
 
@@ -870,8 +923,8 @@ segment_intersect(const Vect3 * v1, const Vect3 * v2, const Vect3 * u1, const Ve
 short
 point_segment_pos(const Vect3 * v1, const Vect3 * v2, const Vect3 * p)
 {
-	Vect3 middle;
-	double minSimilarity;
+	Vect3		middle;
+	double		minSimilarity;
 
 	/* Check if point is same as one of segment endpoints */
 	if (vect3_eq(p, v1) || vect3_eq(p, v2))
@@ -888,14 +941,24 @@ point_segment_pos(const Vect3 * v1, const Vect3 * v2, const Vect3 * p)
 	{
 		/* Segment is long enough to use dot product test. */
 		/* If point vector is more similar to bisecting vector, */
-		/* then it must be closer to center, so the point is inside the segment. */
+
+		/*
+		 * then it must be closer to center, so the point is inside the
+		 * segment.
+		 */
 		return (vect3_dot(p, &middle) > minSimilarity) ? 1 : -1;
 	}
 	else
 	{
 		/* Segment is too short to use dot product test. */
-		/* Check if vectors from segment endpoints to the point are in opposite directions. */
-		Vect3 d1, d2;
+
+		/*
+		 * Check if vectors from segment endpoints to the point are in
+		 * opposite directions.
+		 */
+		Vect3		d1,
+					d2;
+
 		vect3_diff(p, v1, &d1);
 		vect3_normalize(&d1);
 		vect3_diff(p, v2, &d2);
@@ -909,9 +972,11 @@ add_lat_lng(LinkedGeoLoop * loop, const LatLng * latlng)
 {
 	LinkedLatLng *linked;
 
-	if (loop->last) {
+	if (loop->last)
+	{
 		/* Does new vertex exactly match the last one? */
 		const LatLng *last = &loop->last->vertex;
+
 		if (last->lat == latlng->lat && last->lng == latlng->lng)
 			return;
 	}

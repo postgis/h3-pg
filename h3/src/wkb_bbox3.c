@@ -3,19 +3,20 @@
 #include <string.h>
 #include "wkb_linked_geo.h"
 
-typedef struct {
-	double x;
-	double y;
-} Vect2;
+typedef struct
+{
+	double		x;
+	double		y;
+}	Vect2;
 
 static void
-vect2_normalize(Vect2 * vect);
+			vect2_normalize(Vect2 * vect);
 
 static short
-vect2_segment_side(const Vect2 * start, const Vect2 * end, const Vect2 * point);
+			vect2_segment_side(const Vect2 * start, const Vect2 * end, const Vect2 * point);
 
 static void
-bbox3_merge_vect3(const Vect3 * vect, Bbox3 * bbox);
+			bbox3_merge_vect3(const Vect3 * vect, Bbox3 * bbox);
 
 void
 bbox3_from_vect3(const Vect3 * vect, Bbox3 * bbox)
@@ -28,29 +29,39 @@ bbox3_from_vect3(const Vect3 * vect, Bbox3 * bbox)
 void
 bbox3_merge(const Bbox3 * other, Bbox3 * bbox)
 {
-	if (other->xmin < bbox->xmin) bbox->xmin = other->xmin;
-	if (other->xmax > bbox->xmax) bbox->xmax = other->xmax;
-	if (other->ymin < bbox->ymin) bbox->ymin = other->ymin;
-	if (other->ymax > bbox->ymax) bbox->ymax = other->ymax;
-	if (other->zmin < bbox->zmin) bbox->zmin = other->zmin;
-	if (other->zmax > bbox->zmax) bbox->zmax = other->zmax;
+	if (other->xmin < bbox->xmin)
+		bbox->xmin = other->xmin;
+	if (other->xmax > bbox->xmax)
+		bbox->xmax = other->xmax;
+	if (other->ymin < bbox->ymin)
+		bbox->ymin = other->ymin;
+	if (other->ymax > bbox->ymax)
+		bbox->ymax = other->ymax;
+	if (other->zmin < bbox->zmin)
+		bbox->zmin = other->zmin;
+	if (other->zmax > bbox->zmax)
+		bbox->zmax = other->zmax;
 }
 
 void
-bbox3_from_linked_loop(const LinkedGeoLoop* loop, Bbox3 * bbox)
+bbox3_from_linked_loop(const LinkedGeoLoop * loop, Bbox3 * bbox)
 {
-	Vect3 vect, nextVect;
+	Vect3		vect,
+				nextVect;
 
 	vect3_from_lat_lng(&loop->first->vertex, &vect);
 	bbox3_from_vect3(&vect, bbox);
-	if (!loop->first->next) return;
+	if (!loop->first->next)
+		return;
 
 	FOREACH_LINKED_LAT_LNG_PAIR(loop, cur, next)
 	{
-		Bbox3 segmentBbox;
+		Bbox3		segmentBbox;
+
 		vect3_from_lat_lng(&next->vertex, &nextVect);
 
-		if (!vect3_eq(&vect, &nextVect)) {
+		if (!vect3_eq(&vect, &nextVect))
+		{
 			bbox3_from_segment_vect3(&vect, &nextVect, &segmentBbox);
 			bbox3_merge(&segmentBbox, bbox);
 		}
@@ -70,18 +81,22 @@ bbox3_contains_vect3(const Bbox3 * bbox, const Vect3 * vect)
 int
 bbox3_contains_lat_lng(const Bbox3 * bbox, const LatLng * coord)
 {
-	Vect3 vect;
+	Vect3		vect;
+
 	vect3_from_lat_lng(coord, &vect);
 	return bbox3_contains_vect3(bbox, &vect);
 }
 
 void
-bbox3_from_segment_vect3(const Vect3 * vect1, const Vect3* vect2, Bbox3 * bbox)
+bbox3_from_segment_vect3(const Vect3 * vect1, const Vect3 * vect2, Bbox3 * bbox)
 {
-	Vect3 vn, vect3;
-	Vect3 axes[6];
-	Vect2 r1, r2, orig;
-	short orig_side;
+	Vect3		vn,
+				vect3;
+	Vect3		axes[6];
+	Vect2		r1,
+				r2,
+				orig;
+	short		orig_side;
 
 	/* Init bbox */
 	bbox3_from_vect3(vect1, bbox);
@@ -117,7 +132,8 @@ bbox3_from_segment_vect3(const Vect3 * vect1, const Vect3* vect2, Bbox3 * bbox)
 	for (int i = 0; i < 6; ++i)
 	{
 		/* Project axis onto the plane, normalize */
-		Vect2 rx;
+		Vect2		rx;
+
 		rx.x = vect3_dot(&axes[i], vect1);
 		rx.y = vect3_dot(&axes[i], &vect3);
 		vect2_normalize(&rx);
@@ -126,7 +142,8 @@ bbox3_from_segment_vect3(const Vect3 * vect1, const Vect3* vect2, Bbox3 * bbox)
 		/* (is origin on the opposite side of segment (r1, r2))? */
 		if (vect2_segment_side(&r1, &r2, &rx) != orig_side)
 		{
-			Vect3 vx;
+			Vect3		vx;
+
 			vx.x = rx.x * vect1->x + rx.y * vect3.x;
 			vx.y = rx.x * vect1->y + rx.y * vect3.y;
 			vx.z = rx.x * vect1->z + rx.y * vect3.z;
@@ -138,7 +155,9 @@ bbox3_from_segment_vect3(const Vect3 * vect1, const Vect3* vect2, Bbox3 * bbox)
 void
 bbox3_from_segment_lat_lng(const LatLng * coord1, const LatLng * coord2, Bbox3 * bbox)
 {
-	Vect3 vect1, vect2;
+	Vect3		vect1,
+				vect2;
+
 	vect3_from_lat_lng(coord1, &vect1);
 	vect3_from_lat_lng(coord2, &vect2);
 
@@ -148,7 +167,8 @@ bbox3_from_segment_lat_lng(const LatLng * coord1, const LatLng * coord2, Bbox3 *
 static void
 vect2_normalize(Vect2 * vect)
 {
-	double len = sqrt(vect->x * vect->x + vect->y * vect->y);
+	double		len = sqrt(vect->x * vect->x + vect->y * vect->y);
+
 	if (len > 0.0)
 	{
 		vect->x /= len;
@@ -164,15 +184,17 @@ vect2_normalize(Vect2 * vect)
 static short
 vect2_segment_side(const Vect2 * start, const Vect2 * end, const Vect2 * point)
 {
-	double side = (point->x - start->x) * (end->y - start->y)
-		- (end->x - start->x) * (point->y - start->y);
-    return (side == 0) ? 0 : (side < 0) ? -1 : 1;
+	double		side = (point->x - start->x) * (end->y - start->y)
+	- (end->x - start->x) * (point->y - start->y);
+
+	return (side == 0) ? 0 : (side < 0) ? -1 : 1;
 }
 
 static void
 bbox3_merge_vect3(const Vect3 * vect, Bbox3 * bbox)
 {
-	Bbox3 vect_bbox;
+	Bbox3		vect_bbox;
+
 	bbox3_from_vect3(vect, &vect_bbox);
 	bbox3_merge(&vect_bbox, bbox);
 }

@@ -13,20 +13,20 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cells_to_multi_polygon_wkb);
 
 /* Converts LinkedGeoPolygon vertex coordinates to degrees in place */
 static void
-linked_geo_polygon_to_degs(LinkedGeoPolygon * multiPolygon);
+			linked_geo_polygon_to_degs(LinkedGeoPolygon * multiPolygon);
 
 Datum
 h3_cells_to_multi_polygon_wkb(PG_FUNCTION_ARGS)
 {
-	ArrayType	*array = PG_GETARG_ARRAYTYPE_P(0);
+	ArrayType  *array = PG_GETARG_ARRAYTYPE_P(0);
 	LinkedGeoPolygon *linkedPolygon;
-	H3Error	error;
-	int 		numHexes;
+	H3Error		error;
+	int			numHexes;
 	ArrayIterator iterator;
 	Datum		value;
 	bool		isnull;
-	H3Index	*h3set;
-	bytea		*wkb;
+	H3Index    *h3set;
+	bytea	   *wkb;
 
 	numHexes = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
 	h3set = palloc(numHexes * sizeof(H3Index));
@@ -49,6 +49,7 @@ h3_cells_to_multi_polygon_wkb(PG_FUNCTION_ARGS)
 	{
 		/* Split by 180th meridian */
 		LinkedGeoPolygon *splitPolygon = split_linked_polygon_by_180(linkedPolygon);
+
 		linked_geo_polygon_to_degs(splitPolygon);
 		wkb = linked_geo_polygon_to_wkb(splitPolygon);
 		free_linked_geo_polygon(splitPolygon);
@@ -74,7 +75,8 @@ linked_geo_polygon_to_degs(LinkedGeoPolygon * multiPolygon)
 		{
 			FOREACH_LINKED_LAT_LNG_NOCONST(loop, latlng)
 			{
-				LatLng *vertex = &latlng->vertex;
+				LatLng	   *vertex = &latlng->vertex;
+
 				vertex->lat = radsToDegs(vertex->lat);
 				vertex->lng = radsToDegs(vertex->lng);
 			}

@@ -96,6 +96,7 @@ boundary_crosses_180(const CellBoundary * boundary)
 	{
 		double		lon = verts[v].lng;
 		double		nextLon = verts[(v + 1) % numVerts].lng;
+
 		if (SIGN(lon) != SIGN(nextLon)
 			&& fabs(lon - nextLon) > M_PI)
 		{

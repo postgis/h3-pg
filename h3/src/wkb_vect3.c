@@ -79,7 +79,7 @@ vect3_diff(const Vect3 * vect1, const Vect3 * vect2, Vect3 * diff)
 }
 
 void
-vect3_scale(Vect3 *vect, double factor)
+vect3_scale(Vect3 * vect, double factor)
 {
 	vect->x *= factor;
 	vect->y *= factor;

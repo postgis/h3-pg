@@ -57,7 +57,7 @@ _PG_init(void)
 							 NULL);
 
 	DefineCustomBoolVariable("h3.extend_antimeridian",
-						 "Extend boundaries by 180th meridian, when possible.",
+					   "Extend boundaries by 180th meridian, when possible.",
 							 NULL,
 							 &h3_guc_extend_antimeridian,
 							 false,

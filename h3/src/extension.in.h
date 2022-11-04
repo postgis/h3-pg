@@ -107,8 +107,8 @@ Datum		srf_return_h3_index_distances_from_user_fctx(PG_FUNCTION_ARGS);
 		"that cannot accept type record"			   \
 	)
 
-#define H3_DEPRECATION(msg)           \
-	ereport(WARNING, (			      \
+#define H3_DEPRECATION(msg)			  \
+	ereport(WARNING, (				  \
 		errmsg("Deprecated: %s", msg) \
 	))
 

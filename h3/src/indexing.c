@@ -95,15 +95,19 @@ h3_cell_to_boundary(PG_FUNCTION_ARGS)
 	POLYGON    *polygon;
 	CellBoundary boundary;
 
-	// DEPRECATION BEGIN: Remove next major
+	/* DEPRECATION BEGIN: Remove next major */
 	bool		extend;
-	if (PG_NARGS() == 1) {
+
+	if (PG_NARGS() == 1)
+	{
 		extend = h3_guc_extend_antimeridian;
-	} else {
+	}
+	else
+	{
 		extend = PG_GETARG_BOOL(1);
 		H3_DEPRECATION("Please use `SET h3.extend_antimeridian TO true` instead of extend flag");
 	}
-	// DEPRECATION END
+	/* DEPRECATION END */
 
 	error = cellToBoundary(cell, &boundary);
 	H3_ERROR(error, "cellToBoundary");

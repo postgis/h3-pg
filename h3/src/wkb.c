@@ -54,10 +54,10 @@ static size_t
 			boundary_data_size(const CellBoundary * boundary);
 
 static size_t
-linked_geo_polygon_data_size(const LinkedGeoPolygon * multiPolygon);
+			linked_geo_polygon_data_size(const LinkedGeoPolygon * multiPolygon);
 
 static size_t
-linked_geo_loop_data_size(const LinkedGeoLoop * loop);
+			linked_geo_loop_data_size(const LinkedGeoLoop * loop);
 
 static uint8 *
 			wkb_write_boundary_array_data(uint8 *data, const CellBoundary * boundaries, int num);
@@ -66,13 +66,13 @@ static uint8 *
 			wkb_write_boundary_data(uint8 *data, const CellBoundary * boundary);
 
 static uint8 *
-wkb_write_linked_geo_polygon_data(uint8 *data, const LinkedGeoPolygon * multiPolygon);
+			wkb_write_linked_geo_polygon_data(uint8 *data, const LinkedGeoPolygon * multiPolygon);
 
 static uint8 *
 			wkb_write_lat_lng_array(uint8 *data, const LatLng * coord, int num);
 
 static uint8 *
-wkb_write_linked_geo_loop_data(uint8 *data, const LinkedGeoLoop* loop);
+			wkb_write_linked_geo_loop_data(uint8 *data, const LinkedGeoLoop * loop);
 
 static uint8 *
 			wkb_write_lat_lng(uint8 *data, const LatLng * coord);
@@ -123,8 +123,8 @@ boundary_to_wkb(const CellBoundary * boundary)
 bytea *
 linked_geo_polygon_to_wkb(const LinkedGeoPolygon * multiPolygon)
 {
-	bytea		*wkb;
-	uint8		*data;
+	bytea	   *wkb;
+	uint8	   *data;
 	size_t		size = linked_geo_polygon_data_size(multiPolygon);
 
 	wkb = palloc(VARHDRSZ + size);
@@ -193,7 +193,7 @@ size_t
 linked_geo_polygon_data_size(const LinkedGeoPolygon * multiPolygon)
 {
 	size_t		size = 0;
-	int 		isMulti = (multiPolygon->next != NULL);
+	int			isMulti = (multiPolygon->next != NULL);
 
 	/* byte order + type + srid */
 	size = WKB_BYTE_SIZE + WKB_INT_SIZE * 2;
@@ -228,7 +228,7 @@ size_t
 linked_geo_loop_data_size(const LinkedGeoLoop * loop)
 {
 	/* ring size */
-	size_t size = WKB_INT_SIZE;
+	size_t		size = WKB_INT_SIZE;
 
 	/* point data (including closing point) */
 	size += WKB_DOUBLE_SIZE * (count_linked_lat_lng(loop) + 1) * 2;
@@ -281,8 +281,8 @@ wkb_write_boundary_data(uint8 *data, const CellBoundary * boundary)
 uint8 *
 wkb_write_linked_geo_polygon_data(uint8 *data, const LinkedGeoPolygon * multiPolygon)
 {
-	int 		isMulti = (multiPolygon->next != NULL);
-	int		type = isMulti ? WKB_MULTIPOLYGON_TYPE : WKB_POLYGON_TYPE;
+	int			isMulti = (multiPolygon->next != NULL);
+	int			type = isMulti ? WKB_MULTIPOLYGON_TYPE : WKB_POLYGON_TYPE;
 
 	/* byte order */
 	data = wkb_write_endian(data);
@@ -309,7 +309,7 @@ wkb_write_linked_geo_polygon_data(uint8 *data, const LinkedGeoPolygon * multiPol
 			data = wkb_write_int(data, WKB_SRID_DEFAULT);
 		}
 
-		/* # of rings*/
+		/* # of rings */
 		data = wkb_write_int(data, count_linked_geo_loops(polygon));
 
 		/* rings */
@@ -331,7 +331,7 @@ wkb_write_lat_lng_array(uint8 *data, const LatLng * coords, int num)
 }
 
 uint8 *
-wkb_write_linked_geo_loop_data(uint8 *data, const LinkedGeoLoop* loop)
+wkb_write_linked_geo_loop_data(uint8 *data, const LinkedGeoLoop * loop)
 {
 	/* # of points (including closing point) */
 	data = wkb_write_int(data, count_linked_lat_lng(loop) + 1);

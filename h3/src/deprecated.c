@@ -15,10 +15,10 @@
  */
 
 #include <postgres.h>
-#include <fmgr.h>	    // PG_FUNCTION_ARGS, etc.
+#include <fmgr.h>		// PG_FUNCTION_ARGS, etc.
 
-// Inspired by PostGIS legacy function handling
-// https://github.com/postgis/postgis/blob/master/postgis/postgis_legacy.c
+/*	Inspired by PostGIS legacy function handling */
+/*	https://github.com/postgis/postgis/blob/master/postgis/postgis_legacy.c */
 
 #define H3_DEPRECATE(version, funcname) \
 	PGDLLEXPORT PG_FUNCTION_INFO_V1(funcname); \
@@ -27,9 +27,9 @@
 		ereport(ERROR, (\
 			errcode(ERRCODE_FEATURE_NOT_SUPPORTED), \
 			errmsg("A stored procedure tried to use deprecated C function '%s'", \
-			       __func__), \
+				   __func__), \
 			errdetail("Library function '%s' was deprecated in h3 %s", \
-			          __func__, version), \
+					  __func__, version), \
 			errhint("Consider running: ALTER EXTENSION h3 UPDATE") \
 		)); \
 		PG_RETURN_POINTER(NULL); \
