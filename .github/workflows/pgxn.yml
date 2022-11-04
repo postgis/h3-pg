@@ -16,9 +16,12 @@ jobs:
     container: pgxn/pgxn-tools
     steps:
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: "3.20.x"
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommend wget
+          wget https://github.com/Kitware/CMake/releases/download/v3.24.3/cmake-3.24.3.tar.gz
+          tar -zxvf cmake-3.24.3.tar.gz
+          cd cmake-3.24.2
+          ./bootstrap && make && sudo make install
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: pg-start ${{ matrix.pg }}
       - name: Check out the repo
