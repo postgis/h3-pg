@@ -14,18 +14,14 @@
 
 # this file only exists to support pgxnclient
 
-.PHONY: all generate build install installcheck format
+.PHONY: all install installcheck
 
-all: build
-
-generate:
+all:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-build: generate
 	cmake --build build
 
-install: build
+install:
 	cmake --install build --component h3-pg
 
-installcheck: install
+installcheck:
 	ctest --output-on-failure --build-config Release

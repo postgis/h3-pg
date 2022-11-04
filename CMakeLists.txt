@@ -17,8 +17,9 @@
 # and oldest tested versions of CMake. This will ensure
 # you pick up the best policies.
 
-# FetchContent_MakeAvailable in version 3.14
-cmake_minimum_required(VERSION 3.14..3.24)
+# Keep minimum version in sync with:
+# https://github.com/uber/h3/blob/master/CMakeLists.txt
+cmake_minimum_required(VERSION 3.20..3.24)
 
 if(POLICY CMP0135)
   # Set the timestamps of all extracted contents to the time of the extraction
