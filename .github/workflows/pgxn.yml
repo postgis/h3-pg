@@ -1,5 +1,10 @@
 name: pgxn
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   test:
@@ -11,7 +16,16 @@ jobs:
     container: pgxn/pgxn-tools
     steps:
       - name: Install CMake
-        run: apt-get update && apt-get install -y --no-install-recommends cmake
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential gcc libssl-dev
+          wget https://github.com/Kitware/CMake/releases/download/v3.21.0/cmake-3.21.0.tar.gz
+          tar xvf cmake-3.21.0.tar.gz
+          cd cmake-3.21.0
+          ./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
+          gmake
+          sudo make install
+
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: pg-start ${{ matrix.pg }}
       - name: Check out the repo
