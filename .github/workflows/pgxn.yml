@@ -19,7 +19,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends wget
           wget https://github.com/Kitware/CMake/releases/download/v3.24.3/cmake-3.24.3.tar.gz
-          tar -zxvf cmake-3.24.3.tar.gz
+          tar -zxf cmake-3.24.3.tar.gz
           cd cmake-3.24.2
           ./bootstrap && make && sudo make install
       - name: Start PostgreSQL ${{ matrix.pg }}
