@@ -15,17 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     container: pgxn/pgxn-tools
     steps:
-      - name: Install CMake
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends build-essential gcc libssl-dev
-          wget https://github.com/Kitware/CMake/releases/download/v3.21.0/cmake-3.21.0.tar.gz
-          tar xvf cmake-3.21.0.tar.gz
-          cd cmake-3.21.0
-          ./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
-          gmake
-          sudo make install
-
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
+        with:
+          cmake-version: "3.16.x"
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: pg-start ${{ matrix.pg }}
       - name: Check out the repo
