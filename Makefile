@@ -134,12 +134,6 @@ dist: $(SQL_FULLINSTALL) $(SQL_FULLINSTALL_H3_POSTGIS)
 format: clean
 	pgindent
 
-# Run on dev using:
-# PIPENV_PIPFILE=.github/documentation/Pipfile pipenv run make docs/api.md
-docs/api.md: $(SQL_INSTALLS)
-	python .github/documentation/generate.py "h3/sql/install/*" > $@
-	npx doctoc $@
-
 # functions which we have decided not to provide bindings for
 EXCLUDED_BINDING_FUNCTIONS = \
 	degs_to_rads \

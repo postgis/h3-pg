@@ -43,13 +43,3 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
       - name: Test
         run: docker run -v ${PWD}:/github/workspace ghcr.io/zachasme/h3-pg/test:${{ matrix.postgresql }}-${{ matrix.ubuntu }}-${{ matrix.arch }}
-
-  docs:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
-      - run: python -m pip install lark-parser
-      - run: rm docs/api.md
-      - run: make docs/api.md
-      - run: git diff --exit-code docs

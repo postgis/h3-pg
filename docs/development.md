@@ -7,6 +7,8 @@ Simply run `./.github/docker/tools.sh -t`.
 It will mount the code as a volume, and also mount the test output directory,
 so output can be inspected.
 
+Documentation is generated from the sql files, using the script `scripts/documentaion.sh` (requires poetry).
+
 ## Release Process
 
 1. Update version number
