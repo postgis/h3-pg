@@ -9,6 +9,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     postgis
   INSTALLS
     sql/install/01-indexing.sql
+    sql/install/03-traversal.sql
     sql/install/05-regions.sql
     sql/install/20-casts.sql
     sql/install/99-deprecated.sql
