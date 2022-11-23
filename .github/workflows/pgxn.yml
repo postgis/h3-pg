@@ -16,7 +16,7 @@ jobs:
     container: pgxn/pgxn-tools
     steps:
       - name: Setup CMake
-        uses: lukka/get-cmake@latest
+        uses: jwlawson/actions-setup-cmake@v1.13
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: pg-start ${{ matrix.pg }}
       - name: Check out the repo
