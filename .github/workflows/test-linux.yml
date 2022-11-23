@@ -15,7 +15,7 @@ jobs:
 
     runs-on: ubuntu-22.04
 
-    name: Linux ${{config}} 🐘${{ matrix.pg }}
+    name: Linux ${{ matrix.config }} 🐘${{ matrix.pg }}
 
     steps:
       - uses: actions/checkout@v3
