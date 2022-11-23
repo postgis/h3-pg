@@ -18,8 +18,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: |
-          # sudo apt install postgresql-common
-          # sudo sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+          sudo apt-get -y install postgresql-common
+          sudo sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
           sudo apt-get -y install postgresql-${{ matrix.pg }}
           sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
       - name: Test on PostgreSQL ${{ matrix.pg }}
