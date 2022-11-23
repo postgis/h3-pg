@@ -32,5 +32,15 @@ jobs:
           cmake --build build --target=pgxn
           sudo pgxn install ./h3-*.zip
           pgxn load h3
+          pgxn unload h3
+          pgxn load h3=0.1.0
+          pgxn load h3
+        env:
+          PGUSER: postgres
+      - name: Upgrade on PostgreSQL ${{ matrix.pg }}
+        run: |
+          pgxn unload h3
+          pgxn load h3=0.1.0
+          pgxn load h3
         env:
           PGUSER: postgres
