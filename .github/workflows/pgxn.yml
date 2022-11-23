@@ -21,8 +21,11 @@ jobs:
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: |
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -p -i -v ${{ matrix.pg }}
-          sudo pg_ctlcluster 11 main start
-          # sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
+          echo "---1"
+          sudo pg_ctlcluster ${{ matrix.pg }} main start
+          echo "---2"
+          #sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
+          echo "---3"
       - name: Test on PostgreSQL ${{ matrix.pg }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
