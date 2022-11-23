@@ -24,8 +24,10 @@ jobs:
           echo "---1"
           #sudo pg_ctlcluster ${{ matrix.pg }} main start
           echo "---2"
-          sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
+          #sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
           echo "---3"
+          sudo -u postgres -i createuser --superuser runner
+          sudo -u postgres -i createdb runner
       - name: Test on PostgreSQL ${{ matrix.pg }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -35,12 +37,8 @@ jobs:
           pgxn unload h3
           pgxn load h3=0.1.0
           pgxn load h3
-        env:
-          PGUSER: postgres
       - name: Upgrade on PostgreSQL ${{ matrix.pg }}
         run: |
           pgxn unload h3
           pgxn load h3=0.1.0
           pgxn load h3
-        env:
-          PGUSER: postgres
