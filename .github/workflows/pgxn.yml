@@ -21,7 +21,7 @@ jobs:
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: |
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -p -i -v ${{ matrix.pg }}
-          sudo apt-get -y install postgis
+          sudo apt-get -y install postgresql-${{ matrix.pg }}-postgis-3
           sudo -u postgres -i createuser --superuser runner
           sudo -u postgres -i createdb runner
           pgxn load postgis
