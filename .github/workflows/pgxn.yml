@@ -22,12 +22,9 @@ jobs:
           sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
       - name: Test on PostgreSQL ${{ matrix.pg }}
         run: |
-          echo $POSTGRESQL_VERSION
-          make all PROFILE="-Werror"
-          sudo make install
-          status=0
-          make installcheck PGUSER=postgres || status=$?
-          if test -f regression.diffs; then cat regression.diffs; fi
-          exit $status
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target=pgxn
+          python -m pip install pgxnclient
+          pgxnclient install h3-*.zip
         env:
           POSTGRESQL_VERSION: ${{ matrix.pg }}
