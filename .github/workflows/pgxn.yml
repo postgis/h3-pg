@@ -24,7 +24,7 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target=pgxn
-          python -m pip install pgxnclient
+          sudo pip install --system pgxnclient
           sudo pgxnclient install ./h3-*.zip
           pgxnclient load h3
         env:
