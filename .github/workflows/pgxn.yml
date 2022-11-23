@@ -24,6 +24,7 @@ jobs:
           sudo apt-get -y install postgresql-${{ matrix.pg }}-postgis-3
           sudo -u postgres -i createuser --superuser runner
           sudo -u postgres -i createdb runner
+          psql -c "CREATE EXTENSION postgis;"
       - name: Bundle for PGXN
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
