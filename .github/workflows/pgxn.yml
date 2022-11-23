@@ -13,13 +13,20 @@ jobs:
         pg: [15, 14, 13, 12, 11]
     name: 🐘 PostgreSQL ${{ matrix.pg }}
     runs-on: ubuntu-latest
-    container: pgxn/pgxn-tools
     steps:
-      - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v1.13
-      - name: Start PostgreSQL ${{ matrix.pg }}
-        run: pg-start ${{ matrix.pg }}
       - name: Check out the repo
         uses: actions/checkout@v2
+      - name: Start PostgreSQL ${{ matrix.pg }}
+        run: |
+          # sudo apt install postgresql-common
+          # sudo sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+          sudo apt-get -y install postgresql-${{ matrix.pg }}
+          sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
       - name: Test on PostgreSQL ${{ matrix.pg }}
-        run: pg-build-test
+        run: |
+          make all PROFILE="-Werror"
+          sudo make install
+          status=0
+          make installcheck PGUSER=postgres || status=$?
+          if test -f regression.diffs; then cat regression.diffs; fi
+          exit $status
