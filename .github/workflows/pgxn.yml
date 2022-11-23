@@ -8,13 +8,12 @@ on:
 
 jobs:
   pgxn:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Install dependencies
+      - name: Install PGXN Client
         run: sudo pip install --system pgxnclient
 
       - name: Install PostgreSQL server dependencies
