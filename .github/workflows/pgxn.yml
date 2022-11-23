@@ -15,13 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     container: pgxn/pgxn-tools
     steps:
-      - name: Setup cmake
-        run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends wget
-          wget https://github.com/Kitware/CMake/releases/download/v3.24.3/cmake-3.24.3.tar.gz
-          tar -zxf cmake-3.24.3.tar.gz
-          cd cmake-3.24.3
-          ./bootstrap -- -DCMAKE_USE_OPENSSL=OFF && make && sudo make install
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: pg-start ${{ matrix.pg }}
       - name: Check out the repo
