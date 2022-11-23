@@ -19,17 +19,15 @@ jobs:
       - name: Install dependencies
         run: |
           sudo pip install --system pgxnclient
-          which pgxn
-          which pgxnclient
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: |
-          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -i -v ${{ matrix.pg }}
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -p -i -v ${{ matrix.pg }}
           sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
       - name: Test on PostgreSQL ${{ matrix.pg }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target=pgxn
-          sudo pgxnclient install ./h3-*.zip
-          pgxnclient load h3
+          sudo pgxn install ./h3-*.zip
+          pgxn load h3
         env:
           POSTGRESQL_VERSION: ${{ matrix.pg }}
