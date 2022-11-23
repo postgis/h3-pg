@@ -57,7 +57,7 @@ AS $$ SELECT h3_cells_to_multi_polygon_wkb($1)::geography $$ IMMUTABLE STRICT PA
 
 --@ availability: unreleased
 --@ refid: h3_cells_to_multi_polygon_geometry_agg
-CREATE OR REPLACE AGGREGATE h3_cells_to_multi_polygon_geometry(h3index) (
+CREATE AGGREGATE h3_cells_to_multi_polygon_geometry(h3index) (
     sfunc = array_append,
     stype = h3index[],
     finalfunc = h3_cells_to_multi_polygon_geometry,
@@ -66,7 +66,7 @@ CREATE OR REPLACE AGGREGATE h3_cells_to_multi_polygon_geometry(h3index) (
 
 --@ availability: unreleased
 --@ refid: h3_cells_to_multi_polygon_geography_agg
-CREATE OR REPLACE AGGREGATE h3_cells_to_multi_polygon_geography(h3index) (
+CREATE AGGREGATE h3_cells_to_multi_polygon_geography(h3index) (
     sfunc = array_append,
     stype = h3index[],
     finalfunc = h3_cells_to_multi_polygon_geography,
