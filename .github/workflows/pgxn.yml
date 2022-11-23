@@ -29,3 +29,5 @@ jobs:
           make installcheck PGUSER=postgres || status=$?
           if test -f regression.diffs; then cat regression.diffs; fi
           exit $status
+        env:
+          POSTGRESQL_VERSION: ${{ matrix.pg }}
