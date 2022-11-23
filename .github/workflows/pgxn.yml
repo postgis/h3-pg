@@ -17,12 +17,12 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v2
       - name: Install dependencies
-        run: |
-          sudo pip install --system pgxnclient
+        run: sudo pip install --system pgxnclient
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: |
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -p -i -v ${{ matrix.pg }}
-          sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
+          sudo pg_ctlcluster 11 main start
+          # sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
       - name: Test on PostgreSQL ${{ matrix.pg }}
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
