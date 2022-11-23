@@ -7,8 +7,8 @@ set(PostgreSQL_SUPPORTED_VERSIONS ${PostgreSQL_ADDITIONAL_VERSIONS}
   "15" "14" "13" "12" "11")
 
 # Use `FIND_VERSION` to locate specific version of pg_config, or fallback to known versions
-if(FIND_VERSION)
-  list(PREPEND PostgreSQL_SUPPORTED_VERSIONS "${FIND_VERSION}")
+if(PostgreSQL_FIND_VERSION)
+  list(PREPEND PostgreSQL_SUPPORTED_VERSIONS "${PostgreSQL_FIND_VERSION_MAJOR}")
 endif()
 
 foreach(suffix ${PostgreSQL_SUPPORTED_VERSIONS})
