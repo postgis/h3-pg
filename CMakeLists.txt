@@ -38,8 +38,11 @@ project(
 # (But usually don't do this, except maybe for C++ standard)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# Allow forcing PostgreSQL version
+set(POSTGRESQL_VERSION $ENV{POSTGRESQL_VERSION} CACHE STRING "PostgreSQL version major")
+
 # Find packages go here.
-find_package(PostgreSQL REQUIRED)
+find_package(PostgreSQL REQUIRED ${POSTGRESQL_VERSION})
 include(AddPostgreSQLExtension)
 
 # https://cliutils.gitlab.io/modern-cmake/chapters/testing.html
