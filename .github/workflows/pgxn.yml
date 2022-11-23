@@ -25,6 +25,6 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target=pgxn
           python -m pip install pgxnclient
-          pgxnclient install h3-*.zip
+          pgxnclient install ./h3-*.zip
         env:
           POSTGRESQL_VERSION: ${{ matrix.pg }}
