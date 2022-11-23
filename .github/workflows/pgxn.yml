@@ -19,7 +19,7 @@ jobs:
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: |
           sudo apt-get -y install postgresql-common
-          sudo sh /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -i -v ${{ matrix.pg }}
           sudo apt-get -y install postgresql-${{ matrix.pg }}
           sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
       - name: Test on PostgreSQL ${{ matrix.pg }}
