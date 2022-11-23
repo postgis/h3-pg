@@ -22,9 +22,9 @@ jobs:
         run: |
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -p -i -v ${{ matrix.pg }}
           echo "---1"
-          sudo pg_ctlcluster ${{ matrix.pg }} main start
+          #sudo pg_ctlcluster ${{ matrix.pg }} main start
           echo "---2"
-          #sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
+          sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
           echo "---3"
       - name: Test on PostgreSQL ${{ matrix.pg }}
         run: |
