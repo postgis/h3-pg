@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Install PGXN Client
-        run: sudo pip install --system pgxnclient
+        run: sudo pip install pgxnclient
 
       - name: Install PostgreSQL server dependencies
         run: sudo apt install postgresql-server-dev-14 postgis
