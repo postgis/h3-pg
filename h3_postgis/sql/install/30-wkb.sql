@@ -16,10 +16,10 @@
 
 --| # WKB indexing functions
 
---@ availability: 4.0.1
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION
     h3_cell_to_boundary_wkb(cell h3index) RETURNS bytea
-AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+AS 'h3_postgis' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_cell_to_boundary_wkb(h3index)
 IS 'Finds the boundary of the index, converts to EWKB.
 
@@ -32,7 +32,7 @@ This function has to return WKB since Postgres does not provide multipolygon typ
 --@ availability: unreleased
 CREATE OR REPLACE FUNCTION
     h3_cells_to_multi_polygon_wkb(h3index[]) RETURNS bytea
-AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+AS 'h3_postgis' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_cells_to_multi_polygon_wkb(h3index[])
 IS 'Create a LinkedGeoPolygon describing the outline(s) of a set of hexagons, converts to EWKB.
 

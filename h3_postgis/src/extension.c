@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
--- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+#include <postgres.h>			 // Datum, etc.
+#include <fmgr.h>				 // PG_FUNCTION_ARGS, etc.
 
-DROP FUNCTION IF EXISTS h3_cell_to_boundary_wkb(h3index);
-DROP FUNCTION IF EXISTS h3_cells_to_multi_polygon_wkb(h3index[]);
+/* should only be in ONE file */
+PG_MODULE_MAGIC;

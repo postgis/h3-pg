@@ -7,11 +7,21 @@ PostgreSQL_add_extension(postgresql_h3_postgis
   REQUIRES
     h3
     postgis
+  SOURCES
+    src/extension.c
+    src/wkb_bbox3.c
+    src/wkb_indexing.c
+    src/wkb_linked_geo.c
+    src/wkb_regions.c
+    src/wkb_split.c
+    src/wkb_vect3.c
+    src/wkb.c
   INSTALLS
     sql/install/01-indexing.sql
     sql/install/03-traversal.sql
     sql/install/05-regions.sql
     sql/install/20-casts.sql
+    sql/install/30-wkb.sql
     sql/install/99-deprecated.sql
   UPDATES
     sql/updates/h3_postgis--4.0.0.sql
@@ -20,6 +30,13 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     sql/updates/h3_postgis--4.0.2--4.0.3.sql
     sql/updates/h3_postgis--4.0.3--unreleased.sql
 )
+
+# Configure includes
+configure_file(src/extension.in.h extension.h)
+target_include_directories(postgresql_h3_postgis PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+# link to h3lib
+target_link_libraries(postgresql_h3_postgis h3)
 
 if(BUILD_TESTING AND PostgreSQL_PostGIS_FOUND)
   add_subdirectory(test)

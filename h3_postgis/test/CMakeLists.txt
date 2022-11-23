@@ -11,6 +11,8 @@ if(PostgreSQL_REGRESS)
       --inputdir=${CMAKE_CURRENT_SOURCE_DIR}
       --outputdir=${CMAKE_CURRENT_BINARY_DIR}
       --load-extension h3
+      --load-extension postgis
+      --load-extension h3_postgis
       ${TESTS}
   )
 endif()

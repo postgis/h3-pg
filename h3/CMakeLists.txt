@@ -19,13 +19,6 @@ PostgreSQL_add_extension(postgresql_h3
     src/traversal.c
     src/type.c
     src/vertex.c
-    src/wkb_bbox3.c
-    src/wkb_indexing.c
-    src/wkb_linked_geo.c
-    src/wkb_regions.c
-    src/wkb_split.c
-    src/wkb_vect3.c
-    src/wkb.c
   INSTALLS
     sql/install/00-type.sql
     sql/install/01-indexing.sql
@@ -42,7 +35,6 @@ PostgreSQL_add_extension(postgresql_h3
     sql/install/13-opclass_brin.sql
     sql/install/20-casts.sql
     sql/install/30-extension.sql
-    sql/install/31-wkb.sql
     sql/install/99-deprecated.sql
   UPDATES
     sql/updates/h3--0.1.0.sql

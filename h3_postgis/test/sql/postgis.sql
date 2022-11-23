@@ -19,9 +19,6 @@
 \set transmeridianMulti '\'MULTIPOLYGON(((-175 50, -175 55, 175 55, 175 50, -175 50)), ((170 50, 170 55, 165 55, 165 50, 170 50)))\''::geometry(MULTIPOLYGON)
 
 
-CREATE EXTENSION postgis;
-CREATE EXTENSION h3_postgis;
-
 SELECT h3_lat_lng_to_cell(:degree, :resolution) = '8a63a9a99047fff';
 
 -- meters are NOT reprojected
