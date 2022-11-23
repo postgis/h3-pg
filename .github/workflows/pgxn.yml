@@ -29,9 +29,13 @@ jobs:
           sudo systemctl start postgresql.service
           sudo -u postgres -i createuser --superuser runner
           sudo -u postgres -i createdb runner
+          psql -c "CREATE EXTENSION postgis;"
 
       - name: Install
-        run: |
-          sudo pgxn install ./h3-*.zip
-          pgxn load h3
-          pgxn check h3
+        run: sudo pgxn install ./h3-*.zip
+
+      - name: Load
+        run: pgxn load h3
+
+      - name: Check
+        run: pgxn check h3
