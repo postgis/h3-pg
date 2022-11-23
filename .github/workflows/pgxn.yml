@@ -16,6 +16,11 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          sudo pip install --system pgxnclient
+          which pgxn
+          which pgxnclient
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: |
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -i -v ${{ matrix.pg }}
@@ -24,7 +29,6 @@ jobs:
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target=pgxn
-          sudo pip install --system pgxnclient
           sudo pgxnclient install ./h3-*.zip
           pgxnclient load h3
         env:
