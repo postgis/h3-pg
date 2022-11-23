@@ -33,4 +33,4 @@ jobs:
           sudo pgxn install ./h3-*.zip
           pgxn load h3
         env:
-          POSTGRESQL_VERSION: ${{ matrix.pg }}
+          PGUSER: postgres
