@@ -28,10 +28,13 @@ jobs:
           echo "---3"
           sudo -u postgres -i createuser --superuser runner
           sudo -u postgres -i createdb runner
-      - name: Test on PostgreSQL ${{ matrix.pg }}
+          pgxn load postgis
+      - name: Bundle for PGXN
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target=pgxn
+      - name: Install on PostgreSQL ${{ matrix.pg }}
+        run: |
           sudo pgxn install ./h3-*.zip
           pgxn load h3
           pgxn unload h3
