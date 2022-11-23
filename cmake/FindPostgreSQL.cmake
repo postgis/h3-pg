@@ -17,15 +17,15 @@ foreach(suffix ${PostgreSQL_SUPPORTED_VERSIONS})
       "PostgreSQL/${suffix}/bin")
   endif()
   if(UNIX)
-    list(APPEND PostgreSQL_CONFIG_PATH_SUFFIXES
-      "bin")
+    list(APPEND PostgreSQL_CONFIG_HINTS
+      "/usr/lib/postgresql/${suffix}/bin")
   endif()
 endforeach()
 
 # Configuration will be based on values gathered from `pg_config`
 find_program(PostgreSQL_CONFIG pg_config REQUIRED
-  PATH_SUFFIXES
-    ${PostgreSQL_CONFIG_PATH_SUFFIXES}
+  HINTS ${PostgreSQL_CONFIG_HINTS}
+  PATH_SUFFIXES ${PostgreSQL_CONFIG_PATH_SUFFIXES}
 )
 
 # Grab information about the installed version of PostgreSQL
