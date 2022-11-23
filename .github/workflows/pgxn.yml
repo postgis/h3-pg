@@ -18,11 +18,12 @@ jobs:
         uses: actions/checkout@v2
       - name: Start PostgreSQL ${{ matrix.pg }}
         run: |
-          sudo apt-get purge -y postgresql
+          sudo apt-get purge -y postgresql-14
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -i -v ${{ matrix.pg }}
           sudo pg_createcluster --start ${{ matrix.pg }} test -p "${PGPORT:-5432}" -- -A trust
       - name: Test on PostgreSQL ${{ matrix.pg }}
         run: |
+          echo $POSTGRESQL_VERSION
           make all PROFILE="-Werror"
           sudo make install
           status=0
