@@ -474,30 +474,6 @@ Convert H3 index to point.
 Get the currently installed version of the extension.
 
 
-# WKB indexing functions
-
-### h3_cell_to_boundary_wkb(cell `h3index`) ⇒ `bytea`
-*Since v4.0.1*
-
-
-Finds the boundary of the index, converts to EWKB.
-
-Splits polygons when crossing 180th meridian.
-
-This function has to return WKB since Postgres does not provide multipolygon type.
-
-
-# WKB regions functions
-
-### h3_cells_to_multi_polygon_wkb(`h3index[]`) ⇒ `bytea`
-*Since vunreleased*
-
-
-Create a LinkedGeoPolygon describing the outline(s) of a set of hexagons, converts to EWKB.
-
-Splits polygons when crossing 180th meridian.
-
-
 # Deprecated functions
 
 ### h3_cell_to_boundary(cell `h3index`, extend_antimeridian `boolean`) ⇒ `polygon`
@@ -595,5 +571,29 @@ Splits polygons when crossing 180th meridian.
 
 ### `h3index` :: `geography`
 *Since v0.3.0*
+
+
+# WKB indexing functions
+
+### h3_cell_to_boundary_wkb(cell `h3index`) ⇒ `bytea`
+*Since vunreleased*
+
+
+Finds the boundary of the index, converts to EWKB.
+
+Splits polygons when crossing 180th meridian.
+
+This function has to return WKB since Postgres does not provide multipolygon type.
+
+
+# WKB regions functions
+
+### h3_cells_to_multi_polygon_wkb(`h3index[]`) ⇒ `bytea`
+*Since vunreleased*
+
+
+Create a LinkedGeoPolygon describing the outline(s) of a set of hexagons, converts to EWKB.
+
+Splits polygons when crossing 180th meridian.
 
 

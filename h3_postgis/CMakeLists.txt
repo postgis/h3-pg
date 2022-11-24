@@ -31,9 +31,11 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     sql/updates/h3_postgis--4.0.3--unreleased.sql
 )
 
-# Configure includes
-configure_file(src/extension.in.h extension.h)
-target_include_directories(postgresql_h3_postgis PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+# include
+target_include_directories(postgresql_h3_postgis PRIVATE
+  ${CMAKE_BINARY_DIR}/include
+  ${CMAKE_SOURCE_DIR}/include
+)
 
 # link to h3lib
 target_link_libraries(postgresql_h3_postgis h3)

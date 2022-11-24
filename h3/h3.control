@@ -1,3 +1,0 @@
-comment = 'H3 bindings for PostgreSQL'
-default_version = '@PROJECT_VERSION@'
-relocatable = true
