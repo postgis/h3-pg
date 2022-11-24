@@ -42,7 +42,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(POSTGRESQL_VERSION $ENV{POSTGRESQL_VERSION} CACHE STRING "PostgreSQL version major")
 
 # Find packages go here.
-find_package(PostgreSQL ${POSTGRESQL_VERSION} REQUIRED)
+find_package(PostgreSQL ${POSTGRESQL_VERSION} REQUIRED
+  OPTIONAL_COMPONENTS PostGIS
+)
 include(AddPostgreSQLExtension)
 
 # https://cliutils.gitlab.io/modern-cmake/chapters/testing.html

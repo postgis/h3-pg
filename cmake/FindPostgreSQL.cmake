@@ -97,6 +97,22 @@ list(GET PostgreSQL_VERSION_LIST 1 PostgreSQL_VERSION_MINOR)
 set(PostgreSQL_VERSION "${PostgreSQL_VERSION_MAJOR}.${PostgreSQL_VERSION_MINOR}")
 
 # ----------------------------------------------------------------------------
+# Handle additional components
+
+if("PostGIS" IN_LIST PostgreSQL_FIND_COMPONENTS)
+  find_library(
+    POSTGIS
+    NAMES postgis postgis-3
+    PATHS ${PostgreSQL_PKG_LIBRARY_DIR}
+  )
+
+  set(PostgreSQL_PostGIS_FOUND TRUE)
+  if(NOT POSTGIS)
+    set(PostgreSQL_PostGIS_FOUND FALSE)
+  endif()
+endif()
+
+# ----------------------------------------------------------------------------
 # Now we can use FindPackageHandleStandardArgs to do
 # most of the rest of the work for us
 include(FindPackageHandleStandardArgs)
@@ -104,6 +120,7 @@ find_package_handle_standard_args(PostgreSQL
   REQUIRED_VARS
     PostgreSQL_LIBRARY
     PostgreSQL_INCLUDE_DIRS
+  HANDLE_COMPONENTS
   VERSION_VAR PostgreSQL_VERSION
 )
 

@@ -21,6 +21,6 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     sql/updates/h3_postgis--4.0.3--unreleased.sql
 )
 
-if(BUILD_TESTING)
+if(BUILD_TESTING AND PostgreSQL_PostGIS_FOUND)
   add_subdirectory(test)
 endif()
