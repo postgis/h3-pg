@@ -474,6 +474,13 @@ Convert H3 index to point.
 Get the currently installed version of the extension.
 
 
+### h3_pg_migrate_pass_by_reference(`h3index`) ⇒ `h3index`
+*Since vunreleased*
+
+
+Migrate h3index from pass-by-reference to pass-by-value.
+
+
 # Deprecated functions
 
 ### h3_cell_to_boundary(cell `h3index`, extend_antimeridian `boolean`) ⇒ `polygon`
