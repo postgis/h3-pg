@@ -22,7 +22,6 @@
 
 #include <h3api.h> // Main H3 include
 #include "extension.h"
-#include "upstream/h3Index.h"
 
 #define H3_ROOT_INDEX -1
 
@@ -72,13 +71,13 @@ gist_cmp(H3Index a, H3Index b)
 	}
 
 	/* no shared basecell */
-	if (H3_GET_BASE_CELL(a) != H3_GET_BASE_CELL(b))
+	if (getBaseCellNumber(a) != getBaseCellNumber(b))
 	{
 		return 0;
 	}
 
-	aRes = H3_GET_RESOLUTION(a);
-	bRes = H3_GET_RESOLUTION(b);
+	aRes = getResolution(a);
+	bRes = getResolution(b);
 
 	/* ---- */
 
@@ -123,13 +122,13 @@ common_ancestor(H3Index a, H3Index b)
 	}
 
 	/* do not even share the basecell */
-	if (H3_GET_BASE_CELL(a) != H3_GET_BASE_CELL(b))
+	if (getBaseCellNumber(a) != getBaseCellNumber(b))
 	{
 		return H3_ROOT_INDEX;
 	}
 
-	aRes = H3_GET_RESOLUTION(a);
-	bRes = H3_GET_RESOLUTION(b);
+	aRes = getResolution(a);
+	bRes = getResolution(b);
 	bigRes = (aRes > bRes) ? aRes : bRes;
 	for (int i = bigRes; i > 0; i--)
 		/* iterate back basecells */
