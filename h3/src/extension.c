@@ -31,6 +31,7 @@
 PG_MODULE_MAGIC;
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_extension_version);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_pg_migrate_pass_by_reference);
 
 /* Return version number for this extension (not main h3 lib) */
 Datum
@@ -141,4 +142,16 @@ srf_return_h3_index_distances_from_user_fctx(PG_FUNCTION_ARGS)
 	{
 		SRF_RETURN_DONE(funcctx);
 	}
+}
+
+/*
+ * Migration from pass-by-reference to pass-by-value
+ * https://github.com/zachasme/h3-pg/issues/31
+ */
+Datum
+h3_pg_migrate_pass_by_reference(PG_FUNCTION_ARGS)
+{
+	H3Index		cell = (*((H3Index *) DatumGetPointer(PG_GETARG_DATUM(0))));
+
+	PG_RETURN_H3INDEX(cell);
 }

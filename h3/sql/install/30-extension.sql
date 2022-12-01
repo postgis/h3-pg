@@ -21,3 +21,9 @@ CREATE OR REPLACE FUNCTION h3_get_extension_version() RETURNS text
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_get_extension_version() IS
 'Get the currently installed version of the extension.';
+
+--@ availability: unreleased
+CREATE OR REPLACE FUNCTION h3_pg_migrate_pass_by_reference(h3index) RETURNS h3index
+    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+    COMMENT ON FUNCTION h3_pg_migrate_pass_by_reference(h3index) IS
+'Migrate h3index from pass-by-reference to pass-by-value.';
