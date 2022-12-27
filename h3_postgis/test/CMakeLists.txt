@@ -1,5 +1,6 @@
 set(TESTS
   postgis
+  rasters
 )
 
 if(PostgreSQL_REGRESS)
@@ -12,6 +13,7 @@ if(PostgreSQL_REGRESS)
       --outputdir=${CMAKE_CURRENT_BINARY_DIR}
       --load-extension h3
       --load-extension postgis
+      --load-extension postgis_raster
       --load-extension h3_postgis
       ${TESTS}
   )

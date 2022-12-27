@@ -7,6 +7,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
   REQUIRES
     h3
     postgis
+    postgis_raster
   SOURCES
     src/init.c
     src/wkb_bbox3.c
@@ -23,6 +24,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     sql/install/05-regions.sql
     sql/install/20-casts.sql
     sql/install/30-wkb.sql
+    sql/install/40-rasters.sql
     sql/install/99-deprecated.sql
   UPDATES
     sql/updates/h3_postgis--4.0.0.sql

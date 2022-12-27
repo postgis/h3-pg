@@ -14,28 +14,7 @@
  * limitations under the License.
  */
 
--- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3_postgis UPDATE TO '4.1.0'" to load this file. \quit
-
-CREATE OR REPLACE FUNCTION
-    h3_cell_to_boundary_wkb(cell h3index) RETURNS bytea
-AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_boundary_wkb(h3index)
-IS 'Finds the boundary of the index, converts to EWKB.
-
-Splits polygons when crossing 180th meridian.
-
-This function has to return WKB since Postgres does not provide multipolygon type.';
-
-CREATE OR REPLACE FUNCTION
-    h3_cells_to_multi_polygon_wkb(h3index[]) RETURNS bytea
-AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cells_to_multi_polygon_wkb(h3index[])
-IS 'Create a LinkedGeoPolygon describing the outline(s) of a set of hexagons, converts to EWKB.
-
-Splits polygons when crossing 180th meridian.';
-
--- Raster processing
+--| # Raster processing functions
 
 -- Get nodata value for ST_Clip function
 CREATE OR REPLACE FUNCTION __h3_raster_band_nodata(
@@ -133,8 +112,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
--- Raster processing: continuous data
+--| ## Continuous raster data
+--|
+--| Combining summary stats from multiple rasters:
+--| ```
+--| SELECT
+--|     (summary).h3 AS h3,
+--|     (h3_raster_summary_stats_agg((summary).stats)).*
+--| FROM (
+--|     SELECT h3_raster_summary(rast, 8) AS summary
+--|     FROM rasters
+--| ) t
+--| GROUP BY 1;
+--| ```
 
+-- NOTE: `count` can be < 1 when cell area is less than pixel area
+--@ availability: unreleased
 CREATE TYPE h3_raster_summary_stats AS (
     count double precision,
     sum double precision,
@@ -185,12 +178,14 @@ AS $$
     FROM total AS t
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
+--@ availability: unreleased
 CREATE OR REPLACE AGGREGATE h3_raster_summary_stats_agg(h3_raster_summary_stats) (
     sfunc = __h3_raster_summary_stats_agg_transfn,
     stype = h3_raster_summary_stats,
     parallel = safe
 );
 
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION h3_raster_summary_clip(
     rast raster,
     resolution integer,
@@ -220,6 +215,7 @@ COMMENT ON FUNCTION
     h3_raster_summary_clip(raster, integer, integer)
 IS 'Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Clips the raster by H3 cell geometries and processes each part separately.';
 
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION h3_raster_summary_centroids(
     rast raster,
     resolution integer,
@@ -281,6 +277,7 @@ AS $$
     FROM vals;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION h3_raster_summary_subpixel(
     rast raster,
     resolution integer,
@@ -322,14 +319,44 @@ COMMENT ON FUNCTION
     h3_raster_summary(raster, integer, integer)
 IS 'Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Attempts to select an appropriate method based on number of pixels per H3 cell.';
 
--- Raster processing: discrete data
+--| ## Discrete raster data
+--|
+--| Combining summary from multiple rasters into a single JSON object for each H3 index,
+--| adding `fraction` value (fraction of H3 cell area for each value):
+--| ```
+--| WITH
+--|     summary AS (
+--|         SELECT h3, val, h3_raster_class_summary_item_agg(summary) AS item
+--|         FROM (
+--|             -- h3, val, summary
+--|             SELECT (h3_raster_class_summary(rast, 8)).* AS summary
+--|             FROM rasters
+--|         ) t
+--|         GROUP BY 1, 2),
+--|     summary_total AS (
+--|         SELECT h3, val, item, sum((item).count) OVER (PARTITION BY h3) AS total
+--|         FROM summary)
+--| SELECT
+--|     h3,
+--|     jsonb_object_agg(
+--|         concat('class_', val::text),
+--|         h3_raster_class_summary_item_to_jsonb(item) -- val, count, area
+--|             || jsonb_build_object('fraction', (item).count / total)
+--|         ORDER BY val
+--|     ) AS summary
+--| FROM summary_total
+--| GROUP BY 1;
+--| ```
 
+-- NOTE: `count` can be < 1 when cell area is less than pixel area
+--@ availability: unreleased
 CREATE TYPE h3_raster_class_summary_item AS (
     val integer,
     count double precision,
     area double precision
 );
 
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_item_to_jsonb(
     item h3_raster_class_summary_item)
 RETURNS jsonb
@@ -355,6 +382,7 @@ AS $$
         s1.area + s2.area
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
+--@ availability: unreleased
 CREATE OR REPLACE AGGREGATE h3_raster_class_summary_item_agg(h3_raster_class_summary_item) (
     stype = h3_raster_class_summary_item,
     sfunc = __h3_raster_class_summary_item_agg_transfn,
@@ -409,6 +437,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_clip(
     rast raster,
     resolution integer,
@@ -449,6 +478,7 @@ $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 
 -- For each pixel determine which H3 cell it belongs to then group by H3 index and value.
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_centroids(
     rast raster,
     resolution integer,
@@ -465,6 +495,7 @@ COMMENT ON FUNCTION
     h3_raster_class_summary_centroids(raster, integer, integer)
 IS 'Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Finds corresponding H3 cell for each pixel, then groups by H3 and value.';
 
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION __h3_raster_class_summary_subpixel(
     rast raster,
     resolution integer,
@@ -499,6 +530,7 @@ $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 -- Get summary items for each H3 index and value.
 -- For each H3 cell centroid determine which pixel it belongs to.
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_subpixel(
     rast raster,
     resolution integer,
@@ -519,6 +551,7 @@ IS 'Returns `h3_raster_class_summary_item` for each H3 cell and value for a give
 
 -- Get summary items for each H3 index and value.
 -- Select appropriate method based on number of pixels per H3 cell.
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION h3_raster_class_summary(
     rast raster,
     resolution integer,
