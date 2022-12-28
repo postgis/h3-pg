@@ -93,7 +93,7 @@ CREATE OR REPLACE FUNCTION __h3_raster_to_cell_boundaries(
     rast raster,
     resolution integer,
     nband integer)
-RETURNS TABLE(h3 h3index, geom geometry)
+RETURNS TABLE (h3 h3index, geom geometry)
 AS $$
 DECLARE
     rast_geom CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
@@ -118,7 +118,7 @@ CREATE OR REPLACE FUNCTION __h3_raster_to_cell_centroids(
     rast raster,
     resolution integer,
     nband integer)
-RETURNS TABLE(h3 h3index, geom geometry)
+RETURNS TABLE (h3 h3index, geom geometry)
 AS $$
 DECLARE
     rast_geom CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
@@ -154,7 +154,8 @@ AS $$
         (stats).mean,
         (stats).stddev,
         (stats).min,
-        (stats).max)
+        (stats).max
+    )::h3_raster_summary_stats
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_summary_stats_agg_transfn(
@@ -181,7 +182,7 @@ AS $$
         ),
         least((s1).min, (s2).min),
         greatest((s1).max, (s2).max)
-    )
+    )::h3_raster_summary_stats
     FROM total AS t
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
@@ -238,7 +239,7 @@ AS $$
             stddev_pop(val),
             min(val),
             max(val)
-        ) AS stats
+        )::h3_raster_summary_stats AS stats
     FROM pixels
     GROUP BY 1
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
@@ -277,7 +278,7 @@ AS $$
             0,   -- stddev
             val, -- min
             val  -- max
-        )
+        )::h3_rasters_summary_stats AS stats
     FROM vals;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
@@ -435,11 +436,12 @@ RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
     SELECT
         h3_lat_lng_to_cell(geom, resolution) AS h3,
-        val::integer,
+        val::integer AS val,
         ROW(
             val::integer,
             count(*)::double precision,
-            count(*) * pixel_area)
+            count(*) * pixel_area
+        )::h3_raster_class_summary_item AS summary
     FROM (
         -- x, y, val, geom
         SELECT (ST_PixelAsCentroids(rast, nband)).*
@@ -489,11 +491,12 @@ AS $$
             ) c)
     SELECT
         h3,
-        val::integer,
+        val::integer AS val,
         ROW(
             val::integer,
             cell_area / pixel_area,
-            cell_area)
+            cell_area
+        )::h3_raster_class_summary_item AS summary
     FROM vals v;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
