@@ -186,7 +186,7 @@ AS $$
     FROM total AS t
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OR REPLACE AGGREGATE h3_raster_summary_stats_agg(h3_raster_summary_stats) (
+CREATE AGGREGATE h3_raster_summary_stats_agg(h3_raster_summary_stats) (
     sfunc = __h3_raster_summary_stats_agg_transfn,
     stype = h3_raster_summary_stats,
     parallel = safe
@@ -356,7 +356,7 @@ AS $$
         s1.area + s2.area
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OR REPLACE AGGREGATE h3_raster_class_summary_item_agg(h3_raster_class_summary_item) (
+CREATE AGGREGATE h3_raster_class_summary_item_agg(h3_raster_class_summary_item) (
     stype = h3_raster_class_summary_item,
     sfunc = __h3_raster_class_summary_item_agg_transfn,
     parallel = safe
