@@ -128,7 +128,7 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
 -- NOTE: `count` can be < 1 when cell area is less than pixel area
 --@ availability: unreleased
-CREATE TYPE h3_raster_summary_stats (
+CREATE TYPE h3_raster_summary_stats AS (
     count double precision,
     sum double precision,
     mean double precision,
@@ -351,7 +351,7 @@ IS 'Returns `h3_raster_summary_stats` for each H3 cell in raster for a given ban
 
 -- NOTE: `count` can be < 1 when cell area is less than pixel area
 --@ availability: unreleased
-CREATE TYPE h3_raster_class_summary_item (
+CREATE TYPE h3_raster_class_summary_item AS (
     val integer,
     count double precision,
     area double precision
