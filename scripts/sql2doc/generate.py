@@ -26,9 +26,9 @@ fail if new function are undocumented.
 import argparse
 import glob
 import re
-import sys
 from pathlib import Path
 from lark import Lark, Transformer, v_args, visitors
+import sys #TEST
 
 # see PGXN::API::Indexer::_clean_html_body
 def to_anchor(text):
@@ -148,6 +148,39 @@ class Argument:
         return s
 
 
+class Column:
+    def __init__(self, name, coltype):
+        self.name = name;
+        self.coltype = coltype;
+
+    def __str__(self):
+        return "{} `{}`".format(self.name, self.coltype)
+
+class FunctionReturnsBase:
+    pass
+
+
+class FunctionReturns(FunctionReturnsBase):
+    def __init__(self, rettype):
+        self.rettype = rettype
+
+    def __str__(self):
+        return "`{}`".format(self.rettype)
+
+
+class FunctionReturnsSet(FunctionReturns):
+    def __str__(self):
+        return "SETOF " + super().__str__()
+
+
+class FunctionReturnsTable(FunctionReturnsBase):
+    def __init__(self, columns):
+        self.columns = columns
+
+    def __str__(self):
+        return "TABLE (" + ", ".join([str(col) for col in self.columns]) + ")";
+
+
 class CustomMd(StmtBase):
     def __init__(self, line):
         super().__init__()
@@ -171,12 +204,11 @@ class CustomMd(StmtBase):
 
 
 class CreateFunctionStmt(StmtBase):
-    def __init__(self, name: str, arguments, returntype: str, returns_set: bool):
+    def __init__(self, name: str, arguments, returns: FunctionReturnsBase):
         super().__init__(2)
         self.name = name
         self.arguments = arguments or []
-        self.returntype = returntype
-        self.returns_set = returns_set
+        self.returns = returns
 
     def get_ref_text(self):
         return "{}({})".format(
@@ -184,11 +216,10 @@ class CreateFunctionStmt(StmtBase):
             ", ".join([arg.get_typestr() for arg in self.arguments]))
 
     def __str__(self):
-        return "{}({}) ⇒ {}`{}`".format(
+        return "{}({}) ⇒ {}".format(
             self.name,
             ", ".join([str(arg) for arg in self.arguments]),
-            "SETOF " if self.returns_set else "",
-            self.returntype)
+            self.returns)
 
 
 class CreateAggregateStmt(StmtBase):
@@ -276,6 +307,7 @@ class SQLTransformer(Transformer):
     # -- MARKDOWN --------------------------------------------------------------
     @v_args(inline=True)
     def custom_markdown(self, line=""):
+        line = re.sub(r"^--\|[ \t]?", '', line)
         return CustomMd(line)
 
     # -- CREATE TYPE -----------------------------------------------------------
@@ -300,16 +332,29 @@ class SQLTransformer(Transformer):
         return [str(option), value]
 
     # -- CREATE FUNCTION -------------------------------------------------------
+    @v_args(inline=True)
+    def create_fun_ret_table_columns(self, columns):
+        return FunctionReturnsTable(columns)
+
     def create_fun_rettype(self, children):
-        # (returntype, returns_set)
-        return (children[1], children[0] is not None)
+        rettype = children[1]
+        if children[0] is not None:
+            return FunctionReturnsSet(rettype)
+        return FunctionReturns(rettype)
+
+    def column_list(self, children):
+        return children
 
     @v_args(inline=True)
-    def create_func_stmt(self, name: str, arguments, returntype, *opts):
+    def column(self, name: str, coltype: str):
+        return Column(name, coltype)
+
+    @v_args(inline=True)
+    def create_func_stmt(self, name: str, arguments, returns, *opts):
         # skip internal functions
         if name.startswith("__"):
             raise visitors.Discard()
-        return CreateFunctionStmt(name, arguments, returntype[0], returntype[1])
+        return CreateFunctionStmt(name, arguments, returns)
 
     # -- CREATE AGGREGATE ------------------------------------------------------
     @v_args(inline=True)
@@ -356,7 +401,6 @@ class SQLTransformer(Transformer):
 
     def OPERATOR(self, name):
         return str(name)
-
 
 def parse_args():
     parser = argparse.ArgumentParser()

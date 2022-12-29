@@ -618,3 +618,124 @@ Create a LinkedGeoPolygon describing the outline(s) of a set of hexagons, conver
 Splits polygons when crossing 180th meridian.
 
 
+# Raster processing functions
+
+## Continuous raster data
+Combining summary stats from multiple rasters:
+```
+SELECT
+    (summary).h3 AS h3,
+    (h3_raster_summary_stats_agg((summary).stats)).*
+FROM (
+    SELECT h3_raster_summary(rast, 8) AS summary
+    FROM rasters
+) t
+GROUP BY 1;
+```
+
+
+*Since vunreleased*
+
+
+### h3_raster_summary_stats_agg(setof `h3_raster_summary_stats`)
+*Since vunreleased*
+
+
+### h3_raster_summary_clip(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, stats `h3_raster_summary_stats`)
+*Since vunreleased*
+
+
+Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Clips the raster by H3 cell geometries and processes each part separately.
+
+
+### h3_raster_summary_centroids(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, stats `h3_raster_summary_stats`)
+*Since vunreleased*
+
+
+Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Finds corresponding H3 cell for each pixel, then groups values by H3 index.
+
+
+### h3_raster_summary_subpixel(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, stats `h3_raster_summary_stats`)
+*Since vunreleased*
+
+
+Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Assumes H3 cell is smaller than a pixel. Finds corresponding pixel for each H3 cell in raster.
+
+
+### h3_raster_summary(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, stats `h3_raster_summary_stats`)
+
+
+Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Attempts to select an appropriate method based on number of pixels per H3 cell.
+
+
+## Discrete raster data
+Combining summary from multiple rasters into a single JSON object for each H3 index,
+adding `fraction` value (fraction of H3 cell area for each value):
+```
+WITH
+    summary AS (
+        SELECT h3, val, h3_raster_class_summary_item_agg(summary) AS item
+        FROM (
+            -- h3, val, summary
+            SELECT (h3_raster_class_summary(rast, 8)).* AS summary
+            FROM rasters
+        ) t
+        GROUP BY 1, 2),
+    summary_total AS (
+        SELECT h3, val, item, sum((item).count) OVER (PARTITION BY h3) AS total
+        FROM summary)
+SELECT
+    h3,
+    jsonb_object_agg(
+        concat('class_', val::text),
+        h3_raster_class_summary_item_to_jsonb(item) -- val, count, area
+            || jsonb_build_object('fraction', (item).count / total)
+        ORDER BY val
+    ) AS summary
+FROM summary_total
+GROUP BY 1;
+```
+
+
+*Since vunreleased*
+
+
+### h3_raster_class_summary_item_to_jsonb(item `h3_raster_class_summary_item`) ⇒ `jsonb`
+*Since vunreleased*
+
+
+Convert raster summary to binary JSON.
+
+
+### h3_raster_class_summary_item_agg(setof `h3_raster_class_summary_item`)
+*Since vunreleased*
+
+
+### h3_raster_class_summary_clip(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, val `integer`, summary `h3_raster_class_summary_item`)
+*Since vunreleased*
+
+
+Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Clips the raster by H3 cell geometries and processes each part separately.
+
+
+### h3_raster_class_summary_centroids(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, val `integer`, summary `h3_raster_class_summary_item`)
+*Since vunreleased*
+
+
+Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Finds corresponding H3 cell for each pixel, then groups by H3 and value.
+
+
+### h3_raster_class_summary_subpixel(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, val `integer`, summary `h3_raster_class_summary_item`)
+*Since vunreleased*
+
+
+Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Assumes H3 cell is smaller than a pixel. Finds corresponding pixel for each H3 cell in raster.
+
+
+### h3_raster_class_summary(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, val `integer`, summary `h3_raster_class_summary_item`)
+*Since vunreleased*
+
+
+Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Attempts to select an appropriate method based on number of pixels per H3 cell.
+
+

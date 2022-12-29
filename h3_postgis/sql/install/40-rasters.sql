@@ -128,7 +128,7 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
 -- NOTE: `count` can be < 1 when cell area is less than pixel area
 --@ availability: unreleased
-CREATE TYPE h3_raster_summary_stats AS (
+CREATE TYPE h3_raster_summary_stats (
     count double precision,
     sum double precision,
     mean double precision,
@@ -282,7 +282,7 @@ $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 CREATE OR REPLACE FUNCTION h3_raster_summary_subpixel(
     rast raster,
     resolution integer,
-    nband integer DEFAUlT 1)
+    nband integer DEFAULT 1)
 RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
 DECLARE
@@ -351,7 +351,7 @@ IS 'Returns `h3_raster_summary_stats` for each H3 cell in raster for a given ban
 
 -- NOTE: `count` can be < 1 when cell area is less than pixel area
 --@ availability: unreleased
-CREATE TYPE h3_raster_class_summary_item AS (
+CREATE TYPE h3_raster_class_summary_item (
     val integer,
     count double precision,
     area double precision

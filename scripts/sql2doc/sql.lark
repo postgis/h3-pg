@@ -17,8 +17,8 @@ custom_decorated_statement: [custom_decorators] statement
 
 custom_decorators: ("--@" /([^\n])+/)+
 
-custom_markdown: "--|" /([^\n])+/
-        | "--|\n"
+custom_markdown: /--\|[ \t]?([^\n])+/
+    | "--|\n"
 
 // -----------------------------------------------------------------------------
 // --------------- Basic SQL below ---------------------------------------------
@@ -83,12 +83,15 @@ create_oper_opts: create_oper_opt ("," create_oper_opt)*
 //   } ...
 //     [ WITH ( attribute [, ...] ) ]
 create_func_stmt: "CREATE" ("OR" "REPLACE")? "FUNCTION" fun_name "(" [argument_list] ")" [create_fun_rets] create_fun_opts*
-?create_fun_rets: "RETURNS" create_fun_rettype
+?create_fun_rets: ("RETURNS" "TABLE" "(" create_fun_ret_table_columns ")")
+                  | ("RETURNS" create_fun_rettype)
 create_fun_opts: "LANGUAGE" (CNAME|"'" CNAME "'")
               | ("IMMUTABLE" | "STABLE" | "VOLATILE" | ("NOT"? "LEAKPROOF"))
               | (("CALLED" "ON" "NULL" "INPUT") | ("RETURNS" "NULL" "ON" "NULL" "INPUT") | "STRICT")
               | ("PARALLEL" ("UNSAFE" | "RESTRICTED" | "SAFE"))
               | "AS" string ("," string)?
+create_fun_ret_table_columns: column_list
+column_list: column ("," column)*
 argument_list: argument ("," argument)*
 !create_fun_rettype: ["SETOF"] DATATYPE
 
@@ -141,9 +144,15 @@ comment_on_type: "CAST" "(" DATATYPE "AS" DATATYPE ")" -> comment_on_cast
 
 // -----------------------------------------------------------------------------
 // SIMPLE RULES
+column: CNAME DATATYPE
 argument: [ARGMODE] [CNAME] DATATYPE ("DEFAULT" expr)?
 ARGMODE.2: "IN" | "OUT" | "INOUT"
 DATATYPE_SCALAR: "h3index"
+        | "raster"
+        | "summarystats"
+        | "h3_raster_summary_stats"
+        | "h3_raster_class_summary_item"
+        | "jsonb"
         | "bigint"
         | "boolean"
         | "cstring"
