@@ -17,6 +17,9 @@
 --| # Raster processing functions
 
 -- Get nodata value for ST_Clip function
+-- ST_Clip sets nodata pixel values to minimum value by default, but it won't
+-- set band nodata value in this case, which we need later for filtering dumped
+-- values.
 CREATE OR REPLACE FUNCTION __h3_raster_band_nodata(
     rast raster,
     nband integer)
@@ -27,30 +30,30 @@ AS $$
         ST_MinPossibleValue(ST_BandPixelType(rast, nband)));
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OR REPLACE FUNCTION __h3_raster_pixel_area(rast raster)
-RETURNS double precision
-AS $$
-    SELECT ST_Area(ST_PixelAsPolygon(rast, 1, 1)::geography);
-$$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
-
--- Get area of H3 cell close to the center of the raster
-CREATE OR REPLACE FUNCTION __h3_raster_cell_area(rast raster, resolution integer)
-RETURNS double precision
-AS $$
-DECLARE
-    rast_geom CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
-BEGIN
-    SELECT ST_Area(
-        h3_cell_to_boundary_geography(
-            ST_Transform(ST_Centroid(rast_geom), 4326),
-            resolution));
-END;
-$$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
-
 CREATE OR REPLACE FUNCTION __h3_raster_to_polygon(rast raster, nband integer)
 RETURNS geometry
 AS $$
     SELECT ST_MinConvexHull(rast, nband);
+$$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION __h3_raster_pixel_area(rast raster)
+RETURNS double precision
+AS $$
+    SELECT ST_Area(ST_Transform(ST_PixelAsPolygon(rast, 1, 1), 4326)::geography);
+$$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
+
+-- Get area of H3 cell close to the center of the raster
+CREATE OR REPLACE FUNCTION __h3_raster_cell_area(
+    rast raster,
+    resolution integer,
+    nband integer)
+RETURNS double precision
+AS $$
+    SELECT ST_Area(
+        h3_cell_to_boundary_geography(
+            h3_lat_lng_to_cell(
+                ST_Transform(ST_Centroid(__h3_raster_to_polygon(rast, nband)), 4326),
+                resolution)));
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 -- Get all H3 cells potentially intersecting the polygon,
@@ -103,12 +106,15 @@ DECLARE
     rast_geom CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
 BEGIN
     RETURN QUERY
-    SELECT
-        c.h3,
-        ST_Transform(h3_cell_to_geometry(c.h3), ST_SRID(rast)) AS geom
-    FROM (
-        SELECT h3_polygon_to_cells(rast_geom, resolution) AS h3
-    ) c;
+    WITH geoms AS (
+        SELECT
+            c.h3,
+            ST_Transform(h3_cell_to_geometry(c.h3), ST_SRID(rast)) AS geom
+        FROM (
+            SELECT h3_polygon_to_cells(ST_Transform(rast_geom, 4326), resolution) AS h3
+        ) c)
+    SELECT g.*
+    FROM geoms g;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
@@ -227,7 +233,7 @@ AS $$
         -- x, y, val, geom
         SELECT (ST_PixelAsCentroids(rast, nband)).*)
     SELECT
-        h3_lat_lng_to_cell(geom, resolution) AS h3,
+        h3_lat_lng_to_cell(ST_Transform(geom, 4326), resolution) AS h3,
         ROW(
             count(val),
             sum(val),
@@ -252,19 +258,23 @@ CREATE OR REPLACE FUNCTION __h3_raster_summary_subpixel(
 RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
     WITH
-        vals AS (
+        coords AS (
             SELECT
                 h3,
-                ST_Value(
-                    rast,
-                    nband,
-                    ST_WorldToRasterCoordX(rast, geom),
-                    ST_WorldToRasterCoordY(rast, geom)
-                ) AS val
+                ST_WorldToRasterCoordX(rast, geom) AS x,
+                ST_WorldToRasterCoordX(rast, geom) AS y
             FROM (
                 -- h3, geom
                 SELECT (__h3_raster_to_cell_centroids(rast, resolution, nband)).*
-            ) t)
+            ) t),
+        vals AS (
+            SELECT
+                h3,
+                ST_Value(rast, nband, x, y) AS val
+            FROM coords
+            WHERE
+                x BETWEEN 1 AND ST_Width(rast)
+                AND y BETWEEN 1 AND ST_Height(rast))
     SELECT
         h3,
         ROW(
@@ -274,7 +284,7 @@ AS $$
             0,   -- stddev
             val, -- min
             val  -- max
-        )::h3_rasters_summary_stats AS stats
+        )::h3_raster_summary_stats AS stats
     FROM vals;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
@@ -287,7 +297,7 @@ RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
 DECLARE
     pixel_area CONSTANT double precision := __h3_raster_pixel_area(rast);
-    cell_area CONSTANT double precision := __h3_raster_cell_area(rast, resolution);
+    cell_area CONSTANT double precision := __h3_raster_cell_area(rast, resolution, nband);
 BEGIN
     RETURN QUERY SELECT (__h3_raster_summary_subpixel(rast, resolution, nband, pixel_area, cell_area)).*;
 END;
@@ -464,7 +474,7 @@ CREATE OR REPLACE FUNCTION __h3_raster_class_summary_centroids(
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
     SELECT
-        h3_lat_lng_to_cell(geom, resolution) AS h3,
+        h3_lat_lng_to_cell(ST_Transform(geom, 4326), resolution) AS h3,
         val::integer AS val,
         ROW(
             val::integer,
@@ -507,19 +517,23 @@ CREATE OR REPLACE FUNCTION __h3_raster_class_summary_subpixel(
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
     WITH
-        vals AS (
+        coords AS (
             SELECT
                 h3,
-                ST_Value(
-                    rast,
-                    nband,
-                    ST_WorldToRasterCoordX(rast, geom),
-                    ST_WorldToRasterCoordY(rast, geom)
-                ) AS val
+                ST_WorldToRasterCoordX(rast, geom) AS x,
+                ST_WorldToRasterCoordX(rast, geom) AS y
             FROM (
                 -- h3, geom
                 SELECT (__h3_raster_to_cell_centroids(rast, resolution, nband)).*
-            ) c)
+            ) t),
+        vals AS (
+            SELECT
+                h3,
+                ST_Value(rast, nband, x, y) AS val
+            FROM coords
+            WHERE
+                x BETWEEN 1 AND ST_Width(rast)
+                AND y BETWEEN 1 AND ST_Height(rast))
     SELECT
         h3,
         val::integer AS val,
@@ -528,7 +542,7 @@ AS $$
             cell_area / pixel_area,
             cell_area
         )::h3_raster_class_summary_item AS summary
-    FROM vals v;
+    FROM vals;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 -- Get summary items for each H3 index and value.
@@ -541,7 +555,7 @@ CREATE OR REPLACE FUNCTION h3_raster_class_summary_subpixel(
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
 DECLARE
-    cell_area CONSTANT double precision := __h3_raster_cell_area(rast, resolution);
+    cell_area CONSTANT double precision := __h3_raster_cell_area(rast, resolution, nband);
     pixel_area CONSTANT double precision := __h3_raster_pixel_area(rast);
 BEGIN
     RETURN QUERY SELECT (__h3_raster_class_summary_subpixel(rast, resolution, nband, pixel_area, cell_area)).*;
@@ -550,7 +564,6 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
     h3_raster_class_summary_subpixel(raster, integer, integer)
 IS 'Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Assumes H3 cell is smaller than a pixel. Finds corresponding pixel for each H3 cell in raster.';
-
 
 -- Get summary items for each H3 index and value.
 -- Select appropriate method based on number of pixels per H3 cell.
@@ -563,7 +576,7 @@ RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
 DECLARE
      pixel_area CONSTANT double precision := __h3_raster_pixel_area(rast);
-     cell_area CONSTANT double precision := __h3_raster_cell_area(rast, resolution);
+     cell_area CONSTANT double precision := __h3_raster_cell_area(rast, resolution, nband);
      pixels_per_cell CONSTANT double precision := cell_area / pixel_area;
 BEGIN
     IF pixels_per_cell > 350 THEN
