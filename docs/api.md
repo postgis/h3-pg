@@ -663,6 +663,7 @@ Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. A
 
 
 ### h3_raster_summary(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, stats `h3_raster_summary_stats`)
+*Since vunreleased*
 
 
 Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Attempts to select an appropriate method based on number of pixels per H3 cell.
