@@ -676,11 +676,9 @@ adding `fraction` value (fraction of H3 cell area for each value):
 WITH
     summary AS (
         SELECT h3, val, h3_raster_class_summary_item_agg(summary) AS item
-        FROM (
-            -- h3, val, summary
-            SELECT (h3_raster_class_summary(rast, 8)).* AS summary
-            FROM rasters
-        ) t
+        FROM
+            rasters,
+            h3_raster_class_summary(rast, 8)
         GROUP BY 1, 2),
     summary_total AS (
         SELECT h3, val, item, sum((item).count) OVER (PARTITION BY h3) AS total
