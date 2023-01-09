@@ -358,11 +358,15 @@ RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
 DECLARE
     poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
-    pixels_per_cell CONSTANT double precision :=
-        __h3_raster_polygon_centroid_cell_area(poly, resolution)
-        / __h3_raster_pixel_area(rast);
+    cell_area CONSTANT double precision := __h3_raster_polygon_centroid_cell_area(poly, resolution);
+    pixel_area CONSTANT double precision := __h3_raster_pixel_area(rast);
+    pixels_per_cell CONSTANT double precision := cell_area / pixel_area;
 BEGIN
-    IF pixels_per_cell > 100 THEN
+    IF pixels_per_cell > 250
+        OR pixels_per_cell > 80
+           -- cells_per_raster > 10000 / (pixels_per_cell - 80)
+           AND (ST_Area(poly::geography) / cell_area) > 10000 / (pixels_per_cell - 80)
+    THEN
         RETURN QUERY SELECT (__h3_raster_polygon_summary_clip(
             rast,
             poly,
@@ -569,7 +573,11 @@ DECLARE
     pixel_area CONSTANT double precision := __h3_raster_pixel_area(rast);
     pixels_per_cell CONSTANT double precision := cell_area / pixel_area;
 BEGIN
-    IF pixels_per_cell > 100 THEN
+    IF pixels_per_cell > 250
+        OR pixels_per_cell > 80
+           -- cells_per_raster > 10000 / (pixels_per_cell - 80)
+           AND (ST_Area(poly::geography) / cell_area) > 10000 / (pixels_per_cell - 80)
+    THEN
         RETURN QUERY SELECT (__h3_raster_class_polygon_summary_clip(
             rast,
             poly,
