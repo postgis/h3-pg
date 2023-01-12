@@ -91,13 +91,19 @@ DECLARE
 BEGIN
     IF ST_SRID(rast) != 4326 THEN
         buffered := ST_Transform(
-            ST_Buffer(poly, greatest(ST_PixelWidth(rast), ST_PixelHeight(rast))),
+            ST_Buffer(
+                poly,
+                greatest(ST_PixelWidth(rast), ST_PixelHeight(rast)),
+                'join=mitre'),
             4326);
     END IF;
     IF buffer > 0.0 THEN
         RETURN QUERY
         SELECT h3_polygon_to_cells(
-            ST_Buffer(buffered::geography, buffer),
+            ST_Buffer(
+                buffered::geography,
+                buffer,
+                'join=mitre'),
             resolution);
     ELSE
         RETURN QUERY
