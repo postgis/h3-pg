@@ -45,15 +45,22 @@ AS $$
     SELECT ST_Area(ST_Transform(ST_PixelAsPolygon(rast, 1, 1), 4326)::geography);
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
--- Area of a cell close to the center of raster polygon, in meters
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell(
     poly geometry,
     resolution integer)
 RETURNS h3index
 AS $$
-    SELECT h3_lat_lng_to_cell(ST_Transform(ST_Centroid(poly), 4326), resolution);
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    cell h3index := h3_lat_lng_to_cell(ST_Transform(ST_Centroid(poly), 4326), resolution);
+BEGIN
+    IF h3_is_pentagon(cell) THEN
+        SELECT h3 INTO cell FROM h3_grid_disk(cell) AS h3 WHERE h3 != cell LIMIT 1;
+    END IF;
+    RETURN cell;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
+-- Area of a cell close to the center of raster polygon, in meters
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell_area(
     poly geometry,
     resolution integer)

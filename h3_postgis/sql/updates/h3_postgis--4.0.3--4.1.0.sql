@@ -66,8 +66,15 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell(
     resolution integer)
 RETURNS h3index
 AS $$
-    SELECT h3_lat_lng_to_cell(ST_Transform(ST_Centroid(poly), 4326), resolution);
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    cell h3index := h3_lat_lng_to_cell(ST_Transform(ST_Centroid(poly), 4326), resolution);
+BEGIN
+    IF h3_is_pentagon(cell) THEN
+        SELECT h3 INTO cell FROM h3_grid_disk(cell) AS h3 WHERE h3 != cell LIMIT 1;
+    END IF;
+    RETURN cell;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell_area(
     poly geometry,
