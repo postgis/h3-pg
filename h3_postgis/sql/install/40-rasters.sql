@@ -107,22 +107,16 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cell_boundaries_intersects(
     resolution integer)
 RETURNS TABLE (h3 h3index, geom geometry)
 AS $$
-    WITH
-        geoms AS (
-            SELECT
-                c.h3,
-                ST_Transform(h3_cell_to_boundary_geometry(c.h3), ST_SRID(rast)) AS geom
-            FROM (
-                SELECT __h3_raster_polygon_to_cells(
-                    rast,
-                    poly,
-                    resolution,
-                    h3_get_hexagon_edge_length_avg(resolution, 'm') * 1.3
-                ) AS h3
-            ) c)
-    SELECT g.*
-    FROM geoms g
-    WHERE ST_Intersects(g.geom, poly);
+    SELECT h3, geom
+    FROM
+        __h3_raster_polygon_to_cells(
+            rast,
+            poly,
+            resolution,
+            h3_get_hexagon_edge_length_avg(resolution, 'm') * 1.3
+        ) AS h3,
+        ST_Transform(h3_cell_to_boundary_geometry(h3), ST_SRID(rast)) AS geom
+    WHERE ST_Intersects(geom, poly);
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 -- Get raster coordinates of H3 cells with centroids inside the raster polygon
@@ -167,15 +161,11 @@ DECLARE
     nodata CONSTANT double precision := __h3_raster_band_nodata(rast, nband);
 BEGIN
     RETURN QUERY
-    WITH
-        parts AS (
-            SELECT
-               g.h3,
-               ST_Clip(rast, nband, g.geom, nodata, TRUE) AS part
-            FROM __h3_raster_polygon_to_cell_boundaries_intersects(rast, poly, resolution) g)
-    SELECT p.h3, p.part
-    FROM parts p
-    WHERE NOT ST_BandIsNoData(p.part, nband);
+    SELECT c.h3, p AS part
+    FROM
+        __h3_raster_polygon_to_cell_boundaries_intersects(rast, poly, resolution) AS c,
+        ST_Clip(rast, nband, c.geom, nodata, TRUE) AS p
+    WHERE NOT ST_BandIsNoData(p, nband);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
