@@ -38,11 +38,18 @@ AS $$
     SELECT ST_MinConvexHull(rast, nband);
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
--- Area of a single pixel in meters
-CREATE OR REPLACE FUNCTION __h3_raster_pixel_area(rast raster)
+-- Area of a pixel close to the center of raster polygon, in meters
+CREATE OR REPLACE FUNCTION __h3_raster_polygon_pixel_area(
+    rast raster,
+    poly geometry)
 RETURNS double precision
 AS $$
-    SELECT ST_Area(ST_Transform(ST_PixelAsPolygon(rast, 1, 1), 4326)::geography);
+    SELECT ST_Area(
+        ST_PixelAsPolygon(
+            rast,
+            ST_WorldToRasterCoordX(rast, c),
+            ST_WorldToRasterCoordY(rast, c))::geography)
+    FROM ST_Transform(ST_Centroid(poly), 4326) AS c
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell(
@@ -360,7 +367,7 @@ RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
 DECLARE
     poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
-    pixel_area CONSTANT double precision := __h3_raster_pixel_area(rast);
+    pixel_area CONSTANT double precision := __h3_raster_polygon_pixel_area(rast, poly);
     cell_area CONSTANT double precision := __h3_raster_polygon_centroid_cell_area(poly, resolution);
 BEGIN
     RETURN QUERY SELECT (__h3_raster_polygon_summary_subpixel(
@@ -385,7 +392,7 @@ AS $$
 DECLARE
     poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
     cell_area CONSTANT double precision := __h3_raster_polygon_centroid_cell_area(poly, resolution);
-    pixel_area CONSTANT double precision := __h3_raster_pixel_area(rast);
+    pixel_area CONSTANT double precision := __h3_raster_polygon_pixel_area(rast, poly);
     pixels_per_cell CONSTANT double precision := cell_area / pixel_area;
 BEGIN
     IF pixels_per_cell > 70
@@ -540,14 +547,18 @@ CREATE OR REPLACE FUNCTION h3_raster_class_summary_clip(
     nband integer DEFAULT 1)
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
-    SELECT __h3_raster_class_polygon_summary_clip(
+DECLARE
+    poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
+BEGIN
+    RETURN QUERY SELECT (__h3_raster_class_polygon_summary_clip(
         rast,
-        __h3_raster_to_polygon(rast, nband),
+        poly,
         resolution,
         nband,
-        __h3_raster_pixel_area(rast)
-    );
-$$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
+        __h3_raster_polygon_pixel_area(rast, poly)
+    )).*;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
     h3_raster_class_summary_clip(raster, integer, integer)
 IS 'Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Clips the raster by H3 cell geometries and processes each part separately.';
@@ -582,7 +593,8 @@ AS $$
         rast,
         resolution,
         nband,
-        __h3_raster_pixel_area(rast));
+        __h3_raster_polygon_pixel_area(rast, __h3_raster_to_polygon(rast, nband))
+    );
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
     h3_raster_class_summary_centroids(raster, integer, integer)
@@ -624,7 +636,7 @@ BEGIN
         resolution,
         nband,
         __h3_raster_polygon_centroid_cell_area(poly, resolution),
-        __h3_raster_pixel_area(rast)
+        __h3_raster_polygon_pixel_area(rast, poly)
     )).*;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
@@ -642,7 +654,7 @@ AS $$
 DECLARE
     poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
     cell_area CONSTANT double precision := __h3_raster_polygon_centroid_cell_area(poly, resolution);
-    pixel_area CONSTANT double precision := __h3_raster_pixel_area(rast);
+    pixel_area CONSTANT double precision := __h3_raster_polygon_pixel_area(rast, poly);
     pixels_per_cell CONSTANT double precision := cell_area / pixel_area;
 BEGIN
     IF pixels_per_cell > 70
