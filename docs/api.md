@@ -621,7 +621,10 @@ Splits polygons when crossing 180th meridian.
 # Raster processing functions
 
 ## Continuous raster data
-Combining summary stats from multiple rasters:
+For rasters with pixel values representing continuous data (temperature, humidity,
+elevation), the data inside H3 cells can be summarized by calculating number of
+pixels, sum, mean, standard deviation, min and max for each cell inside a raster
+and grouping these stats across multiple rasters by H3 index.
 ```
 SELECT
     (summary).h3 AS h3,
@@ -631,6 +634,12 @@ FROM (
     FROM rasters
 ) t
 GROUP BY 1;
+       h3        | count |        sum         |        mean         |       stddev       |  min  |       max
+-----------------+-------+--------------------+---------------------+--------------------+-------+------------------
+ 882d638189fffff |    10 |  4.607657432556152 | 0.46076574325561526 | 1.3822972297668457 |     0 | 4.607657432556152
+ 882d64c4d1fffff |    10 | 3.6940908953547478 |  0.3694090895354748 |  1.099336879464068 |     0 | 3.667332887649536
+ 882d607431fffff |    11 |  6.219290263950825 |  0.5653900239955295 | 1.7624673707119065 |     0 | 6.13831996917724
+<...>
 ```
 
 
@@ -670,8 +679,14 @@ Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. A
 
 
 ## Discrete raster data
-Combining summary from multiple rasters into a single JSON object for each H3 index,
-adding `fraction` value (fraction of H3 cell area for each value):
+For rasters where pixels have discrete values corresponding to different classes
+of land cover or land use, H3 cell summary can be represented by a JSON object
+with separate fields for each class. First, value, number of pixels and approximate
+area are calculated for each H3 cell and value in a raster, then the stats are
+grouped across multiple rasters by H3 index and value, and after that stats for
+different values in a cell are combined into a single JSON object.
+The following example query additionally calculates a fraction of H3 cell pixels
+for each value, using a window function to get a total number of pixels:
 ```
 WITH
     summary AS (
@@ -681,18 +696,25 @@ WITH
             h3_raster_class_summary(rast, 8)
         GROUP BY 1, 2),
     summary_total AS (
+        -- add total number of pixels per H3 cell
         SELECT h3, val, item, sum((item).count) OVER (PARTITION BY h3) AS total
         FROM summary)
 SELECT
     h3,
     jsonb_object_agg(
         concat('class_', val::text),
-        h3_raster_class_summary_item_to_jsonb(item) -- val, count, area
-            || jsonb_build_object('fraction', (item).count / total)
+        h3_raster_class_summary_item_to_jsonb(item)                 -- val, count, area
+            || jsonb_build_object('fraction', (item).count / total) -- add fraction value
         ORDER BY val
     ) AS summary
 FROM summary_total
 GROUP BY 1;
+      h3        |                                                                            summary
+----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+88194e6f3bfffff | {"class_1": {"area": 75855.5748, "count": 46, "value": 1, "fraction": 0.4509}, "class_2": {"area": 92345.9171, "count": 56, "value": 2, "fraction": 0.5490}}
+88194e6f37fffff | {"class_1": {"area": 255600.3064, "count": 155, "value": 1, "fraction": 0.5}, "class_2": {"area": 255600.3064, "count": 155, "value": 2, "fraction": 0.5}}
+88194e6f33fffff | {"class_1": {"area": 336402.9840, "count": 204, "value": 1, "fraction": 0.5125}, "class_2": {"area": 319912.6416, "count": 194, "value": 2, "fraction": 0.4874}}
+<...>
 ```
 
 
@@ -703,7 +725,7 @@ GROUP BY 1;
 *Since vunreleased*
 
 
-Convert raster summary to binary JSON.
+Convert raster summary to JSONB, example: `{"count": 10, "value": 2, "area": 16490.3423}`
 
 
 ### h3_raster_class_summary_item_agg(setof `h3_raster_class_summary_item`)

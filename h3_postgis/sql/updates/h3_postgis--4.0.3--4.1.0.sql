@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bytes & Brains
+ * Copyright 2022-2023 Kontur Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -415,7 +415,7 @@ AS $$
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
     h3_raster_class_summary_item_to_jsonb(h3_raster_class_summary_item)
-IS 'Convert raster summary to binary JSON.';
+IS 'Convert raster summary to JSONB, example: `{"count": 10, "value": 2, "area": 16490.3423}`';
 
 CREATE OR REPLACE FUNCTION __h3_raster_class_summary_item_agg_transfn(
     s1 h3_raster_class_summary_item,
