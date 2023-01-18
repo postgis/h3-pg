@@ -4,7 +4,7 @@ PostgreSQL_add_extension(postgresql_h3
   RELOCATABLE
   NAME h3
   COMMENT "H3 bindings for PostgreSQL"
-  VERSION "unreleased" #${PROJECT_VERSION}
+  VERSION ${PROJECT_VERSION} #"unreleased"
   COMPONENT ${PROJECT_NAME}
   SOURCES
     src/binding/edge.c
@@ -72,7 +72,7 @@ PostgreSQL_add_extension(postgresql_h3
     sql/updates/h3--4.0.0--4.0.1.sql
     sql/updates/h3--4.0.1--4.0.2.sql
     sql/updates/h3--4.0.2--4.0.3.sql
-    sql/updates/h3--4.0.3--unreleased.sql
+    sql/updates/h3--4.0.3--4.1.0.sql
 )
 
 # include

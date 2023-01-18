@@ -23,6 +23,6 @@ if(PostgreSQL_VALIDATE_EXTUPGRADE)
     COMMAND pg_validate_extupgrade
         --extname h3_postgis
         --from 4.0.0
-        --to unreleased
+        --to ${PROJECT_VERSION} #unreleased
   )
 endif()

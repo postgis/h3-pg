@@ -2,7 +2,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
   RELOCATABLE
   NAME h3_postgis
   COMMENT "H3 PostGIS integration"
-  VERSION "unreleased" #${PROJECT_VERSION}
+  VERSION ${PROJECT_VERSION} #"unreleased"
   COMPONENT ${PROJECT_NAME}
   REQUIRES
     h3
@@ -29,7 +29,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     sql/updates/h3_postgis--4.0.0--4.0.1.sql
     sql/updates/h3_postgis--4.0.1--4.0.2.sql
     sql/updates/h3_postgis--4.0.2--4.0.3.sql
-    sql/updates/h3_postgis--4.0.3--unreleased.sql
+    sql/updates/h3_postgis--4.0.3--4.1.0.sql
 )
 
 # include

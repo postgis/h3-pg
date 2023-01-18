@@ -22,7 +22,7 @@ CREATE OR REPLACE FUNCTION h3_get_extension_version() RETURNS text
     COMMENT ON FUNCTION h3_get_extension_version() IS
 'Get the currently installed version of the extension.';
 
---@ availability: unreleased
+--@ availability: 4.1.0
 CREATE OR REPLACE FUNCTION h3_pg_migrate_pass_by_reference(h3index) RETURNS h3index
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
     COMMENT ON FUNCTION h3_pg_migrate_pass_by_reference(h3index) IS

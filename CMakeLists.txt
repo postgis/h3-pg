@@ -30,7 +30,7 @@ endif()
 # Listing the version is nice here since it sets lots of useful variables
 project(
   h3-pg
-  VERSION 4.0.3
+  VERSION 4.1.0
   LANGUAGES C
 )
 
@@ -52,12 +52,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   include(CTest)
 endif()
 
-# Include the extensions.
-set(CORE_VERSION 4.0.1)
-set(TEST_VERSION unreleased)
-
+# Include core library
 add_subdirectory(cmake/h3)
 
+# Include extensions
 add_subdirectory(h3)
 add_subdirectory(h3_postgis)
 

@@ -10,6 +10,7 @@ Documentation is generated from the sql files, using the script `scripts/documen
    - Don't follow semver, simply use major and minor from H3 core and increment patch.
    - Version number should be changed in `h3.control`, `h3_postgis.control` and `META.json`.
    - Update files suffixed `--unreleased` should be renamed.
+   - Installer `.sql` files should have `@ availability` comments updated.
    - Create new update files with `--unreleased` suffix.
    - Update changelog by moving from `Unreleased` to a new section
 2. Create a release on GitHub

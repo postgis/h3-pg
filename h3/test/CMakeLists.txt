@@ -32,7 +32,7 @@ if(PostgreSQL_VALIDATE_EXTUPGRADE)
     COMMAND pg_validate_extupgrade
       --extname h3
       --from 0.1.0
-      --to unreleased
+      --to ${PROJECT_VERSION} #unreleased
   )
 endif()
 

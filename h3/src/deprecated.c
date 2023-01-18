@@ -74,5 +74,5 @@ H3_DEPRECATE("4.0.0", h3_to_geo_boundary);
 H3_DEPRECATE("4.0.0", h3_to_geo);
 H3_DEPRECATE("4.0.0", h3_uncompact);
 H3_DEPRECATE("4.0.0", h3_unidirectional_edge_is_valid);
-H3_DEPRECATE("unreleased", h3_cell_to_boundary_wkb);
-H3_DEPRECATE("unreleased", h3_cells_to_multi_polygon_wkb);
+H3_DEPRECATE("4.1.0", h3_cell_to_boundary_wkb);
+H3_DEPRECATE("4.1.0", h3_cells_to_multi_polygon_wkb);

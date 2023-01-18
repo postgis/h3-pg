@@ -26,13 +26,15 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+</details>
+
+## [4.1.0] - 2023-01-18
+
 - Bump `h3` to `v4.1.0`
 - Add bindings for `h3_cell_to_child_pos` and `h3_child_pos_to_cell`.
 - Use CMake for entire build (see [#70])
 - Add helper to fix pass-by-value migration (see [#111])
 - Allow distance operator `<->` to work for cells at different resolutions (using center child).
-
-</details>
 
 ## [4.0.3] - 2022-11-04
 
@@ -182,7 +184,8 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.0.3...HEAD
+[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.1.0...HEAD
+[4.1.0]: https://github.com/zachasme/h3-pg/compare/v4.0.3...v4.1.0
 [4.0.3]: https://github.com/zachasme/h3-pg/compare/v4.0.2...v4.0.3
 [4.0.2]: https://github.com/zachasme/h3-pg/compare/v4.0.1...v4.0.2
 [4.0.1]: https://github.com/zachasme/h3-pg/compare/v4.0.0...v4.0.1

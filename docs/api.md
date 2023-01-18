@@ -182,14 +182,14 @@ Compacts the given array as best as possible.
 
 
 ### h3_cell_to_child_pos(child `h3index`, parentRes `integer`) ⇒ `int8`
-*Since vunreleased*
+*Since v4.1.0*
 
 
 Returns the position of the child cell within an ordered list of all children of the cells parent at the specified resolution parentRes. The order of the ordered list is the same as that returned by cellToChildren. This is the complement of childPosToCell.
 
 
 ### h3_child_pos_to_cell(childPos `int8`, parent `h3index`, childRes `int`) ⇒ `h3index`
-*Since vunreleased*
+*Since v4.1.0*
 
 
 Returns the child cell at a given position within an ordered list of all children of parent at the specified resolution childRes. The order of the ordered list is the same as that returned by cellToChildren. This is the complement of cellToChildPos.
@@ -489,7 +489,7 @@ Get the currently installed version of the extension.
 
 
 ### h3_pg_migrate_pass_by_reference(`h3index`) ⇒ `h3index`
-*Since vunreleased*
+*Since v4.1.0*
 
 
 Migrate h3index from pass-by-reference to pass-by-value.
@@ -555,7 +555,7 @@ Splits polygons when crossing 180th meridian.
 # PostGIS Grid Traversal Functions
 
 ### h3_grid_path_cells_recursive(origin `h3index`, destination `h3index`) ⇒ SETOF `h3index`
-*Since vunreleased*
+*Since v4.1.0*
 
 
 # PostGIS Region Functions
@@ -569,19 +569,19 @@ Splits polygons when crossing 180th meridian.
 
 
 ### h3_cells_to_multi_polygon_geometry(`h3index[]`) ⇒ `geometry`
-*Since vunreleased*
+*Since v4.1.0*
 
 
 ### h3_cells_to_multi_polygon_geography(`h3index[]`) ⇒ `geography`
-*Since vunreleased*
+*Since v4.1.0*
 
 
 ### h3_cells_to_multi_polygon_geometry(setof `h3index`)
-*Since vunreleased*
+*Since v4.1.0*
 
 
 ### h3_cells_to_multi_polygon_geography(setof `h3index`)
-*Since vunreleased*
+*Since v4.1.0*
 
 
 # PostGIS casts
@@ -597,7 +597,7 @@ Splits polygons when crossing 180th meridian.
 # WKB indexing functions
 
 ### h3_cell_to_boundary_wkb(cell `h3index`) ⇒ `bytea`
-*Since vunreleased*
+*Since v4.1.0*
 
 
 Finds the boundary of the index, converts to EWKB.
@@ -610,7 +610,7 @@ This function has to return WKB since Postgres does not provide multipolygon typ
 # WKB regions functions
 
 ### h3_cells_to_multi_polygon_wkb(`h3index[]`) ⇒ `bytea`
-*Since vunreleased*
+*Since v4.1.0*
 
 
 Create a LinkedGeoPolygon describing the outline(s) of a set of hexagons, converts to EWKB.
