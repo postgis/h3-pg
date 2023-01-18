@@ -680,7 +680,7 @@ Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. A
 
 ## Discrete raster data
 For rasters where pixels have discrete values corresponding to different classes
-of land cover or land use, H3 cell summary can be represented by a JSON object
+of land cover or land use, H3 cell data summary can be represented by a JSON object
 with separate fields for each class. First, value, number of pixels and approximate
 area are calculated for each H3 cell and value in a raster, then the stats are
 grouped across multiple rasters by H3 index and value, and after that stats for
@@ -690,6 +690,7 @@ for each value, using a window function to get a total number of pixels:
 ```
 WITH
     summary AS (
+        -- get aggregated summary for each H3 index/value pair
         SELECT h3, val, h3_raster_class_summary_item_agg(summary) AS item
         FROM
             rasters,
