@@ -717,6 +717,26 @@ GROUP BY 1;
 88194e6f33fffff | {"class_1": {"area": 336402.9840, "count": 204, "value": 1, "fraction": 0.5125}, "class_2": {"area": 319912.6416, "count": 194, "value": 2, "fraction": 0.4874}}
 <...>
 ```
+Area covered by pixels with the most frequent value in each cell:
+```
+SELECT DISTINCT ON (h3)
+    h3, val, (item).area
+FROM (
+    SELECT
+        h3, val, h3_raster_class_summary_item_agg(summary) AS item
+    FROM
+        rasters,
+        h3_raster_class_summary(rast, 8)
+    GROUP BY 1, 2
+) t
+ORDER BY h3, (item).count DESC;
+       h3        | val |        area
+-----------------+-----+--------------------
+ 88194e6f3bfffff |   5 | 23238.699360251427
+ 88194e6f37fffff |   9 |  60863.26022922993
+ 88194e6f33fffff |   8 |  76355.72646939754
+<...>
+```
 
 
 *Since vunreleased*
