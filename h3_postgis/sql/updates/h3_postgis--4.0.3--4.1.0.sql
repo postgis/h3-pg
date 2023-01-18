@@ -61,11 +61,13 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_pixel_area(
 RETURNS double precision
 AS $$
     SELECT ST_Area(
-        ST_PixelAsPolygon(
-            rast,
-            ST_WorldToRasterCoordX(rast, c),
-            ST_WorldToRasterCoordY(rast, c))::geography)
-    FROM ST_Transform(ST_Centroid(poly), 4326) AS c
+        ST_Transform(
+            ST_PixelAsPolygon(
+                rast,
+                ST_WorldToRasterCoordX(rast, c),
+                ST_WorldToRasterCoordY(rast, c)),
+            4326)::geography)
+    FROM ST_Centroid(poly) AS c
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell(
@@ -373,7 +375,7 @@ DECLARE
     pixels_per_cell CONSTANT double precision := cell_area / pixel_area;
 BEGIN
     IF pixels_per_cell > 70
-        AND (ST_Area(poly::geography) / cell_area) > 10000 / (pixels_per_cell - 70)
+        AND (ST_Area(ST_Transform(poly, 4326)::geography) / cell_area) > 10000 / (pixels_per_cell - 70)
     THEN
         RETURN QUERY SELECT (__h3_raster_polygon_summary_clip(
             rast,
@@ -587,7 +589,7 @@ DECLARE
     pixels_per_cell CONSTANT double precision := cell_area / pixel_area;
 BEGIN
     IF pixels_per_cell > 70
-        AND (ST_Area(poly::geography) / cell_area) > 10000 / (pixels_per_cell - 70)
+        AND (ST_Area(ST_Transform(poly, 4326)::geography) / cell_area) > 10000 / (pixels_per_cell - 70)
     THEN
         RETURN QUERY SELECT (__h3_raster_class_polygon_summary_clip(
             rast,
