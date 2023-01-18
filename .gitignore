@@ -11,7 +11,6 @@ h3/test/results
 
 # Generated
 /h3*.sql
-/h3/src/extension.h
 /h3/test/expected/ci-*.out
 /h3/test/sql/ci-*.sql
 /libh3-*/

@@ -8,7 +8,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     h3
     postgis
   SOURCES
-    src/extension.c
+    src/init.c
     src/wkb_bbox3.c
     src/wkb_indexing.c
     src/wkb_linked_geo.c
@@ -16,6 +16,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     src/wkb_split.c
     src/wkb_vect3.c
     src/wkb.c
+    ${CMAKE_SOURCE_DIR}/include/error.c
   INSTALLS
     sql/install/01-indexing.sql
     sql/install/03-traversal.sql

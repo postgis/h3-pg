@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Bytes & Brains
+ * Copyright 2018-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-#include <postgres.h>		 // Datum, etc.
-#include <fmgr.h>			 // PG_FUNCTION_ARGS, etc.
-#include <access/hash.h>	 // hash_any
+#include <postgres.h>
+#include <h3api.h>
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <fmgr.h>		 // PG_FUNCTION_ARGS
+#include <access/hash.h> // hash_any
+
+#include "type.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_hash);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_hash_extended);

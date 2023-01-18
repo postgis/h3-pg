@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bytes & Brains
+ * Copyright 2022-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-#include "wkb.h"
 #include <stddef.h>
 #include <string.h>
-#include "extension.h"
+
+#include "error.h"
+#include "wkb.h"
 #include "wkb_linked_geo.h"
 
 #define WKB_BYTE_SIZE 1

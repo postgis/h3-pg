@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Bytes & Brains
+ * Copyright 2018-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-#include <postgres.h>		 // Datum, etc.
-#include <fmgr.h>			 // PG_FUNCTION_ARGS, etc.
-#include <utils/array.h>	 // Arrays
-#include <utils/lsyscache.h> // get_typlenbyvalalign
-#include <catalog/pg_type.h>
+#include <postgres.h>
+#include <h3api.h>
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <fmgr.h>			 // PG_FUNCTION_ARGS
+#include <utils/array.h>	 // ArrayType
+#include <utils/lsyscache.h> // get_typlenbyvalalign
+#include <catalog/pg_type.h> // INT4OID
+
+#include "error.h"
+#include "type.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_resolution);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_base_cell_number);
@@ -95,18 +97,15 @@ h3_get_icosahedron_faces(PG_FUNCTION_ARGS)
 	ArrayType  *result;
 	int			nelems = 0;
 
-	H3Error		error;
 	H3Index		hex = PG_GETARG_H3INDEX(0);
 
-	error = maxFaceCount(hex, &maxFaces);
-	H3_ERROR(error, "maxFaceCount");
+	h3_assert(maxFaceCount(hex, &maxFaces));
 
 	/* get the faces */
 	faces = palloc(maxFaces * sizeof(int));
 	elements = palloc(maxFaces * sizeof(Datum));
 
-	error = getIcosahedronFaces(hex, faces);
-	H3_ERROR(error, "getIcosahedronFaces");
+	h3_assert(getIcosahedronFaces(hex, faces));
 
 	for (int i = 0; i < maxFaces; i++)
 	{

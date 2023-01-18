@@ -1,10 +1,27 @@
-#include <postgres.h>		// Datum, etc.
-#include <fmgr.h>			// PG_FUNCTION_ARGS, etc.
-#include <utils/array.h>	// using arrays
+/*
+ * Copyright 2022-2023 Bytes & Brains
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *	   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <postgres.h>
+#include <h3api.h>
 
+#include <fmgr.h>		 // PG_FUNCTION_ARGS
+#include <utils/array.h> // using arrays
+
+#include "error.h"
+#include "type.h"
 #include "wkb_linked_geo.h"
 #include "wkb_split.h"
 #include "wkb.h"
@@ -42,8 +59,7 @@ h3_cells_to_multi_polygon_wkb(PG_FUNCTION_ARGS)
 
 	/* produce hexagons into allocated memory */
 	linkedPolygon = palloc(sizeof(LinkedGeoPolygon));
-	error = cellsToLinkedMultiPolygon(h3set, numHexes, linkedPolygon);
-	H3_ERROR(error, "cellsToLinkedMultiPolygon");
+	h3_assert(cellsToLinkedMultiPolygon(h3set, numHexes, linkedPolygon));
 
 	if (is_linked_polygon_crossed_by_180(linkedPolygon))
 	{

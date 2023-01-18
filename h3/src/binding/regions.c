@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Bytes & Brains
+ * Copyright 2018-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-#include <postgres.h>			 // Datum, etc.
-#include <fmgr.h>				 // PG_FUNCTION_ARGS, etc.
-#include <funcapi.h>			 // Definitions for functions which return sets
-#include <access/htup_details.h> // Needed to return HeapTuple
-#include <utils/array.h>		 // using arrays
-#include <utils/geo_decls.h>	 // making native points
-#include <utils/lsyscache.h>
-#include <utils/memutils.h>
-#include <catalog/pg_type.h>
+#include <postgres.h>
+#include <h3api.h>
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <fmgr.h>				 // PG_FUNCTION_ARGS
+#include <funcapi.h>			 // SRF_IS_FIRSTCALL
+#include <access/htup_details.h> // HeapTuple
+#include <utils/array.h>		 // ArrayType
+#include <utils/geo_decls.h>	 // PG_GETARG_POLYGON_P
+#include <utils/lsyscache.h>	 // get_typlenbyvalalign
+#include <catalog/pg_type.h>	 // POLYGONOID
+
+#include "error.h"
+#include "type.h"
+#include "srf.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_polygon_to_cells);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cells_to_multi_polygon);
@@ -87,7 +89,6 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
 
 		int64_t		maxSize;
 		H3Index    *indices;
-		H3Error		error;
 		ArrayType  *holes;
 		int			nelems = 0;
 		int			resolution;
@@ -141,12 +142,10 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
 		}
 
 		/* produce hexagons into allocated memory */
-		error = maxPolygonToCellsSize(&polygon, resolution, 0, &maxSize);
-		H3_ERROR(error, "maxPolygonToCellsSize");
+		h3_assert(maxPolygonToCellsSize(&polygon, resolution, 0, &maxSize));
 		indices = palloc_extended(maxSize * sizeof(H3Index),
 								  MCXT_ALLOC_HUGE | MCXT_ALLOC_ZERO);
-		error = polygonToCells(&polygon, resolution, 0, indices);
-		H3_ERROR(error, "polygonToCells");
+		h3_assert(polygonToCells(&polygon, resolution, 0, indices));
 
 		funcctx->user_fctx = indices;
 		funcctx->max_calls = maxSize;
@@ -172,7 +171,6 @@ h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 
 	if (SRF_IS_FIRSTCALL())
 	{
-		H3Error		error;
 		Datum		value;
 		bool		isnull;
 		int			i = 0;
@@ -194,8 +192,7 @@ h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 
 		/* produce hexagons into allocated memory */
 		linkedPolygon = palloc(sizeof(LinkedGeoPolygon));
-		error = cellsToLinkedMultiPolygon(h3set, numHexes, linkedPolygon);
-		H3_ERROR(error, "cellsToLinkedMultiPolygon");
+		h3_assert(cellsToLinkedMultiPolygon(h3set, numHexes, linkedPolygon));
 
 		ENSURE_TYPEFUNC_COMPOSITE(get_call_result_type(fcinfo, NULL, &tuple_desc));
 

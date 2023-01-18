@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bytes & Brains
+ * Copyright 2022-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "deprecated.h"
+#include "deprecate.h"
 
 H3_DEPRECATE("1.0.0", h3_basecells);
 H3_DEPRECATE("1.0.0", h3_h3_get_base_cell);

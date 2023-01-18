@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bytes & Brains
+ * Copyright 2022-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-#include "wkb_vect3.h"
 #include <float.h>
 #include <math.h>
+
+#include "wkb_vect3.h"
 
 #define FP_EQUAL(v1, v2) ((v1) == (v2) || fabs((v1) - (v2)) < DBL_EPSILON)
 

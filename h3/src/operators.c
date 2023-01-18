@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Bytes & Brains
+ * Copyright 2020-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-#include <postgres.h>		 // Datum, etc.
-#include <fmgr.h>			 // PG_FUNCTION_ARGS, etc.
+#include <postgres.h>
+#include <h3api.h>
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <fmgr.h> // PG_FUNCTION_ARGS
+
+#include "error.h"
+#include "type.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_distance);
 
@@ -39,18 +41,15 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_contained_by);
 static int
 containment(H3Index a, H3Index b)
 {
-	H3Error		error = 0;
 	H3Index		aParent = a;
 	H3Index		bParent = b;
 	int			aRes = getResolution(a);
 	int			bRes = getResolution(b);
 
 	if (aRes > bRes)
-		error = cellToParent(a, bRes, &aParent);
+		h3_assert(cellToParent(a, bRes, &aParent));
 	else if (aRes < bRes)
-		error = cellToParent(b, aRes, &bParent);
-
-	H3_ERROR(error, "cellToParent");
+		h3_assert(cellToParent(b, aRes, &bParent));
 
 	/* a contains b */
 	if (a == bParent)
@@ -76,19 +75,12 @@ h3index_distance(PG_FUNCTION_ARGS)
 	int64_t		distance;
 
 	if (resA < resB)
-	{
-		error = cellToCenterChild(a, resB, &a);
-		H3_ERROR(error, "cellToCenterChild");
-	}
-
-	if (resB < resA)
-	{
-		error = cellToCenterChild(b, resA, &b);
-		H3_ERROR(error, "cellToCenterChild");
-	}
+		h3_assert(cellToCenterChild(a, resB, &a));
+	else if (resB < resA)
+		h3_assert(cellToCenterChild(b, resA, &b));
 
 	error = gridDistance(a, b, &distance);
-	/* H3_ERROR(error, "gridDistance"); */
+	/* h3_assert(error); */
 	if (error)
 		distance = -1;
 

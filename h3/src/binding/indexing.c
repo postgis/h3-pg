@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Bytes & Brains
+ * Copyright 2018-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-#include <postgres.h>		 // Primary include file for PostgreSQL server .c files
+#include <postgres.h>
+#include <h3api.h>
+
 #include <fmgr.h>			 // PG_FUNCTION_INFO_V1
 #include <utils/geo_decls.h> // PG_GETARG_POINT_P
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
-#include <math.h>
+#include "constants.h"
+#include "error.h"
+#include "type.h"
+#include "guc.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_lat_lng_to_cell);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_lat_lng);
@@ -31,7 +34,6 @@ Datum
 h3_lat_lng_to_cell(PG_FUNCTION_ARGS)
 {
 	H3Index		cell;
-	H3Error		error;
 	LatLng		location;
 	Point	   *point = PG_GETARG_POINT_P(0);
 	int			resolution = PG_GETARG_INT32(1);
@@ -55,8 +57,7 @@ h3_lat_lng_to_cell(PG_FUNCTION_ARGS)
 	location.lng = degsToRads(point->x);
 	location.lat = degsToRads(point->y);
 
-	error = latLngToCell(&location, resolution, &cell);
-	H3_ERROR(error, "latLngToCell");
+	h3_assert(latLngToCell(&location, resolution, &cell));
 
 	PG_FREE_IF_COPY(point, 0);
 	PG_RETURN_H3INDEX(cell);
@@ -67,12 +68,10 @@ Datum
 h3_cell_to_lat_lng(PG_FUNCTION_ARGS)
 {
 	LatLng		center;
-	H3Error		error;
 	Point	   *point = palloc(sizeof(Point));
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 
-	error = cellToLatLng(cell, &center);
-	H3_ERROR(error, "cellToLatLng");
+	h3_assert(cellToLatLng(cell, &center));
 
 	point->x = radsToDegs(center.lng);
 	point->y = radsToDegs(center.lat);
@@ -90,7 +89,6 @@ h3_cell_to_boundary(PG_FUNCTION_ARGS)
 				firstLon,
 				lon,
 				lat;
-	H3Error		error;
 	int			size;
 	POLYGON    *polygon;
 	CellBoundary boundary;
@@ -109,8 +107,7 @@ h3_cell_to_boundary(PG_FUNCTION_ARGS)
 	}
 	/* DEPRECATION END */
 
-	error = cellToBoundary(cell, &boundary);
-	H3_ERROR(error, "cellToBoundary");
+	h3_assert(cellToBoundary(cell, &boundary));
 
 	size = offsetof(POLYGON, p) +sizeof(polygon->p[0]) * boundary.numVerts;
 	polygon = (POLYGON *) palloc(size);

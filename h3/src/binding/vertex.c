@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bytes & Brains
+ * Copyright 2022-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-#include <postgres.h>			 // Datum, etc.
-#include <fmgr.h>				 // PG_FUNCTION_ARGS, etc.
-#include <funcapi.h>			 // Needed to return HeapTuple
-#include <access/htup_details.h> // Needed to return HeapTuple
-#include <utils/geo_decls.h>	 // making native points
+#include <postgres.h>
+#include <h3api.h>
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <fmgr.h>			 // PG_FUNCTION_ARGS
+#include <funcapi.h>		 // SRF_IS_FIRSTCALL
+#include <utils/geo_decls.h> // PG_RETURN_POINT_P
+
+#include "error.h"
+#include "type.h"
+#include "srf.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_vertex);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_vertexes);
@@ -33,12 +35,10 @@ Datum
 h3_cell_to_vertex(PG_FUNCTION_ARGS)
 {
 	H3Index		vertex;
-	H3Error		error;
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 	int			vertexNum = PG_GETARG_INT32(1);
 
-	error = cellToVertex(cell, vertexNum, &vertex);
-	H3_ERROR(error, "cellToVertex");
+	h3_assert(cellToVertex(cell, vertexNum, &vertex));
 
 	PG_RETURN_H3INDEX(vertex);
 }
@@ -53,7 +53,6 @@ h3_cell_to_vertexes(PG_FUNCTION_ARGS)
 		int			maxSize;
 		int			size;
 		H3Index    *vertexes;
-		H3Error		error;
 
 		/* create a function context for cross-call persistence */
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
@@ -70,8 +69,7 @@ h3_cell_to_vertexes(PG_FUNCTION_ARGS)
 		size = maxSize * sizeof(H3Index);
 
 		vertexes = palloc(size);
-		error = cellToVertexes(cell, vertexes);
-		H3_ERROR(error, "cellToVertexes");
+		h3_assert(cellToVertexes(cell, vertexes));
 
 		funcctx->user_fctx = vertexes;
 		funcctx->max_calls = maxSize;
@@ -90,12 +88,10 @@ h3_vertex_to_lat_lng(PG_FUNCTION_ARGS)
 {
 	H3Index		vertex = PG_GETARG_H3INDEX(0);
 
-	H3Error		error;
 	Point	   *point = palloc(sizeof(Point));
 	LatLng		latlng;
 
-	error = vertexToLatLng(vertex, &latlng);
-	H3_ERROR(error, "vertexToLatLng");
+	h3_assert(vertexToLatLng(vertex, &latlng));
 
 	point->x = radsToDegs(latlng.lng);
 	point->y = radsToDegs(latlng.lat);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Bytes & Brains
+ * Copyright 2018-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-#include <postgres.h>		// Primary include file for PostgreSQL server .c files
-#include <fmgr.h>			// PG_FUNCTION_INFO_V1
-#include <funcapi.h>		// SRF_IS_FIRSTCALL
-#include <utils/array.h>	// Arrays
-#include <utils/memutils.h> // MaxAllocSize
+#include <postgres.h>
+#include <h3api.h>
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <fmgr.h>		 // PG_FUNCTION_INFO_V1
+#include <funcapi.h>	 // SRF_IS_FIRSTCALL
+#include <utils/array.h> // ArrayType
+
+#include "error.h"
+#include "type.h"
+#include "srf.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_parent);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_children);
@@ -36,12 +38,10 @@ Datum
 h3_cell_to_parent(PG_FUNCTION_ARGS)
 {
 	H3Index		parent;
-	H3Error		error;
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	int			resolution = PG_GETARG_OPTIONAL_RES(1, origin, -1);
 
-	error = cellToParent(origin, resolution, &parent);
-	H3_ERROR(error, "cellToParent");
+	h3_assert(cellToParent(origin, resolution, &parent));
 
 	PG_RETURN_H3INDEX(parent);
 }
@@ -56,7 +56,6 @@ h3_cell_to_children(PG_FUNCTION_ARGS)
 		int64_t		max;
 		int64_t		size;
 		H3Index    *children;
-		H3Error		error;
 
 		/* create a function context for cross-call persistence */
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
@@ -71,8 +70,7 @@ h3_cell_to_children(PG_FUNCTION_ARGS)
 		H3Index		origin = PG_GETARG_H3INDEX(0);
 		int			resolution = PG_GETARG_OPTIONAL_RES(1, origin, 1);
 
-		error = cellToChildrenSize(origin, resolution, &max);
-		H3_ERROR(error, "cellToChildrenSize");
+		h3_assert(cellToChildrenSize(origin, resolution, &max));
 
 		size = max * sizeof(H3Index);
 		ASSERT(
@@ -82,8 +80,7 @@ h3_cell_to_children(PG_FUNCTION_ARGS)
 			);
 		children = palloc(size);
 
-		error = cellToChildren(origin, resolution, children);
-		H3_ERROR(error, "cellToChildren");
+		h3_assert(cellToChildren(origin, resolution, children));
 
 		funcctx->user_fctx = children;
 		funcctx->max_calls = max;
@@ -101,12 +98,10 @@ Datum
 h3_cell_to_center_child(PG_FUNCTION_ARGS)
 {
 	H3Index		child;
-	H3Error		error;
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	int			resolution = PG_GETARG_OPTIONAL_RES(1, origin, 1);
 
-	error = cellToCenterChild(origin, resolution, &child);
-	H3_ERROR(error, "cellToCenterChild");
+	h3_assert(cellToCenterChild(origin, resolution, &child));
 
 	PG_RETURN_H3INDEX(child);
 }
@@ -118,9 +113,7 @@ h3_cell_to_child_pos(PG_FUNCTION_ARGS)
 	int			parentRes = PG_GETARG_INT32(1);
 	int64_t		childPos;
 
-	H3Error		error = cellToChildPos(child, parentRes, &childPos);
-
-	H3_ERROR(error, "cellToChildPos");
+	h3_assert(cellToChildPos(child, parentRes, &childPos));
 
 	PG_RETURN_INT64(childPos);
 }
@@ -133,9 +126,7 @@ h3_child_pos_to_cell(PG_FUNCTION_ARGS)
 	int			childRes = PG_GETARG_INT32(2);
 	H3Index		child;
 
-	H3Error		error = childPosToCell(childPos, parent, childRes, &child);
-
-	H3_ERROR(error, "childPosToCell");
+	h3_assert(childPosToCell(childPos, parent, childRes, &child));
 
 	PG_RETURN_H3INDEX(child);
 }
@@ -145,7 +136,6 @@ h3_compact_cells(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
-		H3Error		error;
 		Datum		value;
 		bool		isnull;
 		int			i = 0;
@@ -166,8 +156,7 @@ h3_compact_cells(PG_FUNCTION_ARGS)
 			h3set[i++] = DatumGetH3Index(value);
 		}
 
-		error = compactCells(h3set, compactedSet, max);
-		H3_ERROR(error, "compactCells");
+		h3_assert(compactCells(h3set, compactedSet, max));
 
 		funcctx->user_fctx = compactedSet;
 		funcctx->max_calls = max;
@@ -182,7 +171,6 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 {
 	if (SRF_IS_FIRSTCALL())
 	{
-		H3Error		error;
 		int			resolution;
 		Datum		value;
 		bool		isnull;
@@ -235,13 +223,11 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 			resolution = (highRes == 15 ? highRes : highRes + 1);
 		}
 
-		error = uncompactCellsSize(compactedSet, numCompacted, resolution, &max);
-		H3_ERROR(error, "uncompactCellsSize");
+		h3_assert(uncompactCellsSize(compactedSet, numCompacted, resolution, &max));
 
 		uncompactedSet = palloc0(max * sizeof(H3Index));
 
-		error = uncompactCells(compactedSet, numCompacted, uncompactedSet, max, resolution);
-		H3_ERROR(error, "uncompactCells");
+		h3_assert(uncompactCells(compactedSet, numCompacted, uncompactedSet, max, resolution));
 
 		funcctx->user_fctx = uncompactedSet;
 		funcctx->max_calls = max;

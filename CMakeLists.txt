@@ -58,9 +58,6 @@ set(TEST_VERSION unreleased)
 
 add_subdirectory(cmake/h3)
 
-# Shared include
-configure_file(include/extension.in.h include/extension.h)
-
 add_subdirectory(h3)
 add_subdirectory(h3_postgis)
 

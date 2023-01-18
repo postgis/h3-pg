@@ -1,3 +1,5 @@
+configure_file(src/config.in.h src/config.h)
+
 PostgreSQL_add_extension(postgresql_h3
   RELOCATABLE
   NAME h3
@@ -5,20 +7,24 @@ PostgreSQL_add_extension(postgresql_h3
   VERSION "unreleased" #${PROJECT_VERSION}
   COMPONENT ${PROJECT_NAME}
   SOURCES
+    src/binding/edge.c
+    src/binding/hierarchy.c
+    src/binding/indexing.c
+    src/binding/inspection.c
+    src/binding/miscellaneous.c
+    src/binding/regions.c
+    src/binding/traversal.c
+    src/binding/vertex.c
     src/deprecated.c
-    src/edge.c
     src/extension.c
-    src/hierarchy.c
-    src/indexing.c
-    src/inspection.c
-    src/miscellaneous.c
+    src/guc.c
+    src/init.c
     src/opclass_btree.c
     src/opclass_hash.c
     src/operators.c
-    src/regions.c
-    src/traversal.c
+    src/srf.c
     src/type.c
-    src/vertex.c
+    ${CMAKE_SOURCE_DIR}/include/error.c
   INSTALLS
     sql/install/00-type.sql
     sql/install/01-indexing.sql
@@ -71,8 +77,9 @@ PostgreSQL_add_extension(postgresql_h3
 
 # include
 target_include_directories(postgresql_h3 PRIVATE
-  ${CMAKE_BINARY_DIR}/include
+  ${CMAKE_CURRENT_BINARY_DIR}/src
   ${CMAKE_SOURCE_DIR}/include
+  src
 )
 
 # link to h3lib

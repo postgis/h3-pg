@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Bytes & Brains
+ * Copyright 2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef PGH3_WKB_SPLIT_H
-#define PGH3_WKB_SPLIT_H
+/* required for MSVC */
+#define _USE_MATH_DEFINES
 
-#include <h3api.h>
+#include <postgres.h>
 
-#include <stdbool.h>
+#include <fmgr.h> // PG_MODULE_MAGIC
 
-#include "error.h"
+#include "guc.h"
 
-bool
-			is_linked_polygon_crossed_by_180(const LinkedGeoPolygon * multiPolygon);
+/* see https://www.postgresql.org/docs/current/xfunc-c.html#XFUNC-C-DYNLOAD */
+PG_MODULE_MAGIC;
 
-LinkedGeoPolygon *
-			split_linked_polygon_by_180(const LinkedGeoPolygon * multiPolygon);
+void
+_PG_init(void)
+{
+	/* In case we allow using shared library h3, */
+	/* we could make version number assertion here */
 
-double
-			split_180_lat(const LatLng * coord1, const LatLng * coord2);
-
-#endif
+	_guc_init();
+}

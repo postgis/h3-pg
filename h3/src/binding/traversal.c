@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Bytes & Brains
+ * Copyright 2018-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-#include <postgres.h>			 // Datum, etc.
-#include <fmgr.h>				 // PG_FUNCTION_ARGS, etc.
-#include <funcapi.h>			 // Definitions for functions which return sets
-#include <access/htup_details.h> // Needed to return HeapTuple
-#include <utils/array.h>		 // Arrays
-#include <utils/geo_decls.h>	 // making native points
+#include <postgres.h>
+#include <h3api.h>
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <fmgr.h>			 // PG_FUNCTION_ARGS
+#include <funcapi.h>		 // SRF_IS_FIRSTCALL
+#include <utils/geo_decls.h> // PG_GETARG_POINT_P
+
+#include "error.h"
+#include "type.h"
+#include "srf.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_disk);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_disk_distances);
@@ -53,19 +54,16 @@ h3_grid_disk(PG_FUNCTION_ARGS)
 
 		int64_t		max;
 		H3Index    *indices;
-		H3Error		error;
 
 		/* get function arguments */
 		H3Index		origin = PG_GETARG_H3INDEX(0);
 		int			k = PG_GETARG_INT32(1);
 
-		error = maxGridDiskSize(k, &max);
-		H3_ERROR(error, "maxGridDiskSize");
+		h3_assert(maxGridDiskSize(k, &max));
 
 		indices = palloc(max * sizeof(H3Index));
 
-		error = gridDisk(origin, k, indices);
-		H3_ERROR(error, "gridDisk");
+		h3_assert(gridDisk(origin, k, indices));
 
 		funcctx->user_fctx = indices;
 		funcctx->max_calls = max;
@@ -105,19 +103,16 @@ h3_grid_disk_distances(PG_FUNCTION_ARGS)
 		 */
 		/* returning */
 		int64_t		maxSize;
-		H3Error		error;
 		hexDistanceTuple *user_fctx;
 
-		error = maxGridDiskSize(k, &maxSize);
-		H3_ERROR(error, "maxGridDiskSize");
+		h3_assert(maxGridDiskSize(k, &maxSize));
 
 		user_fctx = palloc(sizeof(hexDistanceTuple));
 
 		user_fctx->indices = palloc(maxSize * sizeof(H3Index));
 		user_fctx->distances = palloc(maxSize * sizeof(int));
 
-		error = gridDiskDistances(origin, k, user_fctx->indices, user_fctx->distances);
-		H3_ERROR(error, "gridDiskDistances");
+		h3_assert(gridDiskDistances(origin, k, user_fctx->indices, user_fctx->distances));
 
 		ENSURE_TYPEFUNC_COMPOSITE(get_call_result_type(fcinfo, NULL, &tuple_desc));
 
@@ -159,21 +154,17 @@ h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 		 */
 		int64_t		maxSize;
 		int64_t		innerSize;
-		H3Error		error;
 
-		error = maxGridDiskSize(k, &maxSize);
-		H3_ERROR(error, "maxGridDiskSize");
+		h3_assert(maxGridDiskSize(k, &maxSize));
 
 		if (k > 0)
 		{
-			error = maxGridDiskSize(k - 1, &innerSize);
-			H3_ERROR(error, "maxGridDiskSize");
+			h3_assert(maxGridDiskSize(k - 1, &innerSize));
 			maxSize -= innerSize;
 		}
 		indices = palloc(maxSize * sizeof(H3Index));
 
-		error = gridRingUnsafe(origin, k, indices);
-		H3_ERROR(error, "gridRingUnsafe");
+		h3_assert(gridRingUnsafe(origin, k, indices));
 
 		funcctx->user_fctx = indices;
 		funcctx->max_calls = maxSize;
@@ -197,11 +188,9 @@ h3_grid_distance(PG_FUNCTION_ARGS)
 {
 	H3Index		originIndex = PG_GETARG_H3INDEX(0);
 	H3Index		h3Index = PG_GETARG_H3INDEX(1);
-	H3Error		error;
 	int64_t		distance;
 
-	error = gridDistance(originIndex, h3Index, &distance);
-	H3_ERROR(error, "gridDistance");
+	h3_assert(gridDistance(originIndex, h3Index, &distance));
 
 	PG_RETURN_INT64(distance);
 }
@@ -224,18 +213,15 @@ h3_grid_path_cells(PG_FUNCTION_ARGS)
 
 		/* get function arguments */
 		int64_t		size;
-		H3Error		error;
 		H3Index    *indices;
 		H3Index		start = PG_GETARG_H3INDEX(0);
 		H3Index		end = PG_GETARG_H3INDEX(1);
 
-		error = gridPathCellsSize(start, end, &size);
-		H3_ERROR(error, "gridPathCellsSize");
+		h3_assert(gridPathCellsSize(start, end, &size));
 
 		indices = palloc(size * sizeof(H3Index));
 
-		error = gridPathCells(start, end, indices);
-		H3_ERROR(error, "gridPathCells");
+		h3_assert(gridPathCells(start, end, indices));
 
 		funcctx->user_fctx = indices;
 		funcctx->max_calls = size;
@@ -256,10 +242,8 @@ h3_cell_to_local_ij(PG_FUNCTION_ARGS)
 
 	Point	   *point = (Point *) palloc(sizeof(Point));
 	CoordIJ		coord;
-	H3Error		error;
 
-	error = cellToLocalIj(origin, index, 0, &coord);
-	H3_ERROR(error, "cellToLocalIj");
+	h3_assert(cellToLocalIj(origin, index, 0, &coord));
 
 	point->x = coord.i;
 	point->y = coord.j;
@@ -278,13 +262,11 @@ h3_local_ij_to_cell(PG_FUNCTION_ARGS)
 	H3Index    *index = (H3Index *) palloc(sizeof(H3Index));
 
 	CoordIJ		coord;
-	H3Error		error;
 
 	coord.i = point->x;
 	coord.j = point->y;
 
-	error = localIjToCell(origin, &coord, 0, index);
-	H3_ERROR(error, "localIjToCell");
+	h3_assert(localIjToCell(origin, &coord, 0, index));
 
 	PG_FREE_IF_COPY(point, 1);
 	PG_RETURN_H3INDEX(*index);

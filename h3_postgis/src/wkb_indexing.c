@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bytes & Brains
+ * Copyright 2022-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-#include <postgres.h> // Datum, etc.
-#include <fmgr.h>	  // PG_FUNCTION_ARGS, etc.
+#include <postgres.h>
+#include <h3api.h>
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <fmgr.h>  // PG_FUNCTION_ARGS
 #include <math.h>
+
+#include "constants.h"
+#include "error.h"
+#include "type.h"
 #include "wkb_split.h"
 #include "wkb_vect3.h"
 #include "wkb.h"
@@ -63,13 +66,11 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 {
 	H3Index		cell = PG_GETARG_H3INDEX(0);
 
-	H3Error		error;
 	bytea	   *wkb;
 	CellBoundary boundary;
 	int			crossNum;
 
-	error = cellToBoundary(cell, &boundary);
-	H3_ERROR(error, "cellToBoundary");
+	h3_assert(cellToBoundary(cell, &boundary));
 
 	crossNum = boundary_crosses_180_num(&boundary);
 	if (crossNum == 0)

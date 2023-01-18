@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bytes & Brains
+ * Copyright 2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <postgres.h> // Primary include file for PostgreSQL server .c files
-#include <fmgr.h>	  // PG_FUNCTION_INFO_V1
+#include <postgres.h>
+
+#include <fmgr.h> // PG_FUNCTION_INFO_V1
 
 /*	Inspired by PostGIS legacy function handling */
 /*	https://github.com/postgis/postgis/blob/master/postgis/postgis_legacy.c */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Bytes & Brains
+ * Copyright 2018-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-#include <postgres.h>			 // Primary include file for PostgreSQL server .c files
+#include <postgres.h>
+#include <h3api.h>
+
 #include <fmgr.h>				 // PG_FUNCTION_INFO_V1
 #include <funcapi.h>			 // SRF_IS_FIRSTCALL
-#include <access/htup_details.h> // Needed to return HeapTuple
-#include <utils/geo_decls.h>	 // PG_GETARG_POINT_P
+#include <access/htup_details.h> // HeapTuple
+#include <utils/geo_decls.h>	 // PG_RETURN_POLYGON_P
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include "error.h"
+#include "type.h"
+#include "srf.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_are_neighbor_cells);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cells_to_directed_edge);
@@ -37,12 +40,10 @@ Datum
 h3_are_neighbor_cells(PG_FUNCTION_ARGS)
 {
 	int			neighboring;
-	H3Error		error;
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	H3Index		destination = PG_GETARG_H3INDEX(1);
 
-	error = areNeighborCells(origin, destination, &neighboring);
-	H3_ERROR(error, "areNeighborCells");
+	h3_assert(areNeighborCells(origin, destination, &neighboring));
 
 	PG_RETURN_BOOL(neighboring);
 }
@@ -52,12 +53,10 @@ Datum
 h3_cells_to_directed_edge(PG_FUNCTION_ARGS)
 {
 	H3Index		edge;
-	H3Error		error;
 	H3Index		origin = PG_GETARG_H3INDEX(0);
 	H3Index		destination = PG_GETARG_H3INDEX(1);
 
-	error = cellsToDirectedEdge(origin, destination, &edge);
-	H3_ERROR(error, "cellsToDirectedEdge");
+	h3_assert(cellsToDirectedEdge(origin, destination, &edge));
 
 	PG_RETURN_H3INDEX(edge);
 }
@@ -77,11 +76,9 @@ Datum
 h3_get_directed_edge_origin(PG_FUNCTION_ARGS)
 {
 	H3Index		origin;
-	H3Error		error;
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 
-	error = getDirectedEdgeOrigin(edge, &origin);
-	H3_ERROR(error, "getDirectedEdgeOrigin");
+	h3_assert(getDirectedEdgeOrigin(edge, &origin));
 
 	PG_RETURN_H3INDEX(origin);
 }
@@ -91,11 +88,9 @@ Datum
 h3_get_directed_edge_destination(PG_FUNCTION_ARGS)
 {
 	H3Index		destination;
-	H3Error		error;
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 
-	error = getDirectedEdgeDestination(edge, &destination);
-	H3_ERROR(error, "getDirectedEdgeDestination");
+	h3_assert(getDirectedEdgeDestination(edge, &destination));
 
 	PG_RETURN_H3INDEX(destination);
 }
@@ -110,12 +105,10 @@ h3_directed_edge_to_cells(PG_FUNCTION_ARGS)
 	HeapTuple	tuple;
 	Datum		result;
 
-	H3Error		error;
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 	H3Index    *cells = palloc(2 * sizeof(H3Index));
 
-	error = directedEdgeToCells(edge, cells);
-	H3_ERROR(error, "directedEdgeToCells");
+	h3_assert(directedEdgeToCells(edge, cells));
 
 	ENSURE_TYPEFUNC_COMPOSITE(get_call_result_type(fcinfo, NULL, &tuple_desc));
 
@@ -139,12 +132,10 @@ h3_origin_to_directed_edges(PG_FUNCTION_ARGS)
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
 		int			max = 6;
-		H3Error		error;
 		H3Index		origin = PG_GETARG_H3INDEX(0);
 		H3Index    *edges = palloc(max * sizeof(H3Index));
 
-		error = originToDirectedEdges(origin, edges);
-		H3_ERROR(error, "originToDirectedEdges");
+		h3_assert(originToDirectedEdges(origin, edges));
 
 		funcctx->user_fctx = edges;
 		funcctx->max_calls = max;
@@ -161,11 +152,9 @@ h3_directed_edge_to_boundary(PG_FUNCTION_ARGS)
 	CellBoundary boundary;
 	POLYGON    *polygon;
 	int			size;
-	H3Error		error;
 	H3Index		edge = PG_GETARG_H3INDEX(0);
 
-	error = directedEdgeToBoundary(edge, &boundary);
-	H3_ERROR(error, "directedEdgeToBoundary");
+	h3_assert(directedEdgeToBoundary(edge, &boundary));
 
 	size = offsetof(POLYGON, p[0]) +sizeof(polygon->p[0]) * boundary.numVerts;
 	polygon = (POLYGON *) palloc(size);

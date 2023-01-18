@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Bytes & Brains
+ * Copyright 2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-#include <postgres.h>			 // Datum, etc.
-#include <fmgr.h>				 // PG_FUNCTION_ARGS, etc.
+#ifndef H3_GUC_H
+#define H3_GUC_H
 
-/* should only be in ONE file */
-PG_MODULE_MAGIC;
+extern bool h3_guc_strict;
+extern bool h3_guc_extend_antimeridian;
+
+void _guc_init(void);
+
+#endif /* H3_GUC_H */

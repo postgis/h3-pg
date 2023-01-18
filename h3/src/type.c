@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Bytes & Brains
+ * Copyright 2018-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-#include <postgres.h>		 // Datum, etc.
-#include <fmgr.h>			 // PG_FUNCTION_ARGS, etc.
+#include <postgres.h>
+#include <h3api.h>
 
-#include <h3api.h> // Main H3 include
-#include "extension.h"
+#include <fmgr.h> // PG_FUNCTION_ARGS
+
+#include "error.h"
+#include "type.h"
 
 /* conversion */
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_in);
@@ -30,12 +32,10 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(bigint_to_h3index);
 Datum
 h3index_in(PG_FUNCTION_ARGS)
 {
-	H3Error		error;
-	H3Index		h3;
 	char	   *string = PG_GETARG_CSTRING(0);
+	H3Index		h3;
 
-	error = stringToH3(string, &h3);
-	H3_ERROR(error, "stringToH3");
+	h3_assert(stringToH3(string, &h3));
 
 	PG_RETURN_H3INDEX(h3);
 }
@@ -43,12 +43,10 @@ h3index_in(PG_FUNCTION_ARGS)
 Datum
 h3index_out(PG_FUNCTION_ARGS)
 {
-	H3Error		error;
 	H3Index		h3 = PG_GETARG_H3INDEX(0);
 	char	   *string = palloc(17 * sizeof(char));
 
-	error = h3ToString(h3, string, 17);
-	H3_ERROR(error, "h3ToString");
+	h3_assert(h3ToString(h3, string, 17));
 
 	PG_RETURN_CSTRING(string);
 }
