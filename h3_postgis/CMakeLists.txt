@@ -17,7 +17,6 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     src/wkb_split.c
     src/wkb_vect3.c
     src/wkb.c
-    ${CMAKE_SOURCE_DIR}/include/error.c
   INSTALLS
     sql/install/01-indexing.sql
     sql/install/03-traversal.sql
@@ -35,15 +34,10 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     sql/updates/h3_postgis--4.1.0--unreleased.sql
 )
 
-# include
-target_include_directories(postgresql_h3_postgis PRIVATE
-  ${CMAKE_BINARY_DIR}/include
-  ${CMAKE_SOURCE_DIR}/include
-)
+# link
+target_link_libraries(postgresql_h3_postgis PRIVATE postgresql_h3_shared h3)
 
-# link to h3lib
-target_link_libraries(postgresql_h3_postgis h3)
-
+# test
 if(BUILD_TESTING AND PostgreSQL_PostGIS_FOUND)
   add_subdirectory(test)
 endif()

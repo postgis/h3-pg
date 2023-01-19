@@ -29,7 +29,7 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
     add_library(${LIBRARY_NAME} MODULE ${EXTENSION_SOURCES})
 
     # Link extension to PostgreSQL
-    target_link_libraries(${LIBRARY_NAME} PostgreSQL::PostgreSQL)
+    target_link_libraries(${LIBRARY_NAME} PRIVATE PostgreSQL::PostgreSQL)
 
     # Fix apple missing symbols
     if(APPLE)

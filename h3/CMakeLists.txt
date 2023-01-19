@@ -1,5 +1,3 @@
-configure_file(src/config.in.h src/config.h)
-
 PostgreSQL_add_extension(postgresql_h3
   RELOCATABLE
   NAME h3
@@ -24,7 +22,6 @@ PostgreSQL_add_extension(postgresql_h3
     src/operators.c
     src/srf.c
     src/type.c
-    ${CMAKE_SOURCE_DIR}/include/error.c
   INSTALLS
     sql/install/00-type.sql
     sql/install/01-indexing.sql
@@ -76,16 +73,22 @@ PostgreSQL_add_extension(postgresql_h3
     sql/updates/h3--4.1.0--unreleased.sql
 )
 
+# configure
+configure_file(src/config.in.h src/config.h)
+
 # include
 target_include_directories(postgresql_h3 PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}/src
-  ${CMAKE_SOURCE_DIR}/include
   src
 )
 
-# link to h3lib
-target_link_libraries(postgresql_h3 h3)
+# link
+target_link_libraries(postgresql_h3 PRIVATE
+  postgresql_h3_shared
+  h3
+)
 
+# test
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
