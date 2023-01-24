@@ -74,7 +74,7 @@ PostgreSQL_add_extension(postgresql_h3
 )
 
 # configure
-configure_file(src/config.in.h src/config.h)
+configure_file(src/config.h.in src/config.h)
 
 # include
 target_include_directories(postgresql_h3 PRIVATE

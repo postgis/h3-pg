@@ -65,7 +65,11 @@ add_subdirectory(h3)
 add_subdirectory(h3_postgis)
 
 # Add target that bundles for pgxn
+configure_file(META.json.in META.json)
 add_custom_target(pgxn
-  COMMAND git archive --format zip --prefix="h3-${PROJECT_VERSION}/" -o h3-${PROJECT_VERSION}.zip HEAD
+  COMMAND git archive --format zip
+                      --prefix="h3-${INSTALL_VERSION}/"
+                      --add-file ${CMAKE_BINARY_DIR}/META.json
+                      -o h3-${INSTALL_VERSION}.zip HEAD
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
