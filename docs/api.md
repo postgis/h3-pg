@@ -643,36 +643,36 @@ GROUP BY 1;
 ```
 
 
-*Since vunreleased*
+*Since v4.1.1*
 
 
 ### h3_raster_summary_stats_agg(setof `h3_raster_summary_stats`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 ### h3_raster_summary_clip(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, stats `h3_raster_summary_stats`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Clips the raster by H3 cell geometries and processes each part separately.
 
 
 ### h3_raster_summary_centroids(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, stats `h3_raster_summary_stats`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Finds corresponding H3 cell for each pixel, then groups values by H3 index.
 
 
 ### h3_raster_summary_subpixel(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, stats `h3_raster_summary_stats`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Assumes H3 cell is smaller than a pixel. Finds corresponding pixel for each H3 cell in raster.
 
 
 ### h3_raster_summary(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, stats `h3_raster_summary_stats`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Attempts to select an appropriate method based on number of pixels per H3 cell.
@@ -739,43 +739,43 @@ ORDER BY h3, (item).count DESC;
 ```
 
 
-*Since vunreleased*
+*Since v4.1.1*
 
 
 ### h3_raster_class_summary_item_to_jsonb(item `h3_raster_class_summary_item`) ⇒ `jsonb`
-*Since vunreleased*
+*Since v4.1.1*
 
 
 Convert raster summary to JSONB, example: `{"count": 10, "value": 2, "area": 16490.3423}`
 
 
 ### h3_raster_class_summary_item_agg(setof `h3_raster_class_summary_item`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 ### h3_raster_class_summary_clip(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, val `integer`, summary `h3_raster_class_summary_item`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Clips the raster by H3 cell geometries and processes each part separately.
 
 
 ### h3_raster_class_summary_centroids(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, val `integer`, summary `h3_raster_class_summary_item`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Finds corresponding H3 cell for each pixel, then groups by H3 and value.
 
 
 ### h3_raster_class_summary_subpixel(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, val `integer`, summary `h3_raster_class_summary_item`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Assumes H3 cell is smaller than a pixel. Finds corresponding pixel for each H3 cell in raster.
 
 
 ### h3_raster_class_summary(rast `raster`, resolution `integer`, [nband `integer` = 1]) ⇒ TABLE (h3 `h3index`, val `integer`, summary `h3_raster_class_summary_item`)
-*Since vunreleased*
+*Since v4.1.1*
 
 
 Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Attempts to select an appropriate method based on number of pixels per H3 cell.
