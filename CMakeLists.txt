@@ -30,11 +30,11 @@ endif()
 # Listing the version is nice here since it sets lots of useful variables
 project(
   h3-pg
-  VERSION 4.1.0
+  VERSION 4.1.1
   LANGUAGES C
 )
-# set this to $PROJECT_VERSION on release
-set(INSTALL_VERSION unreleased)
+# set this to "${PROJECT_VERSION}" on release
+set(INSTALL_VERSION "${PROJECT_VERSION}")
 set(H3_CORE_VERSION 4.1.0)
 set(H3_CORE_SHA256 ec99f1f5974846bde64f4513cf8d2ea1b8d172d2218ab41803bf6a63532272bc)
 

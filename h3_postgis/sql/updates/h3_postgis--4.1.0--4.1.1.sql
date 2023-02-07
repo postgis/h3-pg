@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Kontur Inc.
+ * Copyright 2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,50 @@
  * limitations under the License.
  */
 
---| # Raster processing functions
+-- complain if script is sourced in psql, rather than via CREATE EXTENSION
+\echo Use "ALTER EXTENSION h3_postgis UPDATE TO '4.1.1'" to load this file. \quit
 
--- Get nodata value for ST_Clip function
--- ST_Clip sets nodata pixel values to minimum value by default, but it won't
--- set band nodata value in this case, which we need later for filtering dumped
--- values.
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_boundary_wkb(cell h3index) RETURNS bytea
+AS 'h3_postgis' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_boundary_wkb(h3index)
+IS 'Finds the boundary of the index, converts to EWKB.
+
+Splits polygons when crossing 180th meridian.
+
+This function has to return WKB since Postgres does not provide multipolygon type.';
+
+CREATE OR REPLACE FUNCTION
+    h3_cells_to_multi_polygon_wkb(h3index[]) RETURNS bytea
+AS 'h3_postgis' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cells_to_multi_polygon_wkb(h3index[])
+IS 'Create a LinkedGeoPolygon describing the outline(s) of a set of hexagons, converts to EWKB.
+
+Splits polygons when crossing 180th meridian.';
+
+-- raster
+
+
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_boundary_wkb(cell h3index) RETURNS bytea
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_boundary_wkb(h3index)
+IS 'Finds the boundary of the index, converts to EWKB.
+
+Splits polygons when crossing 180th meridian.
+
+This function has to return WKB since Postgres does not provide multipolygon type.';
+
+CREATE OR REPLACE FUNCTION
+    h3_cells_to_multi_polygon_wkb(h3index[]) RETURNS bytea
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cells_to_multi_polygon_wkb(h3index[])
+IS 'Create a LinkedGeoPolygon describing the outline(s) of a set of hexagons, converts to EWKB.
+
+Splits polygons when crossing 180th meridian.';
+
+-- Raster processing
+
 CREATE OR REPLACE FUNCTION __h3_raster_band_nodata(
     rast raster,
     nband integer)
@@ -38,7 +76,6 @@ AS $$
     SELECT ST_MinConvexHull(rast, nband);
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
--- Area of a pixel close to the center of raster polygon, in meters
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_pixel_area(
     rast raster,
     poly geometry)
@@ -69,7 +106,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
--- Area of a cell close to the center of raster polygon, in meters
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell_area(
     poly geometry,
     resolution integer)
@@ -80,9 +116,6 @@ AS $$
             __h3_raster_polygon_centroid_cell(poly, resolution)));
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
--- Get list of cells inside of the raster polygon,
--- buffered by `buffer` value (in meters).
--- If SRID != 4326 then additionally buffer by 1 pixel to account for transformation.
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cells(
     rast raster,
     poly geometry,
@@ -116,7 +149,6 @@ BEGIN
 END
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
--- Get geometries of H3 cells interesecting raster polygon.
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cell_boundaries_intersects(
     rast raster,
     poly geometry,
@@ -135,7 +167,6 @@ AS $$
     WHERE ST_Intersects(geom, poly);
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
--- Get raster coordinates of H3 cells with centroids inside the raster polygon
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cell_coords_centroid(
     rast raster,
     poly geometry,
@@ -185,8 +216,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
--- Get values corresponding to all H3 cells with centroids inside the
--- raster polygon. Assumes cell area is less than pixel area.
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_subpixel_cell_values(
     rast raster,
     poly geometry,
@@ -200,33 +229,8 @@ AS $$
     FROM __h3_raster_polygon_to_cell_coords_centroid(rast, poly, resolution);
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
---| ## Continuous raster data
---|
---| For rasters with pixel values representing continuous data (temperature, humidity,
---| elevation), the data inside H3 cells can be summarized by calculating number of
---| pixels, sum, mean, standard deviation, min and max for each cell inside a raster
---| and grouping these stats across multiple rasters by H3 index.
---|
---| ```
---| SELECT
---|     (summary).h3 AS h3,
---|     (h3_raster_summary_stats_agg((summary).stats)).*
---| FROM (
---|     SELECT h3_raster_summary(rast, 8) AS summary
---|     FROM rasters
---| ) t
---| GROUP BY 1;
---|
---|        h3        | count |        sum         |        mean         |       stddev       |  min  |       max
---| -----------------+-------+--------------------+---------------------+--------------------+-------+------------------
---|  882d638189fffff |    10 |  4.607657432556152 | 0.46076574325561526 | 1.3822972297668457 |     0 | 4.607657432556152
---|  882d64c4d1fffff |    10 | 3.6940908953547478 |  0.3694090895354748 |  1.099336879464068 |     0 | 3.667332887649536
---|  882d607431fffff |    11 |  6.219290263950825 |  0.5653900239955295 | 1.7624673707119065 |     0 | 6.13831996917724
---| <...>
---| ```
+-- Raster processing: continuous data
 
--- NOTE: `count` can be < 1 when cell area is less than pixel area
---@ availability: 4.1.1
 CREATE TYPE h3_raster_summary_stats AS (
     count double precision,
     sum double precision,
@@ -236,7 +240,6 @@ CREATE TYPE h3_raster_summary_stats AS (
     max double precision
 );
 
--- ST_SummaryStats result type to h3_raster_summary_stats
 CREATE OR REPLACE FUNCTION __h3_raster_to_summary_stats(stats summarystats)
 RETURNS h3_raster_summary_stats
 AS $$
@@ -278,7 +281,6 @@ AS $$
     FROM total AS t
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
---@ availability: 4.1.1
 CREATE AGGREGATE h3_raster_summary_stats_agg(h3_raster_summary_stats) (
     sfunc = __h3_raster_summary_stats_agg_transfn,
     stype = h3_raster_summary_stats,
@@ -298,7 +300,6 @@ AS $$
     FROM __h3_raster_polygon_to_cell_parts(rast, poly, resolution, nband);
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
---@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_summary_clip(
     rast raster,
     resolution integer,
@@ -315,7 +316,6 @@ COMMENT ON FUNCTION
     h3_raster_summary_clip(raster, integer, integer)
 IS 'Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Clips the raster by H3 cell geometries and processes each part separately.';
 
---@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_summary_centroids(
     rast raster,
     resolution integer,
@@ -360,7 +360,6 @@ AS $$
     FROM __h3_raster_polygon_subpixel_cell_values(rast, poly, resolution, nband) t;
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
---@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_summary_subpixel(
     rast raster,
     resolution integer,
@@ -384,7 +383,6 @@ COMMENT ON FUNCTION
     h3_raster_summary_subpixel(raster, integer, integer)
 IS 'Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Assumes H3 cell is smaller than a pixel. Finds corresponding pixel for each H3 cell in raster.';
 
---@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_summary(
     rast raster,
     resolution integer,
@@ -427,80 +425,14 @@ COMMENT ON FUNCTION
     h3_raster_summary(raster, integer, integer)
 IS 'Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Attempts to select an appropriate method based on number of pixels per H3 cell.';
 
---| ## Discrete raster data
---|
---| For rasters where pixels have discrete values corresponding to different classes
---| of land cover or land use, H3 cell data summary can be represented by a JSON object
---| with separate fields for each class. First, value, number of pixels and approximate
---| area are calculated for each H3 cell and value in a raster, then the stats are
---| grouped across multiple rasters by H3 index and value, and after that stats for
---| different values in a cell are combined into a single JSON object.
---|
---| The following example query additionally calculates a fraction of H3 cell pixels
---| for each value, using a window function to get a total number of pixels:
---| ```
---| WITH
---|     summary AS (
---|         -- get aggregated summary for each H3 index/value pair
---|         SELECT h3, val, h3_raster_class_summary_item_agg(summary) AS item
---|         FROM
---|             rasters,
---|             h3_raster_class_summary(rast, 8)
---|         GROUP BY 1, 2),
---|     summary_total AS (
---|         -- add total number of pixels per H3 cell
---|         SELECT h3, val, item, sum((item).count) OVER (PARTITION BY h3) AS total
---|         FROM summary)
---| SELECT
---|     h3,
---|     jsonb_object_agg(
---|         concat('class_', val::text),
---|         h3_raster_class_summary_item_to_jsonb(item)                 -- val, count, area
---|             || jsonb_build_object('fraction', (item).count / total) -- add fraction value
---|         ORDER BY val
---|     ) AS summary
---| FROM summary_total
---| GROUP BY 1;
---|
---|       h3        |                                                                            summary
---| ----------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------
---| 88194e6f3bfffff | {"class_1": {"area": 75855.5748, "count": 46, "value": 1, "fraction": 0.4509}, "class_2": {"area": 92345.9171, "count": 56, "value": 2, "fraction": 0.5490}}
---| 88194e6f37fffff | {"class_1": {"area": 255600.3064, "count": 155, "value": 1, "fraction": 0.5}, "class_2": {"area": 255600.3064, "count": 155, "value": 2, "fraction": 0.5}}
---| 88194e6f33fffff | {"class_1": {"area": 336402.9840, "count": 204, "value": 1, "fraction": 0.5125}, "class_2": {"area": 319912.6416, "count": 194, "value": 2, "fraction": 0.4874}}
---| <...>
---| ```
---|
---| Area covered by pixels with the most frequent value in each cell:
---| ```
---| SELECT DISTINCT ON (h3)
---|     h3, val, (item).area
---| FROM (
---|     SELECT
---|         h3, val, h3_raster_class_summary_item_agg(summary) AS item
---|     FROM
---|         rasters,
---|         h3_raster_class_summary(rast, 8)
---|     GROUP BY 1, 2
---| ) t
---| ORDER BY h3, (item).count DESC;
---|
---|        h3        | val |        area
---| -----------------+-----+--------------------
---|  88194e6f3bfffff |   5 | 23238.699360251427
---|  88194e6f37fffff |   9 |  60863.26022922993
---|  88194e6f33fffff |   8 |  76355.72646939754
---| <...>
---| ```
+-- Raster processing: discrete data
 
--- NOTE: `count` can be < 1 when cell area is less than pixel area
---@ availability: 4.1.1
 CREATE TYPE h3_raster_class_summary_item AS (
     val integer,
     count double precision,
     area double precision
 );
 
---@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_item_to_jsonb(
     item h3_raster_class_summary_item)
 RETURNS jsonb
@@ -526,7 +458,6 @@ AS $$
         s1.area + s2.area;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
---@ availability: 4.1.1
 CREATE AGGREGATE h3_raster_class_summary_item_agg(h3_raster_class_summary_item) (
     stype = h3_raster_class_summary_item,
     sfunc = __h3_raster_class_summary_item_agg_transfn,
@@ -565,7 +496,6 @@ AS $$
     FROM summary;
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
---@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_clip(
     rast raster,
     resolution integer,
@@ -607,7 +537,6 @@ AS $$
     GROUP BY 1, 2;
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
---@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_centroids(
     rast raster,
     resolution integer,
@@ -645,7 +574,6 @@ AS $$
     FROM __h3_raster_polygon_subpixel_cell_values(rast, poly, resolution, nband);
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
---@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_subpixel(
     rast raster,
     resolution integer,
@@ -669,7 +597,6 @@ COMMENT ON FUNCTION
     h3_raster_class_summary_subpixel(raster, integer, integer)
 IS 'Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Assumes H3 cell is smaller than a pixel. Finds corresponding pixel for each H3 cell in raster.';
 
---@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_class_summary(
     rast raster,
     resolution integer,
