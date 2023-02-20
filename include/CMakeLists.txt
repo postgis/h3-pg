@@ -7,3 +7,4 @@ target_link_libraries(postgresql_h3_shared
 target_include_directories(postgresql_h3_shared
   INTERFACE ./
 )
+set_target_properties(postgresql_h3_shared PROPERTIES POSITION_INDEPENDENT_CODE True)
