@@ -38,7 +38,7 @@ CREATE OR REPLACE FUNCTION h3index_gist_same(h3index, h3index, internal) RETURNS
 CREATE OR REPLACE FUNCTION h3index_gist_distance(internal, h3index, smallint, oid, internal) RETURNS float8
     AS 'h3' LANGUAGE C STRICT;
 
-CREATE OPERATOR CLASS h3index_ops DEFAULT FOR TYPE h3index USING gist AS
+CREATE OPERATOR CLASS experimental_h3index_ops FOR TYPE h3index USING gist AS
     OPERATOR  3   &&  ,
     OPERATOR  6   =   ,
     OPERATOR  7   @>  ,

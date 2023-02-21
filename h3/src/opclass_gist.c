@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Bytes & Brains
+ * Copyright 2019-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,9 @@
 #include <access/gist.h>	 // GiST
 
 #include <h3api.h> // Main H3 include
-#include "type.h"
+#include "algos.h"
 #include "error.h"
-
-#define H3_ROOT_INDEX -1
-
+#include "type.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_union);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_consistent);
@@ -58,54 +56,16 @@ gist_cmp(H3Index a, H3Index b)
 
 	/* a contains b */
 	error = cellToParent(b, aRes, &bParent);
-	if (!error && a == H3_ROOT_INDEX || (aRes < bRes && bParent == a))
+	if (!error && a == H3_NULL || (aRes < bRes && bParent == a))
 		return 1;
 
 	/* a contained by b */
 	error = cellToParent(a, bRes, &aParent);
-	if (!error && b == H3_ROOT_INDEX || (aRes > bRes && aParent == b))
+	if (!error && b == H3_NULL || (aRes > bRes && aParent == b))
 		return -1;
 
 	/* no overlap */
-	return 0; 
-}
-
-/**
- * GiST support
- */
-
-static H3Index
-common_ancestor(H3Index a, H3Index b)
-{
-	int			aRes,
-				bRes,
-				bigRes;
-	H3Index		aParent,
-				bParent;
-
-	if (a == b)
-		return a;
-
-	/* do not even share the basecell */
-	if (getBaseCellNumber(a) != getBaseCellNumber(b))
-		return H3_ROOT_INDEX;
-
-	aRes = getResolution(a);
-	bRes = getResolution(b);
-	bigRes = (aRes > bRes) ? aRes : bRes;
-
-	/* iterate back basecells */
-	for (int i = bigRes; i > 0; i--)
-	{
-		if (cellToParent(a, i, &aParent))
-			continue;
-		if (cellToParent(b, i, &bParent))
-			continue;
-		if (aParent == bParent)
-			return aParent;
-	}
-
-	return H3_ROOT_INDEX;
+	return 0;
 }
 
 /**
@@ -125,7 +85,7 @@ h3index_gist_union(PG_FUNCTION_ARGS)
 	for (int i = 1; i < n; i++)
 	{
 		tmp = DatumGetH3Index(entries[i].key);
-		out = common_ancestor(out, tmp);
+		out = finest_common_ancestor(out, tmp);
 	}
 
 	PG_RETURN_H3INDEX(out);
@@ -154,10 +114,13 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case RTOverlapStrategyNumber:
+			/* x && y */
 			PG_RETURN_BOOL(gist_cmp(key, query) != 0);
 		case RTContainsStrategyNumber:
+			/* x @> y */
 			PG_RETURN_BOOL(gist_cmp(key, query) > 0);
 		case RTContainedByStrategyNumber:
+			/* x <@ y */
 			if (GIST_LEAF(entry))
 			{
 				PG_RETURN_BOOL(gist_cmp(key, query) < 0);
@@ -201,7 +164,7 @@ h3index_gist_penalty(PG_FUNCTION_ARGS)
 	H3Index		orig = DatumGetH3Index(origentry->key);
 	H3Index		new = DatumGetH3Index(newentry->key);
 
-	H3Index		ancestor = common_ancestor(orig, new);
+	H3Index		ancestor = finest_common_ancestor(orig, new);
 
 	*penalty = (float) getResolution(orig) - getResolution(ancestor);
 
@@ -219,20 +182,41 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 {
 	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
 	GIST_SPLITVEC *v = (GIST_SPLITVEC *) PG_GETARG_POINTER(1);
-
 	OffsetNumber maxoff = entryvec->n - 1;
 	GISTENTRY  *ent = entryvec->vector;
 	int			i,
+				j,
+				real_i,
+				real_j,
 				nbytes;
 	OffsetNumber *left,
 			   *right;
+	GISTENTRY **raw_entryvec;
+
 	H3Index		tmp_union,
 				unionL,
-				unionR;
-	GISTENTRY **raw_entryvec;
+				unionR,
+				a,
+				b,
+				seed_union,
+				seed_left,
+				seed_right,
+				check_left,
+				check_right;
 
 	bool		lset = false,
 				rset = false;
+
+	int			res_a,
+				res_b,
+				res_finest;
+	int64_t		waste,
+				max_waste,
+				nchildren,
+				size_l,
+				size_r,
+				check_size_l,
+				check_size_r;
 
 	nbytes = (maxoff + 1) * sizeof(OffsetNumber);
 
@@ -249,48 +233,86 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 	for (i = FirstOffsetNumber; i <= maxoff; i = OffsetNumberNext(i))
 		raw_entryvec[i] = &(ent[i]);
 
+	/* FIRST lets find best initial split (most wasted space if grouped) */
+
+	max_waste = 0;
 	for (i = FirstOffsetNumber; i <= maxoff; i = OffsetNumberNext(i))
 	{
-		int			real_index = raw_entryvec[i] - ent;
+		real_i = raw_entryvec[i] - entryvec->vector;
+		a = DatumGetH3Index(entryvec->vector[real_i].key);
+		for (j = FirstOffsetNumber; j <= maxoff; j = OffsetNumberNext(j))
+		{
+			real_j = raw_entryvec[j] - entryvec->vector;
+			b = DatumGetH3Index(entryvec->vector[real_j].key);
 
-		tmp_union = DatumGetH3Index(ent[real_index].key);
-		/* DEBUG_H3INDEX(tmp_union); */
-		/* Assert(tmp_union != NULL); */
+			/* no waste if containment */
+			if (gist_cmp(a, b) != 0)
+			{
+				waste = 0;
+				/* otherwise lets calc waste */
+			}
+			else
+			{
+				seed_union = finest_common_ancestor(a, b);
+
+				res_a = getResolution(a);
+				res_b = getResolution(b);
+				res_finest = (res_a > res_b) ? res_a : res_b;
+
+				h3_assert(cellToChildrenSize(seed_union, res_finest, &waste));
+				h3_assert(cellToChildrenSize(a, res_finest, &nchildren));
+				waste -= nchildren;
+				h3_assert(cellToChildrenSize(b, res_finest, &nchildren));
+				waste -= nchildren;
+			}
+
+			if (waste > max_waste)
+			{
+				max_waste = waste;
+				seed_left = a;
+				seed_right = b;
+			}
+		}
+	}
+	DEBUG("BEST SPLIT %i", max_waste);
+	DEBUG_H3INDEX(seed_left);
+	DEBUG_H3INDEX(seed_right);
+	unionL = seed_left;
+	size_l = getResolution(unionL);
+	unionR = seed_right;
+	size_r = getResolution(unionR);
+
+	/* SECOND assign each node to best seed */
+
+	for (i = FirstOffsetNumber; i <= maxoff; i = OffsetNumberNext(i))
+	{
+		real_i = raw_entryvec[i] - ent;
+		a = DatumGetH3Index(ent[real_i].key);
+
+		check_left = finest_common_ancestor(unionL, a);
+		check_size_l = getResolution(check_left);
+
+		check_right = finest_common_ancestor(unionR, a);
+		check_size_r = getResolution(check_right);
 
 		/*
 		 * Choose where to put the index entries and update unionL and unionR
 		 * accordingly. Append the entries to either v_spl_left or
 		 * v_spl_right, and care about the counters.
 		 */
-
-		if (v->spl_nleft < v->spl_nright)
+		if (check_size_l - size_l < check_size_r - size_r)
 		{
-			if (lset == false)
-			{
-				lset = true;
-				unionL = tmp_union;
-			}
-			else
-			{
-				unionL = common_ancestor(unionL, tmp_union);
-			}
-			*left = real_index;
+			unionL = check_left;
+			size_l = check_size_l;
+			*left = real_i;
 			++left;
 			++(v->spl_nleft);
 		}
 		else
 		{
-			if (rset == false)
-			{
-				rset = true;
-				/* DEBUG_H3INDEX(tmp_union); */
-				unionR = tmp_union;
-			}
-			else
-			{
-				unionR = common_ancestor(unionR, tmp_union);
-			}
-			*right = real_index;
+			unionR = check_right;
+			size_r = check_size_r;
+			*right = real_i;
 			++right;
 			++(v->spl_nright);
 		}
@@ -298,6 +320,7 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 
 	v->spl_ldatum = H3IndexGetDatum(unionL);
 	v->spl_rdatum = H3IndexGetDatum(unionR);
+
 	PG_RETURN_POINTER(v);
 }
 

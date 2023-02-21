@@ -1,33 +1,291 @@
 \pset tuples_only on
 \set hexagon '\'831c02fffffffff\'::h3index'
-CREATE TABLE h3_test_gist (hex h3index);
-CREATE INDEX GIST_IDX ON h3_test_gist USING gist(hex);
-INSERT INTO h3_test_gist (hex) SELECT h3_cell_to_parent(:hexagon);
-INSERT INTO h3_test_gist (hex) SELECT h3_cell_to_children(:hexagon);
-INSERT INTO h3_test_gist (hex) SELECT h3_cell_to_center_child(:hexagon, 15);
+CREATE TABLE h3_test_gist (cell h3index);
+CREATE INDEX h3_test_gist_index
+          ON h3_test_gist
+       USING gist(cell experimental_h3index_ops);
+-- insert data
+INSERT INTO h3_test_gist (cell) SELECT h3_cell_to_parent(:hexagon);
+INSERT INTO h3_test_gist (cell) SELECT h3_cell_to_children(:hexagon);
+INSERT INTO h3_test_gist (cell) SELECT h3_cell_to_center_child(:hexagon, 15);
 --
 -- TEST GiST
 --
-SELECT COUNT(*) = 1 FROM h3_test_gist WHERE hex @> :hexagon;
+SELECT COUNT(*) = 1 FROM h3_test_gist WHERE cell @> :hexagon;
  t
 
-SELECT COUNT(*) = 8 FROM h3_test_gist WHERE hex <@ :hexagon;
+SELECT COUNT(*) = 8 FROM h3_test_gist WHERE cell <@ :hexagon;
  t
 
-INSERT INTO h3_test_gist (hex) SELECT h3_grid_disk(:hexagon, 2);
-SELECT COUNT(*) = 8 FROM h3_test_gist WHERE hex <-> :hexagon = 2;
+INSERT INTO h3_test_gist (cell) SELECT h3_grid_disk(:hexagon, 2);
+SELECT COUNT(*) = 8 FROM h3_test_gist WHERE cell <-> :hexagon = 2;
  t
 
 --
 -- BREAK GIST
 --
-SELECT COUNT(*) = 8 FROM h3_test_gist WHERE hex <@ :hexagon;
+SELECT COUNT(*) = 8 FROM h3_test_gist WHERE cell <@ :hexagon;
  t
 
-SELECT COUNT(*) FROM h3_test_gist WHERE hex <@ :hexagon;
+SELECT COUNT(*) FROM h3_test_gist WHERE cell <@ :hexagon;
      8
 
-INSERT INTO h3_test_gist (hex) SELECT h3_cell_to_children(:hexagon, 8);
-SELECT COUNT(*) > 8 FROM h3_test_gist WHERE hex <@ :hexagon;
+INSERT INTO h3_test_gist (cell) SELECT h3_cell_to_children(:hexagon, 8);
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c18fffffffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c2afffffffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c1cfffffffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c1dfffffffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c1efffffffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c31fffffffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c33fffffffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c14fffffffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c10fffffffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c18fffffffff
+NOTICE:  index: 881c02045bfffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c11fffffffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c2afffffffff
+NOTICE:  index: 881c020465fffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c13fffffffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c18fffffffff
+NOTICE:  index: 881c02045dfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1cfffffffff
+NOTICE:  index: 881c02046dfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1dfffffffff
+NOTICE:  index: 881c0204adfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c2afffffffff
+NOTICE:  index: 881c020465fffff
+NOTICE:  BEST SPLIT 1588792951
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c15fffffffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1efffffffff
+NOTICE:  index: 881c02056dfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c31fffffffff
+NOTICE:  index: 881c020623fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c33fffffffff
+NOTICE:  index: 881c020c09fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c18fffffffff
+NOTICE:  index: 881c020483fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c14fffffffff
+NOTICE:  index: 881c020e19fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1cfffffffff
+NOTICE:  index: 881c02046dfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c10fffffffff
+NOTICE:  index: 881c020de5fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c02045bfffff
+NOTICE:  index: 881c022035fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1dfffffffff
+NOTICE:  index: 881c0204adfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c2afffffffff
+NOTICE:  index: 881c020469fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c11fffffffff
+NOTICE:  index: 881c021651fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1efffffffff
+NOTICE:  index: 881c020589fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c0225e1fffff
+NOTICE:  index: 881c024007fffff
+NOTICE:  BEST SPLIT -1819921932
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 831c03fffffffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c31fffffffff
+NOTICE:  index: 881c020623fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c13fffffffff
+NOTICE:  index: 881c022313fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c02045dfffff
+NOTICE:  index: 881c0224dbfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c18fffffffff
+NOTICE:  index: 881c020489fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c33fffffffff
+NOTICE:  index: 881c020f11fffff
+NOTICE:  BEST SPLIT 81233
+NOTICE:  index: 831c05fffffffff
+NOTICE:  index: 881c023363fffff
+NOTICE:  BEST SPLIT 81233
+NOTICE:  index: 831c04fffffffff
+NOTICE:  index: 881c0235adfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c14fffffffff
+NOTICE:  index: 881c020ec5fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020465fffff
+NOTICE:  index: 881c023a81fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1cfffffffff
+NOTICE:  index: 881c020485fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c10fffffffff
+NOTICE:  index: 881c0212c9fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c15fffffffff
+NOTICE:  index: 881c024015fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c02056dfffff
+NOTICE:  index: 881c024a85fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1dfffffffff
+NOTICE:  index: 881c0204c7fffff
+NOTICE:  BEST SPLIT 81233
+NOTICE:  index: 831c06fffffffff
+NOTICE:  index: 881c024cabfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c2afffffffff
+NOTICE:  index: 881c02046bfffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020c09fffff
+NOTICE:  index: 881c025929fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c02045bfffff
+NOTICE:  index: 881c022187fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1efffffffff
+NOTICE:  index: 881c0205b9fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020483fffff
+NOTICE:  index: 881c0250a3fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c11fffffffff
+NOTICE:  index: 881c021723fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020e19fffff
+NOTICE:  index: 881c026507fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c02046dfffff
+NOTICE:  index: 881c026589fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c0225e1fffff
+NOTICE:  index: 881c024007fffff
+NOTICE:  BEST SPLIT 955561769
+NOTICE:  index: 8f1c02000000000
+NOTICE:  index: 881c022311fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020de5fffff
+NOTICE:  index: 881c0261cdfffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c02162bfffff
+NOTICE:  index: 881c022035fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c13fffffffff
+NOTICE:  index: 881c02299bfffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c31fffffffff
+NOTICE:  index: 881c0208cbfffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c0204adfffff
+NOTICE:  index: 881c0271c7fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020469fffff
+NOTICE:  index: 881c027a39fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c021651fffff
+NOTICE:  index: 881c0281abfffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c02045dfffff
+NOTICE:  index: 881c022921fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c18fffffffff
+NOTICE:  index: 881c02048bfffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020589fffff
+NOTICE:  index: 881c0281c5fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c33fffffffff
+NOTICE:  index: 881c020f5bfffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c028ad7fffff
+NOTICE:  index: 881c02a067fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c14fffffffff
+NOTICE:  index: 881c021115fffff
+NOTICE:  BEST SPLIT 81233
+NOTICE:  index: 831c05fffffffff
+NOTICE:  index: 881c0234a9fffff
+NOTICE:  BEST SPLIT 81233
+NOTICE:  index: 831c03fffffffff
+NOTICE:  index: 881c028c01fffff
+NOTICE:  BEST SPLIT 81233
+NOTICE:  index: 831c04fffffffff
+NOTICE:  index: 881c02389dfffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020623fffff
+NOTICE:  index: 881c028ed1fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020465fffff
+NOTICE:  index: 881c0240b3fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c022313fffff
+NOTICE:  index: 881c029363fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c0224dbfffff
+NOTICE:  index: 881c029827fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c1cfffffffff
+NOTICE:  index: 881c020491fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020489fffff
+NOTICE:  index: 881c02a909fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c10fffffffff
+NOTICE:  index: 881c0215b1fffff
+NOTICE:  BEST SPLIT 669478
+NOTICE:  index: 831c15fffffffff
+NOTICE:  index: 881c024509fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c020f11fffff
+NOTICE:  index: 881c02ac85fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c02056dfffff
+NOTICE:  index: 881c024ab7fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c023363fffff
+NOTICE:  index: 881c02adc3fffff
+NOTICE:  BEST SPLIT 16805
+NOTICE:  index: 881c0235adfffff
+NOTICE:  index: 881c02b62bfffff
+SELECT COUNT(*) > 8 FROM h3_test_gist WHERE cell <@ :hexagon;
  t
 

@@ -13,6 +13,7 @@ PostgreSQL_add_extension(postgresql_h3
     src/binding/regions.c
     src/binding/traversal.c
     src/binding/vertex.c
+    src/algos.c
     src/deprecated.c
     src/extension.c
     src/guc.c
