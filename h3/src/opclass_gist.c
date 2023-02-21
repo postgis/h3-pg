@@ -21,26 +21,11 @@
 #include <access/gist.h>	 // GiST
 
 #include <h3api.h> // Main H3 include
-#include "extension.h"
+#include "type.h"
+#include "error.h"
 
 #define H3_ROOT_INDEX -1
 
-#define LOG_NOTICE(X)																	  \
-	do																					  \
-	{																					  \
-		if (false)																		  \
-			ereport(NOTICE, (errmsg("[%s]: (%d).", (const char *)__FUNCTION__, (int)X))); \
-	} while (0)
-
-#define debug_func(x)																								 \
-	do																												 \
-	{																												 \
-		if (false)																									 \
-		{																											 \
-			ereport(NOTICE, (																						 \
-								errmsg("[%s]: Returned nonzero result (%d).", (const char *)__FUNCTION__, (int)x))); \
-		}																											 \
-	} while (0)
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_union);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_consistent);
@@ -54,48 +39,35 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_distance);
 static int
 gist_cmp(H3Index a, H3Index b)
 {
-	int			aRes;
-	int			bRes;
-
-	uint64_t	cellMask = (1LL << 45) - 1;		/* rightmost 45 bits */
-	uint64_t	aCell;
-	uint64_t	bCell;
+	int			aRes,
+				bRes;
 	H3Index		aParent,
 				bParent;
 	H3Error		error;
 
 	/* identity */
 	if (a == b)
-	{
 		return 1;
-	}
 
 	/* no shared basecell */
 	if (getBaseCellNumber(a) != getBaseCellNumber(b))
-	{
 		return 0;
-	}
 
 	aRes = getResolution(a);
 	bRes = getResolution(b);
-
-	/* ---- */
-
-	H3Index		big,
-				sml;
-	int			maxRes;
 
 	/* a contains b */
 	error = cellToParent(b, aRes, &bParent);
 	if (!error && a == H3_ROOT_INDEX || (aRes < bRes && bParent == a))
 		return 1;
+
 	/* a contained by b */
 	error = cellToParent(a, bRes, &aParent);
 	if (!error && b == H3_ROOT_INDEX || (aRes > bRes && aParent == b))
 		return -1;
 
 	/* no overlap */
-	return 0;
+	return 0; 
 }
 
 /**
@@ -105,44 +77,33 @@ gist_cmp(H3Index a, H3Index b)
 static H3Index
 common_ancestor(H3Index a, H3Index b)
 {
-	int			aRes;
-	int			bRes;
-	int			maxRes,
+	int			aRes,
+				bRes,
 				bigRes;
-	uint64_t	cellMask = (1LL << 45) - 1;		/* rightmost 45 bits */
-	uint64_t	abCell;
-	uint64_t	mask;
-	H3Index		masked,
-				aParent,
+	H3Index		aParent,
 				bParent;
 
 	if (a == b)
-	{
 		return a;
-	}
 
 	/* do not even share the basecell */
 	if (getBaseCellNumber(a) != getBaseCellNumber(b))
-	{
 		return H3_ROOT_INDEX;
-	}
 
 	aRes = getResolution(a);
 	bRes = getResolution(b);
 	bigRes = (aRes > bRes) ? aRes : bRes;
+
+	/* iterate back basecells */
 	for (int i = bigRes; i > 0; i--)
-		/* iterate back basecells */
 	{
 		if (cellToParent(a, i, &aParent))
 			continue;
 		if (cellToParent(b, i, &bParent))
 			continue;
-
 		if (aParent == bParent)
 			return aParent;
 	}
-
-	LOG_NOTICE(0);
 
 	return H3_ROOT_INDEX;
 }
@@ -154,8 +115,6 @@ common_ancestor(H3Index a, H3Index b)
 Datum
 h3index_gist_union(PG_FUNCTION_ARGS)
 {
-	LOG_NOTICE(0);
-
 	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
 	GISTENTRY  *entries = entryvec->vector;
 	int			n = entryvec->n;
@@ -168,8 +127,6 @@ h3index_gist_union(PG_FUNCTION_ARGS)
 		tmp = DatumGetH3Index(entries[i].key);
 		out = common_ancestor(out, tmp);
 	}
-
-	debug_func(n);
 
 	PG_RETURN_H3INDEX(out);
 }
@@ -199,16 +156,12 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 		case RTOverlapStrategyNumber:
 			PG_RETURN_BOOL(gist_cmp(key, query) != 0);
 		case RTContainsStrategyNumber:
-			LOG_NOTICE(4);
 			PG_RETURN_BOOL(gist_cmp(key, query) > 0);
 		case RTContainedByStrategyNumber:
-			LOG_NOTICE(5);
 			if (GIST_LEAF(entry))
 			{
 				PG_RETURN_BOOL(gist_cmp(key, query) < 0);
 			}
-			LOG_NOTICE(6);
-			LOG_NOTICE(gist_cmp(key, query));
 			/* internal nodes, just check if we overlap */
 			PG_RETURN_BOOL(gist_cmp(key, query) != 0);
 		default:
@@ -225,14 +178,12 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 Datum
 h3index_gist_compress(PG_FUNCTION_ARGS)
 {
-	LOG_NOTICE(0);
 	PG_RETURN_DATUM(PG_GETARG_DATUM(0));
 }
 
 Datum
 h3index_gist_decompress(PG_FUNCTION_ARGS)
 {
-	LOG_NOTICE(0);
 	PG_RETURN_POINTER(PG_GETARG_POINTER(0));
 }
 
@@ -243,7 +194,6 @@ h3index_gist_decompress(PG_FUNCTION_ARGS)
 Datum
 h3index_gist_penalty(PG_FUNCTION_ARGS)
 {
-	LOG_NOTICE(0);
 	GISTENTRY  *origentry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	GISTENTRY  *newentry = (GISTENTRY *) PG_GETARG_POINTER(1);
 	float	   *penalty = (float *) PG_GETARG_POINTER(2);
@@ -254,8 +204,6 @@ h3index_gist_penalty(PG_FUNCTION_ARGS)
 	H3Index		ancestor = common_ancestor(orig, new);
 
 	*penalty = (float) getResolution(orig) - getResolution(ancestor);
-
-	debug_func(*penalty);
 
 	PG_RETURN_POINTER(penalty);
 }
@@ -272,7 +220,6 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
 	GIST_SPLITVEC *v = (GIST_SPLITVEC *) PG_GETARG_POINTER(1);
 
-	LOG_NOTICE(entryvec->n);
 	OffsetNumber maxoff = entryvec->n - 1;
 	GISTENTRY  *ent = entryvec->vector;
 	int			i,
@@ -304,7 +251,6 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 
 	for (i = FirstOffsetNumber; i <= maxoff; i = OffsetNumberNext(i))
 	{
-		LOG_NOTICE(i);
 		int			real_index = raw_entryvec[i] - ent;
 
 		tmp_union = DatumGetH3Index(ent[real_index].key);
@@ -319,7 +265,6 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 
 		if (v->spl_nleft < v->spl_nright)
 		{
-			LOG_NOTICE(5);
 			if (lset == false)
 			{
 				lset = true;
@@ -335,11 +280,9 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 		}
 		else
 		{
-			LOG_NOTICE(6);
 			if (rset == false)
 			{
 				rset = true;
-				LOG_NOTICE(7);
 				/* DEBUG_H3INDEX(tmp_union); */
 				unionR = tmp_union;
 			}
@@ -347,17 +290,11 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 			{
 				unionR = common_ancestor(unionR, tmp_union);
 			}
-			LOG_NOTICE(8);
 			*right = real_index;
-			LOG_NOTICE(9);
 			++right;
-			LOG_NOTICE(10);
 			++(v->spl_nright);
-			LOG_NOTICE(11);
 		}
 	}
-
-	debug_func(maxoff);
 
 	v->spl_ldatum = H3IndexGetDatum(unionL);
 	v->spl_rdatum = H3IndexGetDatum(unionR);
@@ -372,13 +309,9 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 Datum
 h3index_gist_same(PG_FUNCTION_ARGS)
 {
-	LOG_NOTICE(0);
-
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
 	bool	   *result = (bool *) PG_GETARG_POINTER(2);
-
-	debug_func(*result);
 
 	*result = a == b;
 	PG_RETURN_POINTER(result);
@@ -397,8 +330,6 @@ h3index_gist_same(PG_FUNCTION_ARGS)
 Datum
 h3index_gist_distance(PG_FUNCTION_ARGS)
 {
-	LOG_NOTICE(0);
-
 	GISTENTRY  *entry = (GISTENTRY *) PG_GETARG_POINTER(0);
 	H3Index		query = PG_GETARG_H3INDEX(1);
 	StrategyNumber strategy = (StrategyNumber) PG_GETARG_UINT16(2);
@@ -415,15 +346,13 @@ h3index_gist_distance(PG_FUNCTION_ARGS)
 	{
 		case RTKNNSearchStrategyNumber:
 			error = cellToCenterChild(key, getResolution(query), &child);
-			H3_ERROR(error, "cellToCenterChild");
+			h3_assert(error);
 			error = gridDistance(query, child, &distance);
-			H3_ERROR(error, "gridDistance");
+			h3_assert(error);
 			retval = distance;
 		default:
 			retval = -1;
 	}
-
-	debug_func(retval);
 
 	PG_RETURN_FLOAT8(retval);
 }
