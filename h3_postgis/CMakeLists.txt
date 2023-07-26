@@ -34,7 +34,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     sql/updates/h3_postgis--4.0.3--4.1.0.sql
     sql/updates/h3_postgis--4.1.0--4.1.1.sql
     sql/updates/h3_postgis--4.1.1--4.1.2.sql
-    sql/updates/h3_postgis--4.1.2--unreleased.sql
+    sql/updates/h3_postgis--4.1.2--4.1.3.sql
 )
 
 # link

@@ -15,7 +15,7 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3 UPDATE TO '4.1.3'" to load this file. \quit
 
 COMMENT ON OPERATOR @> (h3index, h3index) IS
   'Returns true if A contains B.';

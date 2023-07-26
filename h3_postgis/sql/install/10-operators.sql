@@ -16,7 +16,7 @@
 
 --| # PostGIS Operators
 
---@ availability: unavailable
+--@ availability: 4.1.3
 CREATE OPERATOR @ (
     PROCEDURE = h3_lat_lng_to_cell,
     LEFTARG = geometry, RIGHTARG = integer
@@ -24,7 +24,7 @@ CREATE OPERATOR @ (
 COMMENT ON OPERATOR @ (geometry, integer) IS
   'Index geometry at specified resolution.';
 
---@ availability: unavailable
+--@ availability: 4.1.3
 CREATE OPERATOR @ (
     PROCEDURE = h3_lat_lng_to_cell,
     LEFTARG = geography, RIGHTARG = integer

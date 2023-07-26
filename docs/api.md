@@ -598,14 +598,14 @@ Splits polygons when crossing 180th meridian.
 # PostGIS Operators
 
 ### Operator: `geometry` @ `integer`
-*Since vunavailable*
+*Since v4.1.3*
 
 
 Index geometry at specified resolution.
 
 
 ### Operator: `geography` @ `integer`
-*Since vunavailable*
+*Since v4.1.3*
 
 
 Index geography at specified resolution.

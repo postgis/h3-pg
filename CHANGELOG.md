@@ -26,10 +26,13 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+</details>
+
+## [4.1.3] - 2023-07-26
+
 - Add `geometry @ int` and `geography @ int` operators, as shortcuts for `h3_lat_lng_to_cell`.
 - Explain PostGIS SRID expectations (see [#131], thanks [@rustprooflabs])
 
-</details>
 
 ## [4.1.2] - 2023-02-08
 
@@ -196,7 +199,8 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.1.2...HEAD
+[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.1.3...HEAD
+[4.1.3]: https://github.com/zachasme/h3-pg/compare/v4.1.2...v4.1.3
 [4.1.2]: https://github.com/zachasme/h3-pg/compare/v4.1.1...v4.1.2
 [4.1.1]: https://github.com/zachasme/h3-pg/compare/v4.1.0...v4.1.1
 [4.1.0]: https://github.com/zachasme/h3-pg/compare/v4.0.3...v4.1.0
