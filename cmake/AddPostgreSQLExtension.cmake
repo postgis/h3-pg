@@ -44,6 +44,12 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
       PREFIX "" # Avoid lib* prefix on output file
     )
 
+    # Since Postgres 16, the shared library extension on macOS is `dylib`, not `so`.
+    # Ref https://github.com/postgres/postgres/commit/b55f62abb2c2e07dfae99e19a2b3d7ca9e58dc1a
+    if (APPLE AND ${PostgreSQL_VERSION_MAJOR} VERSION_GREATER_EQUAL "16")
+      set_target_properties (${LIBRARY_NAME} PROPERTIES SUFFIX ".dylib")
+    endif()
+
     # Install .so/.dll to pkglib-dir
     install(
       TARGETS ${LIBRARY_NAME}
