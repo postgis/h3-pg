@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Zacharias Knudsen
+ * Copyright 2019-2023 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,9 @@
  * limitations under the License.
  */
 
--- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
-
---@ availability: 4.2.0
-CREATE OR REPLACE FUNCTION
-    h3_polygon_to_cells_experimental(exterior polygon, holes polygon[], resolution integer DEFAULT 1, containment_mode text DEFAULT 'center') RETURNS SETOF h3index
-AS 'h3' LANGUAGE C IMMUTABLE
--- intentionally NOT STRICT
-CALLED ON NULL INPUT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_polygon_to_cells_experimental(polygon, polygon[], integer, text)
-IS 'Takes an exterior polygon [and a set of hole polygon] and returns the set of hexagons that best fit the structure.';
+-- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+-- SP-GiST Operator Class (opclass_spgist.c)
+-- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
 -- SP-GiST operator class
 CREATE OR REPLACE FUNCTION h3index_spgist_config(internal, internal) RETURNS void
@@ -48,4 +40,3 @@ CREATE OPERATOR CLASS spgist_h3index_ops DEFAULT FOR TYPE h3index USING spgist A
     FUNCTION  3  h3index_spgist_picksplit(internal, internal),
     FUNCTION  4  h3index_spgist_inner_consistent(internal, internal),
     FUNCTION  5  h3index_spgist_leaf_consistent(internal, internal);
->>>>>>> e8aae9e (Initial SP-GiST experimentation):h3/sql/updates/h3--4.1.3--unreleased.sql

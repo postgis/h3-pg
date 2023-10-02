@@ -7,6 +7,7 @@ set(TESTS
   opclass_brin
   opclass_btree
   opclass_hash
+  opclass_spgist
   regions
   traversal
   type

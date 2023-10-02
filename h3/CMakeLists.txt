@@ -19,6 +19,7 @@ PostgreSQL_add_extension(postgresql_h3
     src/init.c
     src/opclass_btree.c
     src/opclass_hash.c
+    src/opclass_spgist.c
     src/operators.c
     src/srf.c
     src/type.c
@@ -36,6 +37,7 @@ PostgreSQL_add_extension(postgresql_h3
     sql/install/11-opclass_btree.sql
     sql/install/12-opclass_hash.sql
     sql/install/13-opclass_brin.sql
+    sql/install/14-opclass_spgist.sql
     sql/install/20-casts.sql
     sql/install/30-extension.sql
     sql/install/99-deprecated.sql
