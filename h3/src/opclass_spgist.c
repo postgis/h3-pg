@@ -283,7 +283,7 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 {
 	spgInnerConsistentIn *in = (spgInnerConsistentIn *) PG_GETARG_POINTER(0);
 	spgInnerConsistentOut *out = (spgInnerConsistentOut *) PG_GETARG_POINTER(1);
-	H3Index    *parent = NULL;
+	H3Index     parent = NULL;
 	int			bc,
 				i;
 	bool		stop;
@@ -291,7 +291,7 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 
 	if (in->hasPrefix)
 	{
-		*parent = DatumGetH3Index(in->prefixDatum);
+		parent = DatumGetH3Index(in->prefixDatum);
 	}
 
 	if (in->allTheSame)
@@ -336,16 +336,16 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 			switch (strategy)
 			{
 				case RTSameStrategyNumber:
-					if (spgist_cmp(parent, &query) == 0)
+					if (spgist_cmp(&parent, &query) == 0)
 						stop = true;
 					break;
 				case RTContainsStrategyNumber:
-					if (spgist_cmp(parent, &query) == 0)
+					if (spgist_cmp(&parent, &query) == 0)
 						stop = true;
 					/* no overlap */
 					break;
 				case RTContainedByStrategyNumber:
-					if (spgist_cmp(parent, &query) == 0)
+					if (spgist_cmp(&parent, &query) == 0)
 						stop = true;
 					/* no overlap */
 					break;
