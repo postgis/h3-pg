@@ -6,6 +6,7 @@ set(TESTS
   miscellaneous
   opclass_brin
   opclass_btree
+  opclass_gist
   opclass_hash
   regions
   traversal

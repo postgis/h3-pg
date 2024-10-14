@@ -463,6 +463,30 @@ Returns true if A contains B.
 Returns true if A is contained by B.
 
 
+### h3index_gist_consistent(`internal`, `h3index`, `smallint`, `oid`, `internal`) ⇒ `boolean`
+
+
+### h3index_gist_union(`internal`, `internal`) ⇒ `h3index`
+
+
+### h3index_gist_compress(`internal`) ⇒ `internal`
+
+
+### h3index_gist_decompress(`internal`) ⇒ `internal`
+
+
+### h3index_gist_penalty(`internal`, `internal`, `internal`) ⇒ `internal`
+
+
+### h3index_gist_picksplit(`internal`, `internal`) ⇒ `internal`
+
+
+### h3index_gist_same(`h3index`, `h3index`, `internal`) ⇒ `internal`
+
+
+### h3index_gist_distance(`internal`, `h3index`, `smallint`, `oid`, `internal`) ⇒ `float8`
+
+
 # Type casts
 
 ### `h3index` :: `bigint`

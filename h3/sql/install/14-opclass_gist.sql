@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Bytes & Brains
+ * Copyright 2019-2020 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
--- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
 
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 -- GiST Operator Class (opclass_gist.c)
@@ -39,10 +36,10 @@ CREATE OR REPLACE FUNCTION h3index_gist_distance(internal, h3index, smallint, oi
     AS 'h3' LANGUAGE C STRICT;
 
 CREATE OPERATOR CLASS experimental_h3index_ops FOR TYPE h3index USING gist AS
-    OPERATOR  3   &&  ,
-    OPERATOR  6   =   ,
-    OPERATOR  7   @>  ,
-    OPERATOR  8   <@  ,
+    OPERATOR  3   &&  , -- RTOverlapStrategyNumber
+    OPERATOR  6   =   , -- RTSameStrategyNumber
+    OPERATOR  7   @>  , -- RTContainsStrategyNumber
+    OPERATOR  8   <@  , -- RTContainedByStrategyNumber
     OPERATOR  15  <-> (h3index, h3index) FOR ORDER BY integer_ops,
 
     FUNCTION  1  h3index_gist_consistent(internal, h3index, smallint, oid, internal),

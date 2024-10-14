@@ -40,8 +40,8 @@ create_cast_stmt: "CREATE" "CAST" "(" DATATYPE "AS" DATATYPE ")" "WITH" "FUNCTIO
 //    | STORAGE storage_type
 //   } [, ... ]
 create_opcl_stmt: "CREATE" "OPERATOR" "CLASS" CNAME "DEFAULT"? "FOR" "TYPE" CNAME "USING" CNAME "AS" create_opcl_list
-create_opcl_opts: "OPERATOR" SIGNED_NUMBER OPERATOR
-| "FUNCTION" SIGNED_NUMBER fun_name "(" [argument_list] ")"
+create_opcl_opts: "OPERATOR" SIGNED_NUMBER OPERATOR ("(" [argument_list] ")")? ("FOR" "ORDER" "BY" CNAME)?
+                | "FUNCTION" SIGNED_NUMBER ("(" [argument_list] ")")? fun_name "(" [argument_list] ")"
 create_opcl_list: create_opcl_opts ("," create_opcl_opts)*
 
 // -----------------------------------------------------------------------------
@@ -155,20 +155,23 @@ DATATYPE_SCALAR: "h3index"
         | "jsonb"
         | "bigint"
         | "boolean"
+        | "bytea"
         | "cstring"
         | "double" WS "precision"
         | "float"
+        | "float8"
         | "geography"
         | "geometry"
-        | "bytea"
+        | "int"
         | "int32"
         | "int8"
         | "integer"
         | "internal"
-        | "int"
+        | "oid"
         | "point"
         | "polygon"
         | "record"
+        | "smallint"
         | "text"
         | "void"
 DATATYPE: DATATYPE_SCALAR "[]"?
