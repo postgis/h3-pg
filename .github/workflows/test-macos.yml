@@ -18,17 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        with:
-          path: ~/.cargo
-          key: ${{ runner.os }}-cargo-2023
+      # - name: Cache Cargo
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: ~/.cargo
+      #     key: ${{ runner.os }}-cargo-2023
 
       # - name: Install pg_validate_extupgrade
       #   run: cargo install --locked --git https://github.com/rjuju/pg_validate_extupgrade.git
 
-      # - name: Install (& link) PostgreSQL
-      #   run: brew install postgresql@${{ matrix.pg }} postgis
+      - name: Install (& link) PostgreSQL
+        run: brew install postgresql@${{ matrix.pg }} postgis
 
       - name: Generate
         run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
