@@ -26,6 +26,7 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+- Fix library extension on macOS for PostgreSQL >= 16 (see [#140], thanks [@bayandin])
 - Add support for binary I/O (see [#160], thanks [@robertozimek])
 
 </details>
@@ -260,6 +261,7 @@ avoid adding features or APIs which do not map onto the
 [#112]: https://github.com/zachasme/h3-pg/pull/112
 [#117]: https://github.com/zachasme/h3-pg/issues/117
 [#131]: https://github.com/zachasme/h3-pg/pull/131
+[#140]: https://github.com/zachasme/h3-pg/pull/140
 [#160]: https://github.com/zachasme/h3-pg/pull/160
 [@abelvm]: https://github.com/AbelVM
 [@kalenikaliaksandr]: https://github.com/kalenikaliaksandr
@@ -269,4 +271,5 @@ avoid adding features or APIs which do not map onto the
 [@mngr777]: https://github.com/mngr777
 [@trylinka]: https://github.com/trylinka
 [@rustprooflabs]: https://github.com/rustprooflabs
+[@bayandin]: https://github.com/bayandin
 [@robertozimek]: https://github.com/robertozimek
