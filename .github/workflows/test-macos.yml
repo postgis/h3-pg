@@ -26,10 +26,10 @@ jobs:
       - name: Install pg_validate_extupgrade
         run: cargo install --locked --git https://github.com/rjuju/pg_validate_extupgrade.git
 
-      - name: Install (& link) PostgreSQL
-        run: |
-          brew install postgresql@14
-          brew link postgresql@14
+      # - name: Install (& link) PostgreSQL
+      #   run: |
+      #     brew install postgresql@14
+      #     brew link postgresql@14
 
       - name: Generate
         run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
@@ -43,7 +43,7 @@ jobs:
       - name: Prepare PostgreSQL
         run: |
           brew services start postgresql@14
-          createdb runner
+          PGDATA='/usr/local/var/postgres' createdb runner
 
       - name: Test
         run: ctest --test-dir build --output-on-failure --build-config ${{ matrix.config }}
