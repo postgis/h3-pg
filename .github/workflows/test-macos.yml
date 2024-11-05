@@ -26,8 +26,8 @@ jobs:
       - name: Install pg_validate_extupgrade
         run: cargo install --locked --git https://github.com/rjuju/pg_validate_extupgrade.git
 
-      - name: Install PostgreSQL server dependencies
-        run: brew install postgis
+      - name: Install PostgreSQL with server dependencies
+        run: brew install postgresql postgis
 
       - name: Generate
         run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
