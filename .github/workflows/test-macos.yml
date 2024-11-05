@@ -42,7 +42,7 @@ jobs:
 
       - name: Prepare PostgreSQL
         run: |
-          pg_ctl start -D /usr/local/var/postgresql@14 --wait
+          brew services start postgresql@14
           createdb runner
 
       - name: Test
