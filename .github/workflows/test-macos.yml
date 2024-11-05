@@ -12,7 +12,7 @@ jobs:
       matrix:
         config: [Release, Debug]
 
-    runs-on: macos-12
+    runs-on: macos-15
 
     steps:
       - uses: actions/checkout@v3
