@@ -31,9 +31,16 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
     # Link extension to PostgreSQL
     target_link_libraries(${LIBRARY_NAME} PRIVATE PostgreSQL::PostgreSQL)
 
-    # Fix apple missing symbols
+    # Handle macOS specifics
     if(APPLE)
+      # Fix apple missing symbols
       set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS ${PostgreSQL_LINK_FLAGS})
+
+      # Since Postgres 16, the shared library extension on macOS is `dylib`, not `so`.
+      # Ref https://github.com/postgres/postgres/commit/b55f62abb2c2e07dfae99e19a2b3d7ca9e58dc1a
+      if (${PostgreSQL_VERSION_MAJOR} VERSION_GREATER_EQUAL "16")
+        set_target_properties (${LIBRARY_NAME} PROPERTIES SUFFIX ".dylib")
+      endif()
     endif()
 
     # Final touches on output file
@@ -43,12 +50,6 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
       #C_VISIBILITY_PRESET hidden # @TODO: how to get this working?
       PREFIX "" # Avoid lib* prefix on output file
     )
-
-    # Since Postgres 16, the shared library extension on macOS is `dylib`, not `so`.
-    # Ref https://github.com/postgres/postgres/commit/b55f62abb2c2e07dfae99e19a2b3d7ca9e58dc1a
-    if (APPLE AND ${PostgreSQL_VERSION_MAJOR} VERSION_GREATER_EQUAL "16")
-      set_target_properties (${LIBRARY_NAME} PROPERTIES SUFFIX ".dylib")
-    endif()
 
     # Install .so/.dll to pkglib-dir
     install(

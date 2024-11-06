@@ -60,10 +60,12 @@ endif(WIN32)
 # Platform fixes: MacOS
 # https://github.com/postgres/postgres/blob/master/src/makefiles/Makefile.darwin
 set(PostgreSQL_LINK_FLAGS "")
-# @TODO: Find out if the cannot be done in a more cmakey way
+# @TODO: Find out if this can be done in a more cmakey way
 if(APPLE)
   find_program(PostgreSQL_EXECUTABLE postgres REQUIRED NO_DEFAULT_PATH PATHS ${PostgreSQL_BIN_DIR})
   set(PostgreSQL_LINK_FLAGS "-bundle_loader ${PostgreSQL_EXECUTABLE}")
+  # @TODO: Is it possible to remove this and use a cmake flag instead?
+  list(APPEND PostgreSQL_INCLUDE_DIRS "/usr/local/include")
 endif()
 
 # ----------------------------------------------------------------------------

@@ -15,7 +15,7 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fix default PostgreSQL version on Windows Runner
         run: $env:PGBIN >> $env:GITHUB_PATH

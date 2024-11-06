@@ -18,18 +18,15 @@ jobs:
     name: linux 🐘${{ matrix.pg }} (${{ matrix.config }})
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Cache Cargo
-        uses: actions/cache@v3
+      - name: Setup pg_validate_extupgrade
+        uses: baptiste0928/cargo-install@v3
         with:
-          path: ~/.cargo
-          key: ${{ runner.os }}-cargo-2024
+          crate: pg_validate_extupgrade
+          git: https://github.com/rjuju/pg_validate_extupgrade
 
-      - name: Install pg_validate_extupgrade
-        run: cargo install --locked --git https://github.com/rjuju/pg_validate_extupgrade.git
-
-      - name: Setup PostgreSQL ${{ matrix.pg }}
+      - name: Setup PostgreSQL
         run: |
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -p -i -v ${{ matrix.pg }}
           sudo apt-get -y install postgresql-${{ matrix.pg }}-postgis-3

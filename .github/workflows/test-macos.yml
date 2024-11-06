@@ -11,27 +11,38 @@ jobs:
     strategy:
       matrix:
         config: [Release, Debug]
-        pg: [14]
+        pg: [17, 16, 15, 14, 13]
 
-    runs-on: macos-14
+    runs-on: macos-13
+
+    name: macos 🐘${{ matrix.pg }} (${{ matrix.config }})
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      # - name: Cache Cargo
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: ~/.cargo
-      #     key: ${{ runner.os }}-cargo-2023
+      - name: Setup pg_validate_extupgrade
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: pg_validate_extupgrade
+          git: https://github.com/rjuju/pg_validate_extupgrade
 
-      # - name: Install pg_validate_extupgrade
-      #   run: cargo install --locked --git https://github.com/rjuju/pg_validate_extupgrade.git
+      - name: Setup PostgreSQL
+        run: |
+          brew install postgresql@${{ matrix.pg }}
+          brew unlink postgresql@${{ matrix.pg }}
+          brew link --overwrite postgresql@${{ matrix.pg }}
+          brew services run postgresql@${{ matrix.pg }}
 
-      - name: Install PostgreSQL and PostGIS
-        run: brew install postgresql@${{ matrix.pg }} postgis
+      - name: Setup PostGIS
+        run: brew install postgis
+        if: ${{ matrix.pg == 17 || matrix.pg == 14 }}
+
+      - name: Fix gettext linkage for PostgreSQL >= 15
+        run: brew unlink gettext && brew link --overwrite --force gettext
+        if: ${{ matrix.pg >= 15 }}
 
       - name: Generate
-        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+        run: VERBOSE=true cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
       - name: Build
         run: cmake --build build --config ${{ matrix.config }}
@@ -39,8 +50,8 @@ jobs:
       - name: Install
         run: sudo cmake --install build --component h3-pg --config ${{ matrix.config }}
 
-      - name: Prepare PostgreSQL
-        run: brew services start postgresql@${{ matrix.pg }}
+      - name: Create test database (for pg_validate_extupgrade)
+        run: createdb runner
 
       - name: Test
         run: ctest --test-dir build --output-on-failure --build-config ${{ matrix.config }}
