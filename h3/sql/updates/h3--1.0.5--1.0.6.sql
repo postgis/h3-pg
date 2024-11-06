@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Bytes & Brains
+ * Copyright 2018 Zacharias Knudsen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
