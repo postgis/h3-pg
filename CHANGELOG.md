@@ -26,10 +26,12 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+</details>
+
+## [4.1.4] - 2024-11-06
+
 - Fix library extension on macOS for PostgreSQL >= 16 (see [#140], thanks [@bayandin])
 - Add support for binary I/O (see [#160], thanks [@robertozimek])
-
-</details>
 
 ## [4.1.3] - 2023-07-26
 
@@ -201,7 +203,8 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.1.3...HEAD
+[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.1.4...HEAD
+[4.1.4]: https://github.com/zachasme/h3-pg/compare/v4.1.3...v4.1.4
 [4.1.3]: https://github.com/zachasme/h3-pg/compare/v4.1.2...v4.1.3
 [4.1.2]: https://github.com/zachasme/h3-pg/compare/v4.1.1...v4.1.2
 [4.1.1]: https://github.com/zachasme/h3-pg/compare/v4.1.0...v4.1.1

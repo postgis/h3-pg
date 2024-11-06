@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Bytes & Brains
+ * Copyright 2024 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,12 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3 UPDATE TO '4.1.4'" to load this file. \quit
 
---@ internal
 CREATE OR REPLACE FUNCTION
     h3index_recv(internal) RETURNS h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
---@ internal
 CREATE OR REPLACE FUNCTION
     h3index_send(h3index) RETURNS bytea
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
