@@ -13,7 +13,7 @@ jobs:
         config: [Release, Debug]
         pg: [17, 16, 15, 14, 13]
 
-    runs-on: macos-13
+    runs-on: macos-14
 
     name: macos 🐘${{ matrix.pg }} (${{ matrix.config }})
 
@@ -42,9 +42,7 @@ jobs:
         if: ${{ matrix.pg >= 15 }}
 
       - name: Generate
-        run: |
-          echo "${CFLAGS}"
-          VERBOSE=true cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
         env:
           # Fixes missing libintl.h on some runners
           CFLAGS: "-I /usr/local/include"
