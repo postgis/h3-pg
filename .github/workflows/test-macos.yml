@@ -10,7 +10,7 @@ jobs:
   macos:
     strategy:
       matrix:
-        os: [macos-14, macos-13]
+        os: [macos-13]
         pg: [17, 16, 15, 14, 13]
         config: [Release, Debug]
 
