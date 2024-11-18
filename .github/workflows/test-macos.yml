@@ -42,9 +42,12 @@ jobs:
         if: ${{ matrix.pg >= 15 }}
 
       - name: Generate
-        run: VERBOSE=true cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+        run: |
+          echo "${CFLAGS}"
+          VERBOSE=true cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
         env:
-          CFLAGS: -I\ /usr/local/include
+          # Fixes missing libintl.h on some runners
+          CFLAGS: "-I /usr/local/include"
 
       - name: Build
         run: cmake --build build --config ${{ matrix.config }}
