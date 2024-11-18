@@ -42,7 +42,9 @@ jobs:
         if: ${{ matrix.pg >= 15 }}
 
       - name: Generate
-        run: VERBOSE=true cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCMAKE_C_FLAGS=-I\ /usr/local/include
+        run: VERBOSE=true cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
+        env:
+          CFLAGS: -I\ /usr/local/include
 
       - name: Build
         run: cmake --build build --config ${{ matrix.config }}
