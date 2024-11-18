@@ -43,10 +43,7 @@ jobs:
         if: ${{ matrix.pg >= 15 }}
 
       - name: Generate
-        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCMAKE_C_FLAGS=$GETTEXT_FIX
-        env:
-          # Fixes missing libintl.h on some runners
-          GETTEXT_FIX: "-I /usr/local/include"
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCMAKE_C_FLAGS=-I\ /usr/local/include
 
       - name: Build
         run: cmake --build build --config ${{ matrix.config }}
