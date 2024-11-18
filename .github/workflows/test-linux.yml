@@ -16,7 +16,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    name: linux 🐘${{ matrix.pg }} (${{ matrix.config }})
+    name: ${{ matrix.os }} 🐘${{ matrix.pg }} (${{ matrix.config }})
 
     steps:
       - uses: actions/checkout@v4
