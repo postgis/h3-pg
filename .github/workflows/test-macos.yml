@@ -11,9 +11,10 @@ jobs:
     strategy:
       matrix:
         config: [Release, Debug]
+        os: [mac-14, macos-13]
         pg: [17, 16, 15, 14, 13]
 
-    runs-on: macos-14
+    runs-on: ${{ matrix.os }}
 
     name: macos 🐘${{ matrix.pg }} (${{ matrix.config }})
 
