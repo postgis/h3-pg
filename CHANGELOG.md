@@ -28,6 +28,7 @@ avoid adding features or APIs which do not map onto the
 
 - Bump `h3` to `v4.2.0`
 - Add `h3_polygon_to_cells_experimental` (see [#159], thanks [@jmealo])
+- Add experimental SP-GIST operator class (see [#43], thanks [@BielStela])
 - Fix for MacOS in nixpkgs / NixOS (see [#141], thanks [@wolfgangwalther])
 
 </details>
@@ -251,6 +252,7 @@ avoid adding features or APIs which do not map onto the
 [#37]: https://github.com/zachasme/h3-pg/issues/37
 [#38]: https://github.com/zachasme/h3-pg/issues/38
 [#41]: https://github.com/zachasme/h3-pg/issues/41
+[#43]: https://github.com/zachasme/h3-pg/issues/43
 [#55]: https://github.com/zachasme/h3-pg/issues/55
 [#64]: https://github.com/zachasme/h3-pg/issues/64
 [#65]: https://github.com/zachasme/h3-pg/pull/65
@@ -274,6 +276,7 @@ avoid adding features or APIs which do not map onto the
 [#160]: https://github.com/zachasme/h3-pg/pull/160
 [@abelvm]: https://github.com/AbelVM
 [@bayandin]: https://github.com/bayandin
+[@BielStela]: https://github.com/BielStela
 [@jmealo]: https://github.com/jmealo
 [@kalenikaliaksandr]: https://github.com/kalenikaliaksandr
 [@kmacdough]: https://github.com/kmacdough
