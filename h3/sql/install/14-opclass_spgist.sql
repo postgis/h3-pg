@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
--- ---------- ---------- ---------- ---------- ---------- ---------- ----------
--- SP-GiST Operator Class (opclass_spgist.c)
--- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+--| ## SP-GiST operator class (experimental)
+--|
+--| *This is still an experimental feature and may change in future versions.*
+--| Add an SP-GiST index using the `h3index_ops_experimental` operator class:
+--|
+--| ```sql
+--| -- CREATE INDEX [indexname] ON [tablename] USING spgist([column] h3index_ops_experimental);
+--| CREATE INDEX spgist_idx ON h3_data USING spgist(hex h3index_ops_experimental);
+--| ```
 
--- SP-GiST operator class
 --@ internal
 CREATE OR REPLACE FUNCTION h3index_spgist_config(internal, internal) RETURNS void
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;

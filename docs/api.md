@@ -470,6 +470,14 @@ Returns true if A contains B.
 Returns true if A is contained by B.
 
 
+## SP-GiST operator class (experimental)
+*This is still an experimental feature and may change in future versions.*
+Add an SP-GiST index using the `h3index_ops_experimental` operator class:
+```sql
+-- CREATE INDEX [indexname] ON [tablename] USING spgist([column] h3index_ops_experimental);
+CREATE INDEX spgist_idx ON h3_data USING spgist(hex h3index_ops_experimental);
+```
+
 # Type casts
 
 ### `h3index` :: `bigint`
