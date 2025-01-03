@@ -48,4 +48,3 @@ CREATE OPERATOR CLASS spgist_h3index_ops DEFAULT FOR TYPE h3index USING spgist A
     FUNCTION  3  h3index_spgist_picksplit(internal, internal),
     FUNCTION  4  h3index_spgist_inner_consistent(internal, internal),
     FUNCTION  5  h3index_spgist_leaf_consistent(internal, internal);
->>>>>>> e8aae9e (Initial SP-GiST experimentation):h3/sql/updates/h3--4.1.3--unreleased.sql

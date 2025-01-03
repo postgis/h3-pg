@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 Bytes & Brains
+ * Copyright 2024 Zacharias Knudsen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@
 
 #include "inttypes.h"
 
-#include "upstream.h" // Copied from upstream
+#include "h3Index.h" // Technically not public API, but we the bit macros
 
 PG_FUNCTION_INFO_V1(h3index_spgist_config);
 PG_FUNCTION_INFO_V1(h3index_spgist_choose);
@@ -68,28 +68,30 @@ spgist_cmp(H3Index * a, H3Index * b)
 }
 
 /*
- * h3index_spgist_config
- *		Returns static information about the index implementation
+ * Returns static information about the index implementation, including the data
+ * type OIDs of the prefix and node label data types.
  *
- * Including the data type OIDs of the prefix and node label data types
+ * The first argument is a pointer to a spgConfigIn C struct, containing input
+ * data for the function.
+ *
+ * The second argument is a pointer to a spgConfigOut C struct, which the
+ * function must fill with result data.
  */
 Datum
 h3index_spgist_config(PG_FUNCTION_ARGS)
 {
-	/*--------------------------------------------------------------------------
-	 * Oid		attType			data type to be indexed
-	 *--------------------------------------------------------------------------
-	 */
+	// struct {
+	//   Oid  attType  /* data type to be indexed */
+	// }
 	spgConfigIn *in = (spgConfigIn *) PG_GETARG_POINTER(0);
 
-	/*--------------------------------------------------------------------------
-	 * Oid		prefixType		data type of inner-tupleprefixes
-	 * Oid		labelType		data type of inner-tuple node labels
-	 * Oid		leafType		data type of leaf-tuple values
-	 * bool		canReturnData	opclass can reconstruct original data
-	 * bool		longValuesOK	opclass can cope with values > 1 page
-	 *--------------------------------------------------------------------------
-	 */
+	// struct {
+	//   Oid	prefixType		/* data type of inner-tuple prefixes */
+	//   Oid	labelType		/* data type of inner-tuple node labels */
+	//   Oid	leafType		/* data type of leaf-tuple values */
+	//   bool	canReturnData	/* opclass can reconstruct original data */
+	//   bool	longValuesOK	/* opclass can cope with values > 1 page */
+	// }
 	spgConfigOut *out = (spgConfigOut *) PG_GETARG_POINTER(1);
 
 	/* prefix is parent H3 index */
@@ -97,6 +99,23 @@ h3index_spgist_config(PG_FUNCTION_ARGS)
 	/* no need for labels */
 	out->labelType = VOIDOID;
 
+	/*
+	 * leafType should match the index storage type defined by the operator
+	 * class's opckeytype catalog entry. (Note that opckeytype can be zero,
+	 * implying the storage type is the same as the operator class's input type,
+	 * which is the most common situation.) For reasons of backward compatibility,
+	 * the config method can set leafType to some other value, and that value will
+	 * be used; but this is deprecated since the index contents are then
+	 * incorrectly identified in the catalogs. Also, it's permissible to leave
+	 * leafType uninitialized (zero); that is interpreted as meaning the index
+	 * storage type derived from opckeytype.
+	 */
+	//out->leafType = 0;
+
+	/*
+	 * canReturnData should be set true if the operator class is capable of
+	 * reconstructing the originally-supplied index value
+	 */
 	out->canReturnData = true;
 	out->longValuesOK = false;
 
@@ -283,7 +302,7 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 {
 	spgInnerConsistentIn *in = (spgInnerConsistentIn *) PG_GETARG_POINTER(0);
 	spgInnerConsistentOut *out = (spgInnerConsistentOut *) PG_GETARG_POINTER(1);
-	H3Index     parent = NULL;
+	H3Index     parent = H3_NULL;
 	int			bc,
 				i;
 	bool		stop;
@@ -323,7 +342,7 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 		StrategyNumber strategy = in->scankeys[i].sk_strategy;
 		H3Index    query = DatumGetH3Index(in->scankeys[i].sk_argument);
 
-		if (parent == NULL)
+		if (parent == H3_NULL)
 		{
 			if (bc > -1)
 			{
