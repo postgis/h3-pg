@@ -25,7 +25,7 @@
 
 #include "inttypes.h"
 
-#include "h3Index.h" // Technically not public API, but we the bit macros
+#include "h3Index.h" // Technically not public API, but we need the bit macros
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_spgist_config);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_spgist_choose);
