@@ -27,11 +27,11 @@
 
 #include "h3Index.h" // Technically not public API, but we the bit macros
 
-PG_FUNCTION_INFO_V1(h3index_spgist_config);
-PG_FUNCTION_INFO_V1(h3index_spgist_choose);
-PG_FUNCTION_INFO_V1(h3index_spgist_picksplit);
-PG_FUNCTION_INFO_V1(h3index_spgist_inner_consistent);
-PG_FUNCTION_INFO_V1(h3index_spgist_leaf_consistent);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_spgist_config);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_spgist_choose);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_spgist_picksplit);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_spgist_inner_consistent);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_spgist_leaf_consistent);
 
 #define H3_ROOT_INDEX -1
 #define NUM_BASE_CELLS 122
