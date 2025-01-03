@@ -19,22 +19,39 @@
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
 -- SP-GiST operator class
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_spgist_config(internal, internal) RETURNS void
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_spgist_choose(internal, internal) RETURNS void
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_spgist_picksplit(internal, internal) RETURNS void
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_spgist_inner_consistent(internal, internal) RETURNS void
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-CREATE OR REPLACE FUNCTION h3index_spgist_leaf_consistent(internal, internal) RETURNS bool
+--@ internal
+CREATE OR REPLACE FUNCTION h3index_spgist_leaf_consistent(internal, internal) RETURNS boolean
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OPERATOR CLASS spgist_h3index_ops DEFAULT FOR TYPE h3index USING spgist AS
-    OPERATOR  6   =   ,
-    OPERATOR  7   @>  ,
-    OPERATOR  8  <@   ,
-
+-- intentionally *not* marked as DEFAULT,
+-- until we are satisfied with the implementation
+CREATE OPERATOR CLASS h3index_ops_experimental
+FOR TYPE h3index USING spgist
+AS
+ -- OPERATOR   1  <<  ,  -- RTLeftStrategyNumber
+ -- OPERATOR   2  &<  ,  -- RTOverLeftStrategyNumber
+ -- OPERATOR   3  &&  ,  -- RTOverlapStrategyNumber
+ -- OPERATOR   4  &>  ,  -- RTOverRightStrategyNumber
+ -- OPERATOR   5  >>  ,  -- RTRightStrategyNumber
+    OPERATOR   6   =  ,  -- RTSameStrategyNumber
+    OPERATOR   7  @>  ,  -- RTContainsStrategyNumber
+    OPERATOR   8  <@  ,  -- RTContainedByStrategyNumber
+ -- OPERATOR   9  &<| ,  -- RTOverBelowStrategyNumber
+ -- OPERATOR  10  <<| ,  -- RTBelowStrategyNumber
+ -- OPERATOR  11  |>> ,  -- RTAboveStrategyNumber
+ -- OPERATOR  12  |&> ,  -- RTOverAboveStrategyNumber
     FUNCTION  1  h3index_spgist_config(internal, internal),
     FUNCTION  2  h3index_spgist_choose(internal, internal),
     FUNCTION  3  h3index_spgist_picksplit(internal, internal),

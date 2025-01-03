@@ -35,10 +35,11 @@ CREATE OR REPLACE FUNCTION h3index_spgist_picksplit(internal, internal) RETURNS 
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 CREATE OR REPLACE FUNCTION h3index_spgist_inner_consistent(internal, internal) RETURNS void
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-CREATE OR REPLACE FUNCTION h3index_spgist_leaf_consistent(internal, internal) RETURNS bool
+CREATE OR REPLACE FUNCTION h3index_spgist_leaf_consistent(internal, internal) RETURNS boolean
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-CREATE OPERATOR CLASS spgist_h3index_ops DEFAULT FOR TYPE h3index USING spgist AS
+-- intentionally *not* marked as DEFAULT
+CREATE OPERATOR CLASS h3index_ops_experimental FOR TYPE h3index USING spgist AS
     OPERATOR  6   =   ,
     OPERATOR  7   @>  ,
     OPERATOR  8  <@   ,

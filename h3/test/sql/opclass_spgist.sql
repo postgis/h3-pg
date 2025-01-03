@@ -2,7 +2,7 @@
 \set hexagon '\'831c02fffffffff\'::h3index'
 
 CREATE TABLE h3_test_spgist (hex h3index);
-CREATE INDEX SPGIST_IDX ON h3_test_spgist USING spgist(hex);
+CREATE INDEX SPGIST_IDX ON h3_test_spgist USING spgist(hex h3index_ops_experimental);
 INSERT INTO h3_test_spgist (hex) SELECT h3_cell_to_parent(:hexagon);
 INSERT INTO h3_test_spgist (hex) SELECT h3_cell_to_children(:hexagon);
 INSERT INTO h3_test_spgist (hex) SELECT h3_cell_to_center_child(:hexagon, 15);
