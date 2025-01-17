@@ -15,7 +15,7 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3 UPDATE TO '4.2.0'" to load this file. \quit
 
 --@ availability: 4.2.0
 CREATE OR REPLACE FUNCTION

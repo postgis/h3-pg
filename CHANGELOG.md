@@ -26,12 +26,14 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+</details>
+
+## 4.2.0 - 2025-01-17
+
 - Bump `h3` to `v4.2.0`
 - Add `h3_polygon_to_cells_experimental` (see [#159], thanks [@jmealo])
 - Add experimental SP-GIST operator class (see [#43], thanks [@BielStela])
 - Fix for MacOS in nixpkgs / NixOS (see [#141], thanks [@wolfgangwalther])
-
-</details>
 
 ## [4.1.4] - 2024-11-06
 
