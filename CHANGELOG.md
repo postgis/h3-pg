@@ -26,9 +26,10 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
-- More upstream copy/paste in support of Debian package (see [#169], thanks [@df7cb])
-
 </details>
+
+## [4.2.2] - 2025-02-10
+- More upstream copy/paste in support of Debian package (see [#169], thanks [@df7cb])
 
 ## [4.2.1] - 2025-02-04
 
@@ -216,7 +217,8 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.2.1...HEAD
+[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.2.2...HEAD
+[4.2.2]: https://github.com/zachasme/h3-pg/compare/v4.2.1...v4.2.2
 [4.2.1]: https://github.com/zachasme/h3-pg/compare/v4.2.0...v4.2.1
 [4.2.0]: https://github.com/zachasme/h3-pg/compare/v4.1.4...v4.2.0
 [4.1.4]: https://github.com/zachasme/h3-pg/compare/v4.1.3...v4.1.4
