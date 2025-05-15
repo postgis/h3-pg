@@ -140,3 +140,112 @@ SELECT COUNT(*) = 76 FROM (
 ) q;
  t
 
+--
+-- test h3_get_resolution_from_tile_zoom
+--
+-- consequtive examples for tile zooms 0..15 with default params
+--   tile_size: 512 px
+--   hex_edge_pixels: 44
+--   max_h3_resolution: 15
+--   min_h3_resolution: 0
+SELECT h3_get_resolution_from_tile_zoom(0) = 0;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(1) = 0;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(2) = 0;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(3) = 1;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(4) = 2;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(5) = 3;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(6) = 3;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(7) = 4;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(8) = 5;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(9) = 5;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(10) = 6;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(11) = 7;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(12) = 8;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(13) = 8;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(14) = 9;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(15) = 10;
+ t
+
+-- consequtive examples for tile zooms 0..15 with settings:
+--   tile_size: 512 px
+--   hex_edge_pixels: 5
+--   max_h3_resolution: 8
+--   min_h3_resolution: 0
+SELECT h3_get_resolution_from_tile_zoom(0, 8, 0, 5, 512) = 1;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(1, 8, 0, 5, 512) = 2;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(2, 8, 0, 5, 512) = 3;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(3, 8, 0, 5, 512) = 3;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(4, 8, 0, 5, 512) = 4;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(5, 8, 0, 5, 512) = 5;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(6, 8, 0, 5, 512) = 5;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(7, 8, 0, 5, 512) = 6;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(8, 8, 0, 5, 512) = 7;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(9, 8, 0, 5, 512) = 8;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(10, 8, 0, 5, 512) = 8;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(11, 8, 0, 5, 512) = 8;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(12, 8, 0, 5, 512) = 8;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(13, 8, 0, 5, 512) = 8;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(14, 8, 0, 5, 512) = 8;
+ t
+
+SELECT h3_get_resolution_from_tile_zoom(15, 8, 0, 5, 512) = 8;
+ t
+

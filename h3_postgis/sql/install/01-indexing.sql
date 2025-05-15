@@ -75,3 +75,35 @@ COMMENT ON FUNCTION
 IS 'Finds the boundary of the index.
 
 Splits polygons when crossing 180th meridian.';
+
+--@ availability: 4.2.3
+--@ refid: h3_get_resolution_from_tile_zoom
+CREATE OR REPLACE FUNCTION h3_get_resolution_from_tile_zoom(
+    z integer,
+    max_h3_resolution integer DEFAULT 15,
+    min_h3_resolution integer DEFAULT 0,
+    hex_edge_pixels integer DEFAULT 44,
+    tile_size integer DEFAULT 512
+) RETURNS integer
+AS $$
+DECLARE
+    e0  CONSTANT numeric := h3_get_hexagon_edge_length_avg(0,'m'); -- res-0 edge
+    ln7 CONSTANT numeric := LN(SQRT(7.0));                         -- = ln(√7)
+    desired_edge numeric;
+    r_est        integer;
+BEGIN
+    IF z < 0 THEN
+        RAISE EXCEPTION 'Negative tile zoom levels are not supported';
+    END IF;
+
+    desired_edge := 40075016.6855785 / (tile_size * 2 ^ z) * hex_edge_pixels;
+
+    r_est := ROUND( LN(e0 / desired_edge) / ln7 );
+
+    RETURN GREATEST(min_h3_resolution,
+           LEAST(r_est, max_h3_resolution));
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
+COMMENT ON FUNCTION
+    h3_get_resolution_from_tile_zoom(integer, integer, integer, integer, integer)
+IS 'Returns the optimal H3 resolution for a specified XYZ tile zoom level, based on hexagon size in pixels and resolution limits';

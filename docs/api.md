@@ -578,6 +578,13 @@ Finds the boundary of the index.
 Splits polygons when crossing 180th meridian.
 
 
+### h3_get_resolution_from_tile_zoom(z `integer`, [max_h3_resolution `integer` = 15], min_h3_resolution `integer`, [hex_edge_pixels `integer` = 44], [tile_size `integer` = 512]) ⇒ `integer`
+*Since v4.2.3*
+
+
+Returns the optimal H3 resolution for a specified XYZ tile zoom level, based on hexagon size in pixels and resolution limits
+
+
 # PostGIS Grid Traversal Functions
 
 ### h3_grid_path_cells_recursive(origin `h3index`, destination `h3index`) ⇒ SETOF `h3index`
