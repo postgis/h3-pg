@@ -31,13 +31,13 @@
 #include "type.h"
 #include "guc.h"
 
-PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_lat_lng_to_cell);
-PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_lat_lng);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_latlng_to_cell);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_latlng);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_boundary);
 
 /* Indexes the location at the specified resolution */
 Datum
-h3_lat_lng_to_cell(PG_FUNCTION_ARGS)
+h3_latlng_to_cell(PG_FUNCTION_ARGS)
 {
 	H3Index		cell;
 	LatLng		location;
@@ -71,7 +71,7 @@ h3_lat_lng_to_cell(PG_FUNCTION_ARGS)
 
 /* Finds the centroid of the index */
 Datum
-h3_cell_to_lat_lng(PG_FUNCTION_ARGS)
+h3_cell_to_latlng(PG_FUNCTION_ARGS)
 {
 	LatLng		center;
 	Point	   *point = palloc(sizeof(Point));

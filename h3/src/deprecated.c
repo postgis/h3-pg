@@ -76,3 +76,7 @@ H3_DEPRECATE("4.0.0", h3_uncompact);
 H3_DEPRECATE("4.0.0", h3_unidirectional_edge_is_valid);
 H3_DEPRECATE("4.1.0", h3_cell_to_boundary_wkb);
 H3_DEPRECATE("4.1.0", h3_cells_to_multi_polygon_wkb);
+
+H3_SOFT_DEPRECATE(h3_vertex_to_lat_lng, h3_vertex_to_latlng);
+H3_SOFT_DEPRECATE(h3_cell_to_lat_lng, h3_cell_to_latlng);
+H3_SOFT_DEPRECATE(h3_lat_lng_to_cell, h3_latlng_to_cell);

@@ -21,3 +21,27 @@ CREATE OR REPLACE FUNCTION
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_cell_to_boundary(h3index, boolean)
 IS 'DEPRECATED: Use `SET h3.extend_antimeridian TO true` instead.';
+
+--@ availability: 4.0.0
+--@ deprecated
+CREATE OR REPLACE FUNCTION
+    h3_vertex_to_lat_lng(vertex h3index) RETURNS point
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_vertex_to_lat_lng(vertex h3index)
+IS 'DEPRECATED: Use `h3_vertex_to_latlng` instead.';
+
+--@ availability: 4.0.0
+--@ deprecated
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_lat_lng(cell h3index) RETURNS point
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_lat_lng(h3index)
+IS 'DEPRECATED: Use `h3_cell_to_latlng` instead.';
+
+--@ availability: 4.0.0
+--@ deprecated
+CREATE OR REPLACE FUNCTION
+    h3_lat_lng_to_cell(latlng point, resolution integer) RETURNS h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_lat_lng_to_cell(point, integer)
+IS 'DEPRECATED: Use `h3_latlng_to_cell` instead.';

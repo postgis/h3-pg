@@ -32,11 +32,11 @@ AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_cell_to_vertexes(cell h3index)
 IS 'Returns all vertexes for a given cell, as H3 indexes.';
 
---@ availability: 4.0.0
+--@ availability: unreleased
 CREATE OR REPLACE FUNCTION
-    h3_vertex_to_lat_lng(vertex h3index) RETURNS point
+    h3_vertex_to_latlng(vertex h3index) RETURNS point
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_vertex_to_lat_lng(vertex h3index)
+    h3_vertex_to_latlng(vertex h3index)
 IS 'Get the geocoordinates of an H3 vertex.';
 
 --@ availability: 4.0.0

@@ -35,7 +35,7 @@ void h3_assert(int error);
 
 #define H3_DEPRECATION(msg)			  \
 	ereport(WARNING, (				  \
-		errmsg("Deprecated: %s", msg) \
+		errmsg("Deprecation notice: %s", msg) \
 	))
 
 #define DEBUG(msg, ...)			   \

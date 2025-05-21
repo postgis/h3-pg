@@ -27,7 +27,7 @@
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_vertex);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_vertexes);
-PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_vertex_to_lat_lng);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_vertex_to_latlng);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_is_valid_vertex);
 
 /* Returns a single vertex for a given cell, as an H3 index */
@@ -84,7 +84,7 @@ h3_cell_to_vertexes(PG_FUNCTION_ARGS)
 
 /* Get the geocoordinates of an H3 vertex */
 Datum
-h3_vertex_to_lat_lng(PG_FUNCTION_ARGS)
+h3_vertex_to_latlng(PG_FUNCTION_ARGS)
 {
 	H3Index		vertex = PG_GETARG_H3INDEX(0);
 

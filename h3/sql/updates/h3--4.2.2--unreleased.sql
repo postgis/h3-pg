@@ -16,3 +16,41 @@
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+
+--@ availability: unreleased
+CREATE OR REPLACE FUNCTION
+    h3_vertex_to_latlng(vertex h3index) RETURNS point
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_vertex_to_latlng(vertex h3index)
+IS 'Get the geocoordinates of an H3 vertex.';
+
+COMMENT ON FUNCTION
+    h3_vertex_to_lat_lng(vertex h3index)
+IS 'DEPRECATED: Use `h3_vertex_to_latlng` instead.';
+
+--@ availability: unreleased
+CREATE OR REPLACE FUNCTION
+    h3_latlng_to_cell(latlng point, resolution integer) RETURNS h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_latlng_to_cell(point, integer)
+IS 'Indexes the location at the specified resolution.';
+
+COMMENT ON FUNCTION
+    h3_lat_lng_to_cell(point, integer)
+IS 'DEPRECATED: Use `h3_latlng_to_cell` instead.';
+
+--@ availability: unreleased
+CREATE OR REPLACE FUNCTION
+    h3_cell_to_latlng(cell h3index) RETURNS point
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
+    h3_cell_to_latlng(h3index)
+IS 'Finds the centroid of the index.';
+
+COMMENT ON FUNCTION
+    h3_cell_to_lat_lng(vertex h3index)
+IS 'DEPRECATED: Use `h3_cell_to_latlng` instead.';
+
+DROP CAST IF EXISTS (h3index AS point);
+CREATE CAST (h3index AS point) WITH FUNCTION h3_cell_to_latlng(h3index);
+COMMENT ON CAST (h3index AS point) IS
+    'Convert H3 index to point.';

@@ -18,6 +18,8 @@
 
 #include <fmgr.h> // PG_FUNCTION_INFO_V1
 
+#include "error.h"
+
 /*	Inspired by PostGIS legacy function handling */
 /*	https://github.com/postgis/postgis/blob/master/postgis/postgis_legacy.c */
 
@@ -34,4 +36,13 @@
 			errhint("Consider running: ALTER EXTENSION h3 UPDATE") \
 		)); \
 		PG_RETURN_POINTER(NULL); \
+	}
+
+#define H3_SOFT_DEPRECATE(oldfunc, newfunc) \
+	Datum newfunc(PG_FUNCTION_ARGS); \
+	PGDLLEXPORT PG_FUNCTION_INFO_V1(oldfunc); \
+	Datum oldfunc(PG_FUNCTION_ARGS) \
+	{ \
+		H3_DEPRECATION(#oldfunc " will be deprecated in favor of " #newfunc " next major release"); \
+		newfunc(fcinfo); \
 	}

@@ -19,20 +19,20 @@
 --| These function are used for finding the H3 index containing coordinates,
 --| and for finding the center and boundary of H3 indexes.
 
---@ availability: 4.0.0
+--@ availability: unreleased
 --@ ref: h3_lat_lng_to_cell_geometry, h3_lat_lng_to_cell_geography
 CREATE OR REPLACE FUNCTION
-    h3_lat_lng_to_cell(latlng point, resolution integer) RETURNS h3index
+    h3_latlng_to_cell(latlng point, resolution integer) RETURNS h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_lat_lng_to_cell(point, integer)
+    h3_latlng_to_cell(point, integer)
 IS 'Indexes the location at the specified resolution.';
 
---@ availability: 4.0.0
+--@ availability: unreleased
 --@ ref: h3_cell_to_geometry, h3_cell_to_geography
 CREATE OR REPLACE FUNCTION
-    h3_cell_to_lat_lng(cell h3index) RETURNS point
+    h3_cell_to_latlng(cell h3index) RETURNS point
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
-    h3_cell_to_lat_lng(h3index)
+    h3_cell_to_latlng(h3index)
 IS 'Finds the centroid of the index.';
 
 --@ availability: 4.0.0
