@@ -18,17 +18,17 @@ represented as a (or 16-character) hexadecimal string, like '8928308280fffff'.
 These function are used for finding the H3 index containing coordinates,
 and for finding the center and boundary of H3 indexes.
 
-### h3_lat_lng_to_cell(latlng `point`, resolution `integer`) ⇒ `h3index`
-*Since v4.0.0*
+### h3_latlng_to_cell(latlng `point`, resolution `integer`) ⇒ `h3index`
+*Since vunreleased*
 
-See also: <a href="#h3_lat_lng_to_cell.geometry.resolution.integer.h3index">h3_lat_lng_to_cell(`geometry`, `integer`)</a>, <a href="#h3_lat_lng_to_cell.geography.resolution.integer.h3index">h3_lat_lng_to_cell(`geography`, `integer`)</a>
+See also: <a href="#h3_latlng_to_cell.geometry.resolution.integer.h3index">h3_latlng_to_cell(`geometry`, `integer`)</a>, <a href="#h3_latlng_to_cell.geography.resolution.integer.h3index">h3_latlng_to_cell(`geography`, `integer`)</a>
 
 
 Indexes the location at the specified resolution.
 
 
-### h3_cell_to_lat_lng(cell `h3index`) ⇒ `point`
-*Since v4.0.0*
+### h3_cell_to_latlng(cell `h3index`) ⇒ `point`
+*Since vunreleased*
 
 See also: <a href="#h3_cell_to_geometry.h3index.geometry">h3_cell_to_geometry(`h3index`)</a>, <a href="#h3_cell_to_geography.h3index.geography">h3_cell_to_geography(`h3index`)</a>
 
@@ -352,8 +352,8 @@ Returns a single vertex for a given cell, as an H3 index.
 Returns all vertexes for a given cell, as H3 indexes.
 
 
-### h3_vertex_to_lat_lng(vertex `h3index`) ⇒ `point`
-*Since v4.0.0*
+### h3_vertex_to_latlng(vertex `h3index`) ⇒ `point`
+*Since vunreleased*
 
 
 Get the geocoordinates of an H3 vertex.
@@ -521,26 +521,35 @@ Migrate h3index from pass-by-reference to pass-by-value.
 
 DEPRECATED: Use `SET h3.extend_antimeridian TO true` instead.
 
+
+DEPRECATED: Use `h3_vertex_to_latlng` instead.
+
+
+DEPRECATED: Use `h3_cell_to_latlng` instead.
+
+
+DEPRECATED: Use `h3_latlng_to_cell` instead.
+
 # PostGIS Integration
 The `GEOMETRY` data passed to `h3-pg` PostGIS functions should
 be in SRID 4326. This is an expectation of the core H3 library.
 Using other SRIDs, such as 3857, can result in either errors or
 invalid data depending on the function.
 For example, the `h3_polygon_to_cells()` function will fail with
-an error in this scenario while the `h3_lat_lng_to_cell()` function
+an error in this scenario while the `h3_latlng_to_cell()` function
 will return an invalid geometry.
 
 # PostGIS Indexing Functions
 
-### h3_lat_lng_to_cell(`geometry`, resolution `integer`) ⇒ `h3index`
-*Since v4.0.0*
+### h3_latlng_to_cell(`geometry`, resolution `integer`) ⇒ `h3index`
+*Since vunreleased*
 
 
 Indexes the location at the specified resolution.
 
 
-### h3_lat_lng_to_cell(`geography`, resolution `integer`) ⇒ `h3index`
-*Since v4.0.0*
+### h3_latlng_to_cell(`geography`, resolution `integer`) ⇒ `h3index`
+*Since vunreleased*
 
 
 Indexes the location at the specified resolution.
@@ -836,5 +845,11 @@ Returns `h3_raster_class_summary_item` for each H3 cell and value for a given ba
 
 
 Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Attempts to select an appropriate method based on number of pixels per H3 cell.
+
+
+DEPRECATED: Use `h3_latlng_to_cell` instead..
+
+
+DEPRECATED: Use `h3_latlng_to_cell` instead..
 
 
