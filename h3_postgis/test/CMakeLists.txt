@@ -1,4 +1,5 @@
 set(TESTS
+  deprecations
   postgis
   rasters
 )

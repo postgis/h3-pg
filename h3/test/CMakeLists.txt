@@ -1,5 +1,6 @@
 set(TESTS
   clustering
+  deprecated
   edge
   extension
   hierarchy
