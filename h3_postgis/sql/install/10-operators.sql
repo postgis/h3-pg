@@ -18,7 +18,7 @@
 
 --@ availability: 4.1.3
 CREATE OPERATOR @ (
-    PROCEDURE = h3_lat_lng_to_cell,
+    PROCEDURE = h3_latlng_to_cell,
     LEFTARG = geometry, RIGHTARG = integer
 );
 COMMENT ON OPERATOR @ (geometry, integer) IS
@@ -26,7 +26,7 @@ COMMENT ON OPERATOR @ (geometry, integer) IS
 
 --@ availability: 4.1.3
 CREATE OPERATOR @ (
-    PROCEDURE = h3_lat_lng_to_cell,
+    PROCEDURE = h3_latlng_to_cell,
     LEFTARG = geography, RIGHTARG = integer
 );
 COMMENT ON OPERATOR @ (geography, integer) IS

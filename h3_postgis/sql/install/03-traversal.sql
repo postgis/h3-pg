@@ -42,7 +42,7 @@ BEGIN
                     h3_cell_to_geometry(destination) AS g2),
             cells AS (
                 SELECT
-                    h3_lat_lng_to_cell(
+                    h3_latlng_to_cell(
                         ST_Centroid(ST_MakeLine(g1, g2)::geography),
                         h3_get_resolution(origin)) AS middle
                 FROM points)

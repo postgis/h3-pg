@@ -19,31 +19,31 @@
 --| Using other SRIDs, such as 3857, can result in either errors or
 --| invalid data depending on the function.
 --| For example, the `h3_polygon_to_cells()` function will fail with
---| an error in this scenario while the `h3_lat_lng_to_cell()` function
+--| an error in this scenario while the `h3_latlng_to_cell()` function
 --| will return an invalid geometry.
 
 --| # PostGIS Indexing Functions
 
---@ availability: 4.0.0
---@ refid: h3_lat_lng_to_cell_geometry
-CREATE OR REPLACE FUNCTION h3_lat_lng_to_cell(geometry, resolution integer) RETURNS h3index
-    AS $$ SELECT h3_lat_lng_to_cell($1::point, $2); $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+--@ availability: unreleased
+--@ refid: h3_latlng_to_cell_geometry
+CREATE OR REPLACE FUNCTION h3_latlng_to_cell(geometry, resolution integer) RETURNS h3index
+    AS $$ SELECT h3_latlng_to_cell($1::point, $2); $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
-    h3_lat_lng_to_cell(geometry, resolution integer)
+    h3_latlng_to_cell(geometry, resolution integer)
 IS 'Indexes the location at the specified resolution.';
 
---@ availability: 4.0.0
---@ refid: h3_lat_lng_to_cell_geography
-CREATE OR REPLACE FUNCTION h3_lat_lng_to_cell(geography, resolution integer) RETURNS h3index
-    AS $$ SELECT h3_lat_lng_to_cell($1::geometry, $2); $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+--@ availability: unreleased
+--@ refid: h3_latlng_to_cell_geography
+CREATE OR REPLACE FUNCTION h3_latlng_to_cell(geography, resolution integer) RETURNS h3index
+    AS $$ SELECT h3_latlng_to_cell($1::geometry, $2); $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
-    h3_lat_lng_to_cell(geometry, resolution integer)
+    h3_latlng_to_cell(geometry, resolution integer)
 IS 'Indexes the location at the specified resolution.';
 
 --@ availability: 4.0.0
 --@ refid: h3_cell_to_geometry
 CREATE OR REPLACE FUNCTION h3_cell_to_geometry(h3index) RETURNS geometry
-  AS $$ SELECT ST_SetSRID(h3_cell_to_lat_lng($1)::geometry, 4326) $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+  AS $$ SELECT ST_SetSRID(h3_cell_to_latlng($1)::geometry, 4326) $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_cell_to_geometry(h3index)
 IS 'Finds the centroid of the index.';

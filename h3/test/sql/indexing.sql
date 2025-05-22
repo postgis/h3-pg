@@ -8,26 +8,26 @@
 \set resolution 3
 
 --
--- TEST h3_cell_to_lat_lng and h3_lat_lng_to_cell
+-- TEST h3_cell_to_latlng and h3_latlng_to_cell
 --
 
 -- convertion to geo works
-SELECT h3_cell_to_lat_lng(:hexagon) ~= :geo;
+SELECT h3_cell_to_latlng(:hexagon) ~= :geo;
 
 -- convertion to h3 index works
-SELECT h3_lat_lng_to_cell(:geo, :resolution) = :hexagon;
+SELECT h3_latlng_to_cell(:geo, :resolution) = :hexagon;
 
--- h3_cell_to_lat_lng is inverse of h3_lat_lng_to_cell
-SELECT h3_cell_to_lat_lng(i) ~= :geo AND h3_get_resolution(i) = :resolution FROM (
-    SELECT h3_lat_lng_to_cell(:geo, :resolution) AS i
+-- h3_cell_to_latlng is inverse of h3_latlng_to_cell
+SELECT h3_cell_to_latlng(i) ~= :geo AND h3_get_resolution(i) = :resolution FROM (
+    SELECT h3_latlng_to_cell(:geo, :resolution) AS i
 ) AS q;
--- h3_lat_lng_to_cell is inverse of h3_cell_to_lat_lng
-SELECT h3_lat_lng_to_cell(g, r) = :hexagon FROM (
-    SELECT h3_cell_to_lat_lng(:hexagon) AS g, h3_get_resolution(:hexagon) AS r
+-- h3_latlng_to_cell is inverse of h3_cell_to_latlng
+SELECT h3_latlng_to_cell(g, r) = :hexagon FROM (
+    SELECT h3_cell_to_latlng(:hexagon) AS g, h3_get_resolution(:hexagon) AS r
 ) AS q;
 -- same for pentagon
-SELECT h3_lat_lng_to_cell(g, r) = :pentagon FROM (
-    SELECT h3_cell_to_lat_lng(:pentagon) AS g, h3_get_resolution(:pentagon) AS r
+SELECT h3_latlng_to_cell(g, r) = :pentagon FROM (
+    SELECT h3_cell_to_latlng(:pentagon) AS g, h3_get_resolution(:pentagon) AS r
 ) AS q;
 
 --

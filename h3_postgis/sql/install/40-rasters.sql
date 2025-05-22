@@ -60,7 +60,7 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell(
 RETURNS h3index
 AS $$
 DECLARE
-    cell h3index := h3_lat_lng_to_cell(ST_Transform(ST_Centroid(poly), 4326), resolution);
+    cell h3index := h3_latlng_to_cell(ST_Transform(ST_Centroid(poly), 4326), resolution);
 BEGIN
     IF h3_is_pentagon(cell) THEN
         SELECT h3 INTO cell FROM h3_grid_disk(cell) AS h3 WHERE h3 != cell LIMIT 1;
@@ -323,7 +323,7 @@ CREATE OR REPLACE FUNCTION h3_raster_summary_centroids(
 RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
     SELECT
-        h3_lat_lng_to_cell(ST_Transform(geom, 4326), resolution) AS h3,
+        h3_latlng_to_cell(ST_Transform(geom, 4326), resolution) AS h3,
         ROW(
             count(val),
             sum(val),
@@ -596,7 +596,7 @@ CREATE OR REPLACE FUNCTION __h3_raster_class_summary_centroids(
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
     SELECT
-        h3_lat_lng_to_cell(ST_Transform(geom, 4326), resolution) AS h3,
+        h3_latlng_to_cell(ST_Transform(geom, 4326), resolution) AS h3,
         val::integer AS val,
         ROW(
             val::integer,

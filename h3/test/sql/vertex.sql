@@ -24,10 +24,10 @@ SELECT COUNT(*) = 5 FROM (
 ) q;
 
 --
--- TEST h3_vertex_to_lat_lng
+-- TEST h3_vertex_to_latlng
 --
  
-SELECT h3_vertex_to_lat_lng(:vertex2) ~= :geo;
+SELECT h3_vertex_to_latlng(:vertex2) ~= :geo;
 
 --
 -- TEST h3_is_valid_vertex and

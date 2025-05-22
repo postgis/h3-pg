@@ -19,22 +19,22 @@
 \set transmeridianMulti '\'MULTIPOLYGON(((-175 50, -175 55, 175 55, 175 50, -175 50)), ((170 50, 170 55, 165 55, 165 50, 170 50)))\''::geometry(MULTIPOLYGON)
 
 
-SELECT h3_lat_lng_to_cell(:degree, :resolution) = '8a63a9a99047fff';
+SELECT h3_latlng_to_cell(:degree, :resolution) = '8a63a9a99047fff';
 
 -- meters are NOT reprojected
-SELECT h3_lat_lng_to_cell(:meter, :resolution) <> '8a63a9a99047fff';
+SELECT h3_latlng_to_cell(:meter, :resolution) <> '8a63a9a99047fff';
 
 -- check back/forth conversion return same hex
-SELECT h3_lat_lng_to_cell(h3_cell_to_geometry(:hexagon), :resolution) = '8a63a9a99047fff';
+SELECT h3_latlng_to_cell(h3_cell_to_geometry(:hexagon), :resolution) = '8a63a9a99047fff';
 
 -- check num points in boundary
 SELECT ST_NPoints(h3_cell_to_boundary_geometry(:hexagon)) = 7;
 
--- test strict h3_lat_lng_to_cell throws for bad latlon
+-- test strict h3_latlng_to_cell throws for bad latlon
 CREATE FUNCTION h3_test_postgis_nounit() RETURNS boolean LANGUAGE PLPGSQL
     AS $$
         BEGIN
-            PERFORM h3_lat_lng_to_cell(POINT(360, 2.592131261648213), 1);
+            PERFORM h3_latlng_to_cell(POINT(360, 2.592131261648213), 1);
             RETURN false;
         EXCEPTION WHEN OTHERS THEN
             RETURN true;
@@ -48,11 +48,11 @@ DROP FUNCTION h3_test_postgis_nounit;
 -- Test wraparound
 \set lon 55.6677199224442
 \set lat 12.592131261648213
-SELECT h3_lat_lng_to_cell(POINT(:lon,       :lat), 7)
-     = h3_lat_lng_to_cell(POINT(:lon + 360, :lat), 7);
+SELECT h3_latlng_to_cell(POINT(:lon,       :lat), 7)
+     = h3_latlng_to_cell(POINT(:lon + 360, :lat), 7);
 
-SELECT h3_lat_lng_to_cell(POINT(:lon, :lat      ), 7)
-     = h3_lat_lng_to_cell(POINT(:lon, :lat + 360), 7);
+SELECT h3_latlng_to_cell(POINT(:lon, :lat      ), 7)
+     = h3_latlng_to_cell(POINT(:lon, :lat + 360), 7);
 
 -- test h3_grid_path_cells_recursive works for long path
 SELECT COUNT(*) > 0 FROM (

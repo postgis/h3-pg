@@ -136,7 +136,7 @@ WITH
         -- Find an H3 cell in a bottom-right corner of a first raster
         -- (intersecting 4 rasters)
         SELECT
-            h3_lat_lng_to_cell(
+            h3_latlng_to_cell(
                 ST_MakePoint(
                     ST_RasterToWorldCoordX(rast, :raster_size),
                     ST_RasterToWorldCoordY(rast, :raster_size)),

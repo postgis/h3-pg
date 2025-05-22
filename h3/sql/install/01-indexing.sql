@@ -20,7 +20,7 @@
 --| and for finding the center and boundary of H3 indexes.
 
 --@ availability: unreleased
---@ ref: h3_lat_lng_to_cell_geometry, h3_lat_lng_to_cell_geography
+--@ ref: h3_latlng_to_cell_geometry, h3_latlng_to_cell_geography
 CREATE OR REPLACE FUNCTION
     h3_latlng_to_cell(latlng point, resolution integer) RETURNS h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
