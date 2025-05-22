@@ -27,7 +27,7 @@ avoid adding features or APIs which do not map onto the
   </summary>
 
 - Add `h3_get_resolution_from_tile_zoom` (see [#176], thanks [@sleeping-h])
-- Align function names with other binding (see [#177])
+- Alter function names containing `lat_lng` to `latlng` in order to align with other SQL bindings (see [#177])
 
 </details>
 
