@@ -27,6 +27,7 @@ avoid adding features or APIs which do not map onto the
   </summary>
 
 - Add `h3_get_resolution_from_tile_zoom` (see [#176], thanks [@sleeping-h])
+- Align function names with other binding (see [#177])
 
 </details>
 
@@ -290,6 +291,7 @@ avoid adding features or APIs which do not map onto the
 [#160]: https://github.com/zachasme/h3-pg/pull/160
 [#169]: https://github.com/zachasme/h3-pg/issues/169
 [#176]: https://github.com/zachasme/h3-pg/pull/176
+[#177]: https://github.com/zachasme/h3-pg/pull/177
 [@abelvm]: https://github.com/AbelVM
 [@bayandin]: https://github.com/bayandin
 [@BielStela]: https://github.com/BielStela
