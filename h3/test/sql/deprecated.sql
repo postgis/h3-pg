@@ -5,5 +5,10 @@
 \set hexagon '\'831c02fffffffff\'::h3index'
 \set resolution 3
 
+SELECT h3_cell_to_lat_lng(:hexagon);
+SELECT :geo;
+SELECT h3_lat_lng_to_cell(:geo, :resolution);
+SELECT :hexagon;
+
 SELECT h3_cell_to_lat_lng(:hexagon) ~= :geo;
 SELECT h3_lat_lng_to_cell(:geo, :resolution) = :hexagon;
