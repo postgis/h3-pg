@@ -44,5 +44,5 @@
 	Datum oldfunc(PG_FUNCTION_ARGS) \
 	{ \
 		H3_DEPRECATION(#oldfunc " will be deprecated in favor of " #newfunc " next major release"); \
-		newfunc(fcinfo); \
+		return newfunc(fcinfo); \
 	}
