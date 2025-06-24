@@ -26,11 +26,12 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+</details>
+
+## [4.2.3] - 2025-06-24
 - Add `h3_get_resolution_from_tile_zoom` (see [#176], thanks [@sleeping-h])
 - Alter function names containing `lat_lng` to `latlng` in order to align with other SQL bindings (see [#177])
 - Add support for PostgreSQL 18 ([#179], see thanks [@devrimgunduz])
-
-</details>
 
 ## [4.2.2] - 2025-02-10
 - More upstream copy/paste in support of Debian package (see [#169], thanks [@df7cb])
@@ -221,7 +222,8 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.2.2...HEAD
+[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.2.3...HEAD
+[4.2.3]: https://github.com/zachasme/h3-pg/compare/v4.2.2...v4.2.3
 [4.2.2]: https://github.com/zachasme/h3-pg/compare/v4.2.1...v4.2.2
 [4.2.1]: https://github.com/zachasme/h3-pg/compare/v4.2.0...v4.2.1
 [4.2.0]: https://github.com/zachasme/h3-pg/compare/v4.1.4...v4.2.0

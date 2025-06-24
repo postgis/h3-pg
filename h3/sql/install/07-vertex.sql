@@ -32,7 +32,7 @@ AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_cell_to_vertexes(cell h3index)
 IS 'Returns all vertexes for a given cell, as H3 indexes.';
 
---@ availability: unreleased
+--@ availability: 4.2.3
 CREATE OR REPLACE FUNCTION
     h3_vertex_to_latlng(vertex h3index) RETURNS point
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION

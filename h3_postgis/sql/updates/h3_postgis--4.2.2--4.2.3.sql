@@ -15,7 +15,7 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3_postgis UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3_postgis UPDATE TO '4.2.3'" to load this file. \quit
 
 CREATE OR REPLACE FUNCTION h3_get_resolution_from_tile_zoom(
     z integer,

@@ -19,7 +19,7 @@
 --| These function are used for finding the H3 index containing coordinates,
 --| and for finding the center and boundary of H3 indexes.
 
---@ availability: unreleased
+--@ availability: 4.2.3
 --@ ref: h3_latlng_to_cell_geometry, h3_latlng_to_cell_geography
 CREATE OR REPLACE FUNCTION
     h3_latlng_to_cell(latlng point, resolution integer) RETURNS h3index
@@ -27,7 +27,7 @@ AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_latlng_to_cell(point, integer)
 IS 'Indexes the location at the specified resolution.';
 
---@ availability: unreleased
+--@ availability: 4.2.3
 --@ ref: h3_cell_to_geometry, h3_cell_to_geography
 CREATE OR REPLACE FUNCTION
     h3_cell_to_latlng(cell h3index) RETURNS point

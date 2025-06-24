@@ -19,7 +19,7 @@ These function are used for finding the H3 index containing coordinates,
 and for finding the center and boundary of H3 indexes.
 
 ### h3_latlng_to_cell(latlng `point`, resolution `integer`) ⇒ `h3index`
-*Since vunreleased*
+*Since v4.2.3*
 
 See also: <a href="#h3_latlng_to_cell.geometry.resolution.integer.h3index">h3_latlng_to_cell(`geometry`, `integer`)</a>, <a href="#h3_latlng_to_cell.geography.resolution.integer.h3index">h3_latlng_to_cell(`geography`, `integer`)</a>
 
@@ -28,7 +28,7 @@ Indexes the location at the specified resolution.
 
 
 ### h3_cell_to_latlng(cell `h3index`) ⇒ `point`
-*Since vunreleased*
+*Since v4.2.3*
 
 See also: <a href="#h3_cell_to_geometry.h3index.geometry">h3_cell_to_geometry(`h3index`)</a>, <a href="#h3_cell_to_geography.h3index.geography">h3_cell_to_geography(`h3index`)</a>
 
@@ -353,7 +353,7 @@ Returns all vertexes for a given cell, as H3 indexes.
 
 
 ### h3_vertex_to_latlng(vertex `h3index`) ⇒ `point`
-*Since vunreleased*
+*Since v4.2.3*
 
 
 Get the geocoordinates of an H3 vertex.
@@ -542,14 +542,14 @@ will return an invalid geometry.
 # PostGIS Indexing Functions
 
 ### h3_latlng_to_cell(`geometry`, resolution `integer`) ⇒ `h3index`
-*Since vunreleased*
+*Since v4.2.3*
 
 
 Indexes the location at the specified resolution.
 
 
 ### h3_latlng_to_cell(`geography`, resolution `integer`) ⇒ `h3index`
-*Since vunreleased*
+*Since v4.2.3*
 
 
 Indexes the location at the specified resolution.

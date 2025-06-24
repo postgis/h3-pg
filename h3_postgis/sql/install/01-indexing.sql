@@ -24,7 +24,7 @@
 
 --| # PostGIS Indexing Functions
 
---@ availability: unreleased
+--@ availability: 4.2.3
 --@ refid: h3_latlng_to_cell_geometry
 CREATE OR REPLACE FUNCTION h3_latlng_to_cell(geometry, resolution integer) RETURNS h3index
     AS $$ SELECT h3_latlng_to_cell($1::point, $2); $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
@@ -32,7 +32,7 @@ COMMENT ON FUNCTION
     h3_latlng_to_cell(geometry, resolution integer)
 IS 'Indexes the location at the specified resolution.';
 
---@ availability: unreleased
+--@ availability: 4.2.3
 --@ refid: h3_latlng_to_cell_geography
 CREATE OR REPLACE FUNCTION h3_latlng_to_cell(geography, resolution integer) RETURNS h3index
     AS $$ SELECT h3_latlng_to_cell($1::geometry, $2); $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;

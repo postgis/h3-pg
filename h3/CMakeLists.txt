@@ -79,7 +79,7 @@ PostgreSQL_add_extension(postgresql_h3
     sql/updates/h3--4.1.4--4.2.0.sql
     sql/updates/h3--4.2.0--4.2.1.sql
     sql/updates/h3--4.2.1--4.2.2.sql
-    sql/updates/h3--4.2.2--unreleased.sql
+    sql/updates/h3--4.2.2--4.2.3.sql
 )
 
 # configure

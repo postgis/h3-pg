@@ -15,9 +15,9 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3 UPDATE TO '4.2.3'" to load this file. \quit
 
---@ availability: unreleased
+--@ availability: 4.2.3
 CREATE OR REPLACE FUNCTION
     h3_vertex_to_latlng(vertex h3index) RETURNS point
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
@@ -28,7 +28,7 @@ COMMENT ON FUNCTION
     h3_vertex_to_lat_lng(vertex h3index)
 IS 'DEPRECATED: Use `h3_vertex_to_latlng` instead.';
 
---@ availability: unreleased
+--@ availability: 4.2.3
 CREATE OR REPLACE FUNCTION
     h3_latlng_to_cell(latlng point, resolution integer) RETURNS h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
@@ -39,7 +39,7 @@ COMMENT ON FUNCTION
     h3_lat_lng_to_cell(point, integer)
 IS 'DEPRECATED: Use `h3_latlng_to_cell` instead.';
 
---@ availability: unreleased
+--@ availability: 4.2.3
 CREATE OR REPLACE FUNCTION
     h3_cell_to_latlng(cell h3index) RETURNS point
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
