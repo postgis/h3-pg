@@ -1,3 +1,8 @@
+> [!WARNING]  
+> h3-pg has moved to [postgis/h3-pg](https://github.com/postgis/h3-pg). Please follow development and post issues under the new postgis repo.
+>
+> An archive of the source code before the move is available here.
+
 # h3-pg: Uber's H3 Hexagonal Hierarchical Geospatial Indexing System in PostgreSQL
 
 [![test-linux](https://github.com/postgis/h3-pg/actions/workflows/test-linux.yml/badge.svg)](https://github.com/postgis/h3-pg/actions/workflows/test-linux.yml)
