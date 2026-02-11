@@ -8,7 +8,7 @@
 \set polar '\'81f2bffffffffff\'::h3index'
 \set lat1 84.76455330449812
 \set lat2 89.980298101841
-\set epsilon 0.0000000000001
+\set epsilon 0.0000000001
 \set longPathEndpoint1 '\'842ca2bffffffff\'::h3index'
 \set longPathEndpoint2 '\'842e611ffffffff\'::h3index'
 -- polygon with 2 holes
