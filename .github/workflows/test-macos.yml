@@ -42,11 +42,16 @@ jobs:
         run: brew unlink gettext && brew link --overwrite --force gettext
         if: ${{ matrix.pg >= 15 }}
 
+      - name: Export gettext build flags for PostgreSQL >= 15
+        if: ${{ matrix.pg >= 15 }}
+        run: |
+          GETTEXT_PREFIX="$(brew --prefix gettext)"
+          echo "CPPFLAGS=-I${GETTEXT_PREFIX}/include" >> "$GITHUB_ENV"
+          echo "CFLAGS=-I${GETTEXT_PREFIX}/include" >> "$GITHUB_ENV"
+          echo "LDFLAGS=-L${GETTEXT_PREFIX}/lib" >> "$GITHUB_ENV"
+
       - name: Generate
         run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.config }}
-        env:
-          # Fixes missing libintl.h on some runners
-          CFLAGS: "-I /usr/local/include"
 
       - name: Build
         run: cmake --build build --config ${{ matrix.config }}
@@ -62,4 +67,4 @@ jobs:
 
       - name: Print regression diffs
         if: ${{ failure() }}
-        run: cat build/*/test/regression.diffs
+        run: cat build/*/test/regression.diffs || true
