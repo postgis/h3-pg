@@ -35,7 +35,9 @@ jobs:
         run: sudo pgxn install ./h3-*.zip
 
       - name: Load
-        run: pgxn load h3
+        run: |
+          psql -d runner -c "CREATE EXTENSION h3; CREATE EXTENSION h3_postgis;"
 
       - name: Check
-        run: pgxn check h3
+        run: |
+          psql -d runner -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('h3', 'h3_postgis') ORDER BY extname;"
