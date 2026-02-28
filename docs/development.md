@@ -2,7 +2,8 @@
 
 In order to build and test your changes, simply run `./scripts/develop`.
 
-Documentation is generated from the sql files, using the script `scripts/documentaion` (requires poetry).
+Documentation is generated from the SQL files using `scripts/documentation` (requires poetry).
+This command also validates that all extension GUCs are documented in `h3/src/guc.c`.
 
 ## Release Process
 

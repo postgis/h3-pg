@@ -20,3 +20,9 @@ h3/test/results
 # IDEs
 .vscode/*
 !.vscode/settings.json
+
+# Python / tooling junk
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/

@@ -530,6 +530,35 @@ DEPRECATED: Use `h3_cell_to_latlng` instead.
 
 DEPRECATED: Use `h3_latlng_to_cell` instead.
 
+## Configuration (GUCs)
+
+### `h3.extend_antimeridian`
+Recommended: false for planar PostGIS geometry operations.
+
+false: use split-across-antimeridian behavior, usually preferred for
+planar operations like overlays/intersections.
+
+true: keep upstream H3 antimeridian continuity behavior as-is.
+Use for H3-first workflows that expect continuity semantics.
+
+Example:
+  SET h3.extend_antimeridian TO false;
+  SELECT h3_cell_to_boundary('8003fffffffffff'::h3index);
+
+### `h3.strict`
+Recommended: true for most PostGIS/SQL analytics sessions.
+
+true: reject longitude outside [-180, 180] and latitude outside [-90, 90].
+Use this to catch wrong coordinate-system inputs early (for example
+projected coordinates passed as lon/lat).
+
+false: keep upstream H3 default behavior (including wrapped coordinates).
+Use only when wrapped-around data is intentional.
+
+Example:
+  SET h3.strict TO true;
+  SELECT h3_latlng_to_cell(POINT(6196902.235, 1413172.083), 10);
+
 # PostGIS Integration
 The `GEOMETRY` data passed to `h3-pg` PostGIS functions should
 be in SRID 4326. This is an expectation of the core H3 library.

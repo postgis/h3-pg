@@ -28,7 +28,7 @@ import glob
 import re
 from pathlib import Path
 from lark import Lark, Transformer, v_args, visitors
-import sys #TEST
+import sys
 
 # see PGXN::API::Indexer::_clean_html_body
 def to_anchor(text):
@@ -282,7 +282,7 @@ class SQLTransformer(Transformer):
     @v_args(inline=True)
     def custom_decorated_statement(self, decorators, statement = None):
         if not statement:
-            raise visitors.Discard()
+            return visitors.Discard
         if decorators:
             statement.set_decorators(decorators)
         return statement
@@ -353,7 +353,7 @@ class SQLTransformer(Transformer):
     def create_func_stmt(self, name: str, arguments, returns, *opts):
         # skip internal functions
         if name.startswith("__"):
-            raise visitors.Discard()
+            return visitors.Discard
         return CreateFunctionStmt(name, arguments, returns)
 
     # -- CREATE AGGREGATE ------------------------------------------------------
@@ -376,7 +376,7 @@ class SQLTransformer(Transformer):
 
     # -- CREATE OPERATOR CLASS -------------------------------------------------
     def create_opcl_stmt(self, children):
-        raise visitors.Discard()
+        return visitors.Discard
 
     # -- SIMPLE RULES ----------------------------------------------------------
 
@@ -409,7 +409,15 @@ def parse_args():
         nargs=2, metavar=('header', 'glob'),
         action='append',
         help='Globs for each group of SQL install files')
-    return parser.parse_args()
+    parser.add_argument(
+        '--guc-source',
+        help='Source file containing DefineCustom*Variable declarations')
+    args = parser.parse_args()
+
+    if not args.group:
+        parser.error("at least one --group is required")
+
+    return args
 
 def create_parser():
     here = Path(__file__).parent
@@ -445,6 +453,77 @@ def statements_to_md(statements, context):
     items = [stmt.to_md(context) for stmt in statements]
     return [item for item in items if len(item) > 0]
 
+def default_guc_source():
+    return Path(__file__).resolve().parents[2] / "h3" / "src" / "guc.c"
+
+def read_guc_names(path):
+    text = Path(path).read_text()
+    names = re.findall(r'DefineCustom\w+Variable\(\s*"([^"]+)"', text)
+    return sorted(set(name for name in names if name.startswith("h3.")))
+
+def read_guc_docs(path):
+    text = Path(path).read_text()
+    docs = {}
+
+    for match in re.finditer(r'/\*(.*?)\*/', text, re.S):
+        body = match.group(1)
+        lines = [re.sub(r'^\s*\*\s?', '', line).rstrip() for line in body.splitlines()]
+        for idx, line in enumerate(lines):
+            marker = re.match(r'@guc-doc\s+([A-Za-z0-9_.]+)\s*$', line)
+            if not marker:
+                continue
+
+            name = marker.group(1)
+            content = lines[idx + 1:]
+            while content and content[0] == "":
+                content.pop(0)
+            while content and content[-1] == "":
+                content.pop()
+            docs[name] = "\n".join(content)
+            break
+
+    return docs
+
+def validate_guc_docs(guc_source):
+    guc_names = set(read_guc_names(guc_source))
+    guc_docs = read_guc_docs(guc_source)
+    doc_names = set(guc_docs.keys())
+
+    missing_gucs = sorted(guc_names - doc_names)
+    unknown_doc_gucs = sorted(doc_names - guc_names)
+    empty_doc_gucs = sorted(name for name, body in guc_docs.items() if body.strip() == "")
+
+    if missing_gucs or unknown_doc_gucs or empty_doc_gucs:
+        print("Documentation coverage check failed.", file=sys.stderr)
+        if missing_gucs:
+            print("\nMissing extension GUCs:", file=sys.stderr)
+            for item in missing_gucs:
+                print(f"  - {item}", file=sys.stderr)
+        if unknown_doc_gucs:
+            print("\nUnknown @guc-doc markers (no matching GUC):", file=sys.stderr)
+            for item in unknown_doc_gucs:
+                print(f"  - {item}", file=sys.stderr)
+        if empty_doc_gucs:
+            print("\nEmpty @guc-doc blocks:", file=sys.stderr)
+            for item in empty_doc_gucs:
+                print(f"  - {item}", file=sys.stderr)
+        return 1
+
+    print("GUC documentation check passed.", file=sys.stderr)
+    return 0
+
+def guc_docs_to_md(guc_docs):
+    if not guc_docs:
+        return ""
+
+    md = "## Configuration (GUCs)\n"
+
+    for name in sorted(guc_docs):
+        md += f"\n### `{name}`\n"
+        md += guc_docs[name] + "\n"
+
+    return md
+
 def main():
     args = parse_args()
     parser = create_parser()
@@ -457,12 +536,25 @@ def main():
         group = process_group(parser, item, statements_by_refid)
         groups.append(group)
 
+    guc_source = args.guc_source or default_guc_source()
+    rc = validate_guc_docs(guc_source)
+    if rc != 0:
+        sys.exit(rc)
+    guc_docs = read_guc_docs(guc_source)
+
     # Output
+    added_guc_section = False
     md = ""
     for group in groups:
         [header, statements] = group
         md += md_heading(header) + "\n"
         md += "\n".join(statements_to_md(statements, Context(statements_by_refid))) + "\n"
+        if not added_guc_section and header == "API Reference":
+            md += guc_docs_to_md(guc_docs) + "\n"
+            added_guc_section = True
+
+    if not added_guc_section:
+        md += guc_docs_to_md(guc_docs) + "\n"
 
     print(md)
 
