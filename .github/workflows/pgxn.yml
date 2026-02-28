@@ -35,7 +35,9 @@ jobs:
         run: sudo pgxn install ./h3-*.zip
 
       - name: Load
-        run: pgxn load h3
+        run: |
+          pgxn load -d runner ./h3-*.zip
 
       - name: Check
-        run: pgxn check h3
+        run: |
+          pgxn check -d runner ./h3-*.zip
