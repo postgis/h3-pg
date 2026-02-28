@@ -36,8 +36,8 @@ jobs:
 
       - name: Load
         run: |
-          psql -d runner -c "CREATE EXTENSION h3; CREATE EXTENSION h3_postgis;"
+          pgxn load -d runner ./h3-*.zip
 
       - name: Check
         run: |
-          psql -d runner -c "SELECT extname, extversion FROM pg_extension WHERE extname IN ('h3', 'h3_postgis') ORDER BY extname;"
+          pgxn check -d runner ./h3-*.zip
