@@ -23,43 +23,48 @@
 --| will return an invalid geometry.
 
 --| # PostGIS Indexing Functions
+--|
+--| PostgreSQL 17+ executes CREATE INDEX (and other maintenance operations)
+--| with a restricted search_path. Use @extschema:*@ placeholders so wrapper
+--| functions can always resolve cross-extension symbols safely.
+--| Keep wrappers as plain SQL without STRICT to preserve SQL-function inlining.
 
 --@ availability: 4.2.3
 --@ refid: h3_latlng_to_cell_geometry
-CREATE OR REPLACE FUNCTION h3_latlng_to_cell(geometry, resolution integer) RETURNS h3index
-    AS $$ SELECT h3_latlng_to_cell($1::point, $2); $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION h3_latlng_to_cell(@extschema:postgis@.geometry, resolution integer) RETURNS h3index
+    AS $$ SELECT @extschema:h3@.h3_latlng_to_cell($1::point, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_latlng_to_cell(geometry, resolution integer)
 IS 'Indexes the location at the specified resolution.';
 
 --@ availability: 4.2.3
 --@ refid: h3_latlng_to_cell_geography
-CREATE OR REPLACE FUNCTION h3_latlng_to_cell(geography, resolution integer) RETURNS h3index
-    AS $$ SELECT h3_latlng_to_cell($1::geometry, $2); $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION h3_latlng_to_cell(@extschema:postgis@.geography, resolution integer) RETURNS h3index
+    AS $$ SELECT @extschema:h3@.h3_latlng_to_cell($1::@extschema:postgis@.geometry, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_latlng_to_cell(geometry, resolution integer)
 IS 'Indexes the location at the specified resolution.';
 
 --@ availability: 4.0.0
 --@ refid: h3_cell_to_geometry
-CREATE OR REPLACE FUNCTION h3_cell_to_geometry(h3index) RETURNS geometry
-  AS $$ SELECT ST_SetSRID(h3_cell_to_latlng($1)::geometry, 4326) $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION h3_cell_to_geometry(h3index) RETURNS @extschema:postgis@.geometry
+  AS $$ SELECT @extschema:postgis@.ST_SetSRID(@extschema:h3@.h3_cell_to_latlng($1)::@extschema:postgis@.geometry, 4326) $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_cell_to_geometry(h3index)
 IS 'Finds the centroid of the index.';
 
 --@ availability: 4.0.0
 --@ refid: h3_cell_to_geography
-CREATE OR REPLACE FUNCTION h3_cell_to_geography(h3index) RETURNS geography
-  AS $$ SELECT h3_cell_to_geometry($1)::geography $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION h3_cell_to_geography(h3index) RETURNS @extschema:postgis@.geography
+  AS $$ SELECT @extschema@.h3_cell_to_geometry($1)::@extschema:postgis@.geography $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_cell_to_geography(h3index)
 IS 'Finds the centroid of the index.';
 
 --@ availability: 4.0.0
 --@ refid: h3_cell_to_boundary_geometry
-CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index) RETURNS geometry
-  AS $$ SELECT h3_cell_to_boundary_wkb($1)::geometry $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index) RETURNS @extschema:postgis@.geometry
+  AS $$ SELECT @extschema:h3@.h3_cell_to_boundary_wkb($1)::@extschema:postgis@.geometry $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_cell_to_boundary_geometry(h3index)
 IS 'Finds the boundary of the index.
@@ -68,8 +73,8 @@ Splits polygons when crossing 180th meridian.';
 
 --@ availability: 4.0.0
 --@ refid: h3_cell_to_boundary_geography
-CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index) RETURNS geography
-  AS $$ SELECT h3_cell_to_boundary_wkb($1)::geography $$ IMMUTABLE STRICT PARALLEL SAFE LANGUAGE SQL;
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index) RETURNS @extschema:postgis@.geography
+  AS $$ SELECT @extschema:h3@.h3_cell_to_boundary_wkb($1)::@extschema:postgis@.geography $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_cell_to_boundary_geography(h3index)
 IS 'Finds the boundary of the index.

@@ -22,4 +22,6 @@ set_target_properties(h3 PROPERTIES
   C_VISIBILITY_PRESET          hidden
 )
 
-set(H3_INCLUDE_DIR ${h3_BINARY_DIR}/src/h3lib/include)
+# Export vendored H3 headers for downstream extension/tooling steps.
+# In particular, LLVM bitcode generation for `h3`/`h3_postgis` needs this path.
+set(H3_INCLUDE_DIR ${h3_BINARY_DIR}/src/h3lib/include CACHE INTERNAL "Vendored H3 include directory")

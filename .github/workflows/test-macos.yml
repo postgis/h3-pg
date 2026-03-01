@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-14]
-        pg: [17, 16, 15, 14, 13]
+        pg: [18, 17, 16, 15, 14]
         config: [Release, Debug]
 
     runs-on: ${{ matrix.os }}
@@ -36,7 +36,7 @@ jobs:
 
       - name: Setup PostGIS
         run: brew install postgis
-        if: ${{ matrix.pg == 17 || matrix.pg == 14 }}
+        if: ${{ matrix.pg == 18 || matrix.pg == 17 || matrix.pg == 14 }}
 
       - name: Fix gettext linkage for PostgreSQL >= 15
         run: brew unlink gettext && brew link --overwrite --force gettext

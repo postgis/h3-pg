@@ -98,6 +98,9 @@ target_link_libraries(postgresql_h3 PRIVATE
   h3
 )
 
+# Emit PostgreSQL JIT bitcode only after all include/link settings are final.
+PostgreSQL_add_extension_bitcode(postgresql_h3 h3 ${PROJECT_NAME})
+
 # test
 if(BUILD_TESTING)
   add_subdirectory(test)

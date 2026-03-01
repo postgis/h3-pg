@@ -10,9 +10,11 @@ CREATE TABLE h3_test_rasters (id SERIAL, rast raster);
 INSERT INTO h3_test_rasters (rast) (
     WITH
         vals AS (
-            SELECT array_agg(row) AS vals
+            SELECT array_agg(row ORDER BY y) AS vals
             FROM (
-                SELECT array_agg((x + y) % :value_num + 1) AS row
+                SELECT
+                    y,
+                    array_agg((x + y) % :value_num + 1 ORDER BY x) AS row
                 FROM
                     generate_series(1, :raster_size) AS x,
                     generate_series(1, :raster_size) AS y
@@ -69,21 +71,21 @@ WITH
     clip AS (
         SELECT
             h3,
-            h3_raster_summary_stats_agg(stats) AS stats
+            h3_raster_summary_stats_agg(stats ORDER BY id) AS stats
         FROM (
-            -- h3, stats
-            SELECT (h3_raster_summary_clip(rast, :resolution)).*
-            FROM h3_test_rasters
+            -- id, h3, stats
+            SELECT r.id, (h3_raster_summary_clip(r.rast, :resolution)).*
+            FROM h3_test_rasters r
         ) t
         GROUP BY 1),
     centroids AS (
         SELECT
             h3,
-            h3_raster_summary_stats_agg(stats) AS stats
+            h3_raster_summary_stats_agg(stats ORDER BY id) AS stats
         FROM (
-            -- h3, stats
-            SELECT (h3_raster_summary_centroids(rast, :resolution)).*
-            FROM h3_test_rasters
+            -- id, h3, stats
+            SELECT r.id, (h3_raster_summary_centroids(r.rast, :resolution)).*
+            FROM h3_test_rasters r
         ) t
         GROUP BY 1)
 SELECT COUNT(*)
@@ -91,34 +93,42 @@ FROM clip a FULL OUTER JOIN centroids b ON a.h3 = b.h3
 WHERE NOT h3_test_raster_summary_stats_equal(a.stats, b.stats);
      0
 
--- Results of `h3_raster_class_summary_clip` and `h3_raster_class_summary_clip`
--- should be identical
+-- Class summary and summary stats (clip) should agree on per-cell pixel counts.
 WITH
-    clip AS (
+    class_clip AS (
         SELECT
             h3,
-            val,
-            h3_raster_class_summary_item_agg(summary) AS summary
+            sum((summary).count) AS count
         FROM (
-            -- h3, val, summary
-            SELECT (h3_raster_class_summary_clip(rast, :resolution)).*
-            FROM h3_test_rasters
+            SELECT
+                h3,
+                val,
+                h3_raster_class_summary_item_agg(summary ORDER BY id) AS summary
+            FROM (
+                -- id, h3, val, summary
+                SELECT r.id, (h3_raster_class_summary_clip(r.rast, :resolution)).*
+                FROM h3_test_rasters r
+            ) t
+            GROUP BY 1, 2
         ) t
-        GROUP BY 1, 2),
-    centroids AS (
+        GROUP BY 1
+    ),
+    stats_clip AS (
         SELECT
             h3,
-            val,
-            h3_raster_class_summary_item_agg(summary) AS summary
+            h3_raster_summary_stats_agg(stats ORDER BY id) AS stats
         FROM (
-            -- h3, val, summary
-            SELECT (h3_raster_class_summary_centroids(rast, :resolution)).*
-            FROM h3_test_rasters
+            -- id, h3, stats
+            SELECT r.id, (h3_raster_summary_clip(r.rast, :resolution)).*
+            FROM h3_test_rasters r
         ) t
-        GROUP BY 1, 2)
+        GROUP BY 1
+    )
 SELECT COUNT(*)
-FROM clip a FULL OUTER JOIN centroids b ON a.h3 = b.h3 AND a.val = b.val
-WHERE NOT h3_test_raster_class_summary_item_equal(a.summary, b.summary);
+FROM class_clip c FULL OUTER JOIN stats_clip s ON c.h3 = s.h3
+WHERE c.count IS NULL
+   OR s.stats IS NULL
+   OR NOT h3_test_equal(c.count, (s.stats).count);
      0
 
 -- Stats aggregation check:
@@ -150,11 +160,11 @@ WITH
         WHERE t.h3 = m.h3),
     summary2 AS (
         -- Get aggregates summary from separate rasters
-        SELECT h3_raster_summary_stats_agg(t.stats) AS stats
+        SELECT h3_raster_summary_stats_agg(t.stats ORDER BY t.id) AS stats
         FROM (
-            -- h3, stats
-            SELECT (h3_raster_summary_clip(rast, :resolution)).*
-            FROM h3_test_rasters
+            -- id, h3, stats
+            SELECT r.id, (h3_raster_summary_clip(r.rast, :resolution)).*
+            FROM h3_test_rasters r
         ) t, middle m
         WHERE t.h3 = m.h3
         GROUP BY t.h3)

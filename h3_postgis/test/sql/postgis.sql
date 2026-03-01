@@ -30,6 +30,23 @@ SELECT h3_latlng_to_cell(h3_cell_to_geometry(:hexagon), :resolution) = '8a63a9a9
 -- check num points in boundary
 SELECT ST_NPoints(h3_cell_to_boundary_geometry(:hexagon)) = 7;
 
+-- PostgreSQL 17+ maintenance ops run with restricted search_path
+CREATE TABLE h3_pg17_idx_test (
+    h3cell h3index
+);
+INSERT INTO h3_pg17_idx_test VALUES (:hexagon);
+CREATE INDEX h3_pg17_idx_test_gix
+    ON h3_pg17_idx_test
+    USING GIST (h3_cell_to_geometry(h3cell));
+DROP INDEX h3_pg17_idx_test_gix;
+
+CREATE MATERIALIZED VIEW h3_pg17_mv_test AS
+SELECT h3_cell_to_geometry(h3cell) AS geom
+FROM h3_pg17_idx_test;
+REFRESH MATERIALIZED VIEW h3_pg17_mv_test;
+DROP MATERIALIZED VIEW h3_pg17_mv_test;
+DROP TABLE h3_pg17_idx_test;
+
 -- test strict h3_latlng_to_cell throws for bad latlon
 CREATE FUNCTION h3_test_postgis_nounit() RETURNS boolean LANGUAGE PLPGSQL
     AS $$

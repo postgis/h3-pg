@@ -544,7 +544,7 @@ AS $$
         count::double precision,
         count * pixel_area
     )::h3_raster_class_summary_item
-    FROM ST_ValueCount(rast, nband) t;
+    FROM ST_ValueCount(rast, nband, TRUE) t;
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_class_polygon_summary_clip(
