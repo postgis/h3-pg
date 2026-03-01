@@ -10,6 +10,21 @@ find_program(PostgreSQL_VALIDATE_EXTUPGRADE pg_validate_extupgrade)
 
 # Add pgindent binary
 find_program(PostgreSQL_INDENT pgindent)
+find_program(PostgreSQL_BSD_INDENT pg_bsd_indent
+  HINTS "${PostgreSQL_BIN_DIR}"
+)
+
+# Keep source formatting opt-in for normal builds.
+option(PostgreSQL_AUTOFORMAT "Run pgindent targets as build dependencies" OFF)
+
+# Prefer PostgreSQL-provided defaults when available.
+set(PostgreSQL_INDENT_ARGS "")
+if(EXISTS "${PostgreSQL_SHARE_DIR}/typedefs.list")
+  list(APPEND PostgreSQL_INDENT_ARGS "--typedefs=${PostgreSQL_SHARE_DIR}/typedefs.list")
+endif()
+if(PostgreSQL_BSD_INDENT)
+  list(APPEND PostgreSQL_INDENT_ARGS "--indent=${PostgreSQL_BSD_INDENT}")
+endif()
 
 # Helper that emits and installs extension bitcode for PostgreSQL JIT.
 # This intentionally follows PostgreSQL's `bitcode/<ext>/...` + `<ext>.index.bc`
@@ -246,12 +261,14 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
   )
 
   # Setup auto-format
-  if(PostgreSQL_INDENT)
+  if(PostgreSQL_INDENT AND EXTENSION_SOURCES)
     add_custom_target("format_${EXTENSION_NAME}"
-      COMMAND ${PostgreSQL_INDENT} ${EXTENSION_SOURCES}
+      COMMAND ${PostgreSQL_INDENT} ${PostgreSQL_INDENT_ARGS} ${EXTENSION_SOURCES}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       COMMENT "Formatting ${EXTENSION_NAME} sources"
     )
-    add_dependencies(${LIBRARY_NAME} "format_${EXTENSION_NAME}")
+    if(PostgreSQL_AUTOFORMAT)
+      add_dependencies(${LIBRARY_NAME} "format_${EXTENSION_NAME}")
+    endif()
   endif()
 endfunction()

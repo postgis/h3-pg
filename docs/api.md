@@ -569,6 +569,10 @@ an error in this scenario while the `h3_latlng_to_cell()` function
 will return an invalid geometry.
 
 # PostGIS Indexing Functions
+PostgreSQL 17+ executes CREATE INDEX (and other maintenance operations)
+with a restricted search_path. Use @extschema:*@ placeholders so wrapper
+functions can always resolve cross-extension symbols safely.
+Keep wrappers as plain SQL without STRICT to preserve SQL-function inlining.
 
 ### h3_latlng_to_cell(`geometry`, resolution `integer`) ⇒ `h3index`
 *Since v4.2.3*

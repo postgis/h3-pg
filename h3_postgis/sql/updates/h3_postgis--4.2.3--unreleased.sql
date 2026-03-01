@@ -51,3 +51,18 @@ CREATE OR REPLACE FUNCTION h3_lat_lng_to_cell(@extschema:postgis@.geometry, reso
 
 CREATE OR REPLACE FUNCTION h3_lat_lng_to_cell(@extschema:postgis@.geography, resolution integer) RETURNS h3index
     AS $$ SELECT @extschema:h3@.h3_lat_lng_to_cell($1::@extschema:postgis@.geometry, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+
+-- Keep installed-vs-upgraded function text identical for pg_validate_extupgrade.
+CREATE OR REPLACE FUNCTION __h3_raster_class_summary_part(
+    rast raster,
+    nband integer,
+    pixel_area double precision)
+RETURNS SETOF h3_raster_class_summary_item
+AS $$
+    SELECT ROW(
+        value::double precision,
+        count::double precision,
+        count * pixel_area
+    )::h3_raster_class_summary_item
+    FROM ST_ValueCount(rast, nband, TRUE) t;
+$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;

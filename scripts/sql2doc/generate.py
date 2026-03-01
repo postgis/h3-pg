@@ -384,8 +384,28 @@ class SQLTransformer(Transformer):
     false = lambda self, _: "`false`"
     number = v_args(inline=True)(int)
 
+    def schema_name(self, children):
+        return str(children[0])
+
+    def datatype(self, children):
+        if len(children) == 1:
+            return str(children[0])
+
+        if len(children) == 2:
+            # Unqualified array type: <base>[]
+            if str(children[1]) == "[]":
+                return "{}[]".format(children[0])
+            # Qualified type without array suffix: <schema>.<base>
+            # Keep docs user-facing by rendering only the base type.
+            return str(children[1])
+
+        # Qualified array type: <schema>.<base>[]
+        return "{}[]".format(children[1])
+
     def fun_name(self, children):
-        return children[1]
+        # Keep link text stable: use the bare function name even when parser
+        # sees a schema-qualified form.
+        return children[-1]
 
     @v_args(inline=True)
     def string(self, s):

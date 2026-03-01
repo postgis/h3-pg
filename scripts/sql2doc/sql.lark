@@ -30,7 +30,7 @@ create_type_stmt: "CREATE" "TYPE" CNAME "AS"? ("(" /([^\)])+/ ")")?
 
 // -----------------------------------------------------------------------------
 // CREATE CAST ...
-create_cast_stmt: "CREATE" "CAST" "(" DATATYPE "AS" DATATYPE ")" "WITH" "FUNCTION" CNAME "(" /([^\)])+/ ")"
+create_cast_stmt: "CREATE" "CAST" "(" datatype "AS" datatype ")" "WITH" "FUNCTION" CNAME "(" /([^\)])+/ ")"
 
 // -----------------------------------------------------------------------------
 // CREATE OPERATOR CLASS name [ DEFAULT ] FOR TYPE data_type
@@ -54,8 +54,8 @@ create_opcl_list: create_opcl_opts ("," create_opcl_opts)*
 // )
 create_oper_stmt: "CREATE" "OPERATOR" OPERATOR "(" create_oper_opts ")"
 create_oper_opt: /PROCEDURE/ "=" CNAME
-               | /LEFTARG/ "=" DATATYPE
-               | /RIGHTARG/ "=" DATATYPE
+               | /LEFTARG/ "=" datatype
+               | /RIGHTARG/ "=" datatype
                | /COMMUTATOR/ "=" OPERATOR
                | /NEGATOR/ "=" OPERATOR
                | /RESTRICT/ "=" CNAME
@@ -93,7 +93,7 @@ create_fun_opts: "LANGUAGE" (CNAME|"'" CNAME "'")
 create_fun_ret_table_columns: column_list
 column_list: column ("," column)*
 argument_list: argument ("," argument)*
-!create_fun_rettype: ["SETOF"] DATATYPE
+!create_fun_rettype: ["SETOF"] datatype
 
 // -----------------------------------------------------------------------------
 // CREATE [ OR REPLACE ] AGGREGATE name ( [ argmode ] [ argname ] arg_data_type [ , ... ] ) (
@@ -122,7 +122,7 @@ argument_list: argument ("," argument)*
 create_agg_stmt: "CREATE" ("OR" "REPLACE")? "AGGREGATE" fun_name "(" [argument_list] ")" "(" agg_param_list ")"
 agg_param_list: agg_param ("," agg_param)*
 agg_param: "sfunc" "=" fun_name
-         | "stype" "=" DATATYPE
+         | "stype" "=" datatype
          | "finalfunc" "=" fun_name
          | "parallel" "=" ("safe"|"restricted"|"unsafe")
 
@@ -138,14 +138,14 @@ agg_param: "sfunc" "=" fun_name
 //   ...
 // } IS 'text'
 comment_on_stmt: "COMMENT" "ON" comment_on_type "IS" string
-comment_on_type: "CAST" "(" DATATYPE "AS" DATATYPE ")" -> comment_on_cast
+comment_on_type: "CAST" "(" datatype "AS" datatype ")" -> comment_on_cast
                | "FUNCTION" fun_name "(" [argument_list] ")" -> comment_on_function
                | "OPERATOR" OPERATOR "(" argument "," argument ")" -> comment_on_operator
 
 // -----------------------------------------------------------------------------
 // SIMPLE RULES
-column: CNAME DATATYPE
-argument: [ARGMODE] [CNAME] DATATYPE ("DEFAULT" expr)?
+column: CNAME datatype
+argument: [ARGMODE] [CNAME] datatype ("DEFAULT" expr)?
 ARGMODE.2: "IN" | "OUT" | "INOUT"
 DATATYPE_SCALAR: "h3index"
         | "raster"
@@ -171,8 +171,12 @@ DATATYPE_SCALAR: "h3index"
         | "record"
         | "text"
         | "void"
-DATATYPE: DATATYPE_SCALAR "[]"?
-fun_name: [CNAME "."] CNAME
+// Extension SQL templates can schema-qualify foreign extension types using
+// placeholders such as @extschema:postgis@.geometry.
+schema_name: CNAME | EXTSCHEMA_PLACEHOLDER
+ARRAY_SUFFIX: "[]"
+datatype: DATATYPE_SCALAR ARRAY_SUFFIX? | (schema_name "." DATATYPE_SCALAR ARRAY_SUFFIX?)
+fun_name: CNAME | schema_name "." CNAME
 ?expr: atom | string
 atom: SIGNED_NUMBER -> number
     | "TRUE" -> true
@@ -185,6 +189,7 @@ string: STRING
 // They can be defined as a combination of literals and other terminals.
 LITERAL: SIGNED_NUMBER | ESCAPED_STRING
 OPERATOR: ("+"|"-"|"*"|"/"|"<"|">"|"="|"~"|"!"|"@"|"#"|"%"|"^"|"&"|"|"|"`"|"?")+
+EXTSCHEMA_PLACEHOLDER: /@extschema(:[A-Za-z_][A-Za-z0-9_]*)?@/
 STRING: "'" /([^'])+/ "'"
       | "$$" /(.|\n)*?/ "$$"
 

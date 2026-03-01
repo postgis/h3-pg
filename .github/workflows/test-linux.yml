@@ -51,4 +51,4 @@ jobs:
 
       - name: Print regression diffs
         if: ${{ failure() }}
-        run: cat build/*/test/regression.diffs
+        run: cat build/*/test/regression.diffs || true
