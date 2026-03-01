@@ -60,7 +60,7 @@ CREATE OR REPLACE FUNCTION __h3_raster_class_summary_part(
 RETURNS SETOF h3_raster_class_summary_item
 AS $$
     SELECT ROW(
-        value::double precision,
+        value::integer,
         count::double precision,
         count * pixel_area
     )::h3_raster_class_summary_item
