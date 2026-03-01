@@ -560,13 +560,51 @@ Example:
   SELECT h3_latlng_to_cell(POINT(6196902.235, 1413172.083), 10);
 
 # PostGIS Integration
-The `GEOMETRY` data passed to `h3-pg` PostGIS functions should
-be in SRID 4326. This is an expectation of the core H3 library.
-Using other SRIDs, such as 3857, can result in either errors or
-invalid data depending on the function.
-For example, the `h3_polygon_to_cells()` function will fail with
-an error in this scenario while the `h3_latlng_to_cell()` function
-will return an invalid geometry.
+
+## Input requirements
+`h3_postgis` functions interpret PostGIS coordinates as lon/lat degrees in SRID 4326.
+They do not reproject.
+Practical checklist:
+- Coordinate bounds (lon/lat range): enable `h3.strict` (see GUCs)
+- For polygon-to-cell functions: validate inputs with `ST_IsValid()`
+- Invalid polygons: behavior is undefined and can produce unexpectedly large result sets
+- If you repair inputs: `ST_MakeValid()` can return MULTIPOLYGON/GEOMETRYCOLLECTION, so keep polygonal parts
+
+### Quick sanity checks
+```sql
+-- Optional: reject out-of-range lon/lat early
+SET h3.strict TO true;
+SELECT
+  ST_SRID(geom)          AS srid,
+  ST_GeometryType(geom)  AS type,
+  ST_IsValid(geom)       AS is_valid
+FROM my_polygons
+LIMIT 10;
+```
+
+### Repairing invalid geometries
+PostGIS supports optional `ST_MakeValid()` parameters (for example `method=structure`) on
+newer versions. See the PostGIS docs for details.
+```sql
+WITH prepared AS (
+  SELECT ST_CollectionExtract(
+      CASE
+          WHEN ST_IsValid(geom) THEN geom
+          ELSE ST_MakeValid(geom)
+      END,
+      3  -- polygonal components
+  ) AS geom
+  FROM my_polygons
+)
+SELECT h3_polygon_to_cells(geom, 7)
+FROM prepared
+WHERE NOT ST_IsEmpty(geom);
+```
+`ST_MakeValid()` is not a universal fix: it can change topology, and results can differ
+across geometry models and projections. In particular, self-intersections are often
+repaired into "bow-tie" style MULTIPOLYGON output. Review repaired geometries (and consider
+inspecting `ST_IsValidReason()` during debugging).
+See PostGIS docs: <https://postgis.net/docs/ST_MakeValid.html>
 
 # PostGIS Indexing Functions
 PostgreSQL 17+ executes CREATE INDEX (and other maintenance operations)
@@ -634,13 +672,28 @@ Returns the optimal H3 resolution for a specified XYZ tile zoom level, based on 
 
 
 # PostGIS Region Functions
+Note: `h3_polygon_to_cells*` assumes valid polygonal input in SRID 4326.
+If results look surprising, start by checking `ST_IsValid()` and `ST_SRID()`
+(and consider `SET h3.strict TO true` to catch out-of-range lon/lat).
+For collections, extract polygonal parts first: `ST_CollectionExtract(geom, 3)`.
+The "PostGIS Integration" section includes a validation/repair pattern.
 
 ### h3_polygon_to_cells(multi `geometry`, resolution `integer`) ⇒ SETOF `h3index`
 *Since v4.0.0*
 
 
+Converts polygonal geometry to H3 cells.
+
+See "PostGIS Integration" for SRID/validity requirements.
+
+
 ### h3_polygon_to_cells(multi `geography`, resolution `integer`) ⇒ SETOF `h3index`
 *Since v4.0.0*
+
+
+Converts polygonal geography to H3 cells.
+
+See "PostGIS Integration" for SRID/validity requirements.
 
 
 ### h3_cells_to_multi_polygon_geometry(`h3index[]`) ⇒ `geometry`
@@ -663,8 +716,18 @@ Returns the optimal H3 resolution for a specified XYZ tile zoom level, based on 
 *Since v4.2.0*
 
 
+Converts polygonal geometry to H3 cells using experimental containment modes.
+
+See "PostGIS Integration" for SRID/validity requirements.
+
+
 ### h3_polygon_to_cells_experimental(multi `geography`, resolution `integer`, [containment_mode `text` = center]) ⇒ SETOF `h3index`
 *Since v4.2.0*
+
+
+Converts polygonal geography to H3 cells using experimental containment modes.
+
+See "PostGIS Integration" for SRID/validity requirements.
 
 
 # PostGIS Operators

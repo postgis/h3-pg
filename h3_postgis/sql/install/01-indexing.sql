@@ -14,13 +14,56 @@
  * limitations under the License.
  */
 
---| The `GEOMETRY` data passed to `h3-pg` PostGIS functions should
---| be in SRID 4326. This is an expectation of the core H3 library.
---| Using other SRIDs, such as 3857, can result in either errors or
---| invalid data depending on the function.
---| For example, the `h3_polygon_to_cells()` function will fail with
---| an error in this scenario while the `h3_latlng_to_cell()` function
---| will return an invalid geometry.
+--| ## Input requirements
+--|
+--| `h3_postgis` functions interpret PostGIS coordinates as lon/lat degrees in SRID 4326.
+--| They do not reproject.
+--|
+--| Practical checklist:
+--|
+--| - Coordinate bounds (lon/lat range): enable `h3.strict` (see GUCs)
+--| - For polygon-to-cell functions: validate inputs with `ST_IsValid()`
+--| - Invalid polygons: behavior is undefined and can produce unexpectedly large result sets
+--| - If you repair inputs: `ST_MakeValid()` can return MULTIPOLYGON/GEOMETRYCOLLECTION, so keep polygonal parts
+--|
+--| ### Quick sanity checks
+--| ```sql
+--| -- Optional: reject out-of-range lon/lat early
+--| SET h3.strict TO true;
+--|
+--| SELECT
+--|   ST_SRID(geom)          AS srid,
+--|   ST_GeometryType(geom)  AS type,
+--|   ST_IsValid(geom)       AS is_valid
+--| FROM my_polygons
+--| LIMIT 10;
+--| ```
+--|
+--| ### Repairing invalid geometries
+--|
+--| PostGIS supports optional `ST_MakeValid()` parameters (for example `method=structure`) on
+--| newer versions. See the PostGIS docs for details.
+--| ```sql
+--| WITH prepared AS (
+--|   SELECT ST_CollectionExtract(
+--|       CASE
+--|           WHEN ST_IsValid(geom) THEN geom
+--|           ELSE ST_MakeValid(geom)
+--|       END,
+--|       3  -- polygonal components
+--|   ) AS geom
+--|   FROM my_polygons
+--| )
+--| SELECT h3_polygon_to_cells(geom, 7)
+--| FROM prepared
+--| WHERE NOT ST_IsEmpty(geom);
+--| ```
+--|
+--| `ST_MakeValid()` is not a universal fix: it can change topology, and results can differ
+--| across geometry models and projections. In particular, self-intersections are often
+--| repaired into "bow-tie" style MULTIPOLYGON output. Review repaired geometries (and consider
+--| inspecting `ST_IsValidReason()` during debugging).
+--| See PostGIS docs: <https://postgis.net/docs/ST_MakeValid.html>
 
 --| # PostGIS Indexing Functions
 --|

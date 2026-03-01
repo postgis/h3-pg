@@ -7,6 +7,11 @@
 \set lat 51.5
 \set lng -0.025
 
+-- Regression stability:
+-- These checks are sensitive to tiny floating differences. Keep the math strict,
+-- but avoid plan/parallel variability between runs.
+SET max_parallel_workers_per_gather TO 0;
+
 CREATE TABLE h3_test_rasters (id SERIAL, rast raster);
 
 INSERT INTO h3_test_rasters (rast) (
@@ -141,7 +146,7 @@ WHERE c.count IS NULL
 WITH
     rast AS (
         -- Union all test rasters
-        SELECT ST_Union(rast) AS rast FROM h3_test_rasters),
+        SELECT ST_Union(rast ORDER BY id) AS rast FROM h3_test_rasters),
     middle AS (
         -- Find an H3 cell in a bottom-right corner of a first raster
         -- (intersecting 4 rasters)

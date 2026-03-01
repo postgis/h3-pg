@@ -52,6 +52,30 @@ CREATE OR REPLACE FUNCTION h3_lat_lng_to_cell(@extschema:postgis@.geometry, reso
 CREATE OR REPLACE FUNCTION h3_lat_lng_to_cell(@extschema:postgis@.geography, resolution integer) RETURNS h3index
     AS $$ SELECT @extschema:h3@.h3_lat_lng_to_cell($1::@extschema:postgis@.geometry, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 
+COMMENT ON FUNCTION
+    h3_polygon_to_cells(geometry, integer)
+IS 'Converts polygonal geometry to H3 cells.
+
+See "PostGIS Integration" for SRID/validity requirements.';
+
+COMMENT ON FUNCTION
+    h3_polygon_to_cells(geography, integer)
+IS 'Converts polygonal geography to H3 cells.
+
+See "PostGIS Integration" for SRID/validity requirements.';
+
+COMMENT ON FUNCTION
+    h3_polygon_to_cells_experimental(geometry, integer, text)
+IS 'Converts polygonal geometry to H3 cells using experimental containment modes.
+
+See "PostGIS Integration" for SRID/validity requirements.';
+
+COMMENT ON FUNCTION
+    h3_polygon_to_cells_experimental(geography, integer, text)
+IS 'Converts polygonal geography to H3 cells using experimental containment modes.
+
+See "PostGIS Integration" for SRID/validity requirements.';
+
 -- Keep installed-vs-upgraded function text identical for pg_validate_extupgrade.
 CREATE OR REPLACE FUNCTION __h3_raster_class_summary_part(
     rast raster,

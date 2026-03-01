@@ -30,6 +30,7 @@ avoid adding features or APIs which do not map onto the
 - Add `h3_postgis` regression coverage for `CREATE INDEX` expression functions and materialized view maintenance under restricted `search_path`
 - Add regression coverage for pg_dump/restore-style `search_path=''` expression-index replay on `h3_lat_lng_to_cell` (see [#168])
 - Add developer note in migration SQL: avoid function-level `SET search_path` in these wrappers to preserve SQL-function inlining
+- Add documentation warning for invalid polygon inputs to `h3_polygon_to_cells*` and guidance for `ST_IsValid` / `ST_MakeValid` workflows (see [#157])
 
 </details>
 
@@ -295,6 +296,7 @@ avoid adding features or APIs which do not map onto the
 [#131]: https://github.com/zachasme/h3-pg/pull/131
 [#140]: https://github.com/zachasme/h3-pg/pull/140
 [#141]: https://github.com/zachasme/h3-pg/pull/141
+[#157]: https://github.com/zachasme/h3-pg/issues/157
 [#159]: https://github.com/zachasme/h3-pg/pull/159
 [#160]: https://github.com/zachasme/h3-pg/pull/160
 [#165]: https://github.com/zachasme/h3-pg/issues/165

@@ -81,6 +81,206 @@ SELECT COUNT(*) = 48 FROM (
     SELECT h3_polygon_to_cells(:with2holes, 10)
 ) q;
 
+-- valid input example at resolution 7: polyfill of 7 known cells is stable
+WITH origin AS (
+    SELECT h3_latlng_to_cell(:degree, 7) AS h3
+),
+cells AS (
+    SELECT h3_grid_disk(h3, 1) AS h3 FROM origin
+),
+poly AS (
+    SELECT h3_cells_to_multi_polygon_geometry(array_agg(h3)) AS g FROM cells
+)
+SELECT COUNT(*) = 7
+FROM poly, LATERAL h3_polygon_to_cells(g, 7) AS cell(h3);
+
+-- invalid polygon can produce a very large number of cells (upstream H3 behavior)
+SET client_min_messages TO warning;
+\set invalid_res 5
+WITH geom AS (
+    SELECT ST_SetSRID(ST_GeomFromGeoJSON('{
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [-148.5, 29.1],
+          [-148.5, 63.9],
+          [-72.5, 29.1],
+          [-72.5, 63.9],
+          [-148.5, 29.1]
+        ]
+      ]
+    }'), 4326) AS g
+)
+SELECT ST_IsValid(g) = false FROM geom;
+
+-- valid rectangle with same vertex set (different winding/order) is much larger
+WITH geom AS (
+    SELECT ST_SetSRID(ST_GeomFromGeoJSON('{
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [-148.5, 29.1],
+          [-148.5, 63.9],
+          [-72.5, 63.9],
+          [-72.5, 29.1],
+          [-148.5, 29.1]
+        ]
+      ]
+    }'), 4326) AS g
+)
+SELECT ST_IsValid(g) FROM geom;
+
+WITH geom AS (
+    SELECT ST_SetSRID(ST_GeomFromGeoJSON('{
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [-148.5, 29.1],
+          [-148.5, 63.9],
+          [-72.5, 29.1],
+          [-72.5, 63.9],
+          [-148.5, 29.1]
+        ]
+      ]
+    }'), 4326) AS g
+)
+SELECT COUNT(*) = 48256
+FROM geom, LATERAL h3_polygon_to_cells(g, :invalid_res) AS cell(h3);
+
+WITH geom AS (
+    SELECT ST_SetSRID(ST_GeomFromGeoJSON('{
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [-148.5, 29.1],
+          [-148.5, 63.9],
+          [-72.5, 63.9],
+          [-72.5, 29.1],
+          [-148.5, 29.1]
+        ]
+      ]
+    }'), 4326) AS g
+)
+SELECT COUNT(*) = 90190
+FROM geom, LATERAL h3_polygon_to_cells(g, :invalid_res) AS cell(h3);
+
+-- ST_MakeValid() repair can return multipolygons / collections; keep polygonal parts
+CREATE FUNCTION h3_test_makevalid_structure(geom geometry) RETURNS geometry LANGUAGE plpgsql
+AS $$
+DECLARE
+    out geometry;
+BEGIN
+    BEGIN
+        EXECUTE 'SELECT ST_MakeValid($1, ''method=structure'')' INTO out USING geom;
+    EXCEPTION WHEN undefined_function THEN
+        out := ST_MakeValid(geom);
+    END;
+
+    RETURN out;
+END;
+$$;
+
+WITH geom AS (
+    SELECT ST_SetSRID(ST_GeomFromGeoJSON('{
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [-148.5, 29.1],
+          [-148.5, 63.9],
+          [-72.5, 29.1],
+          [-72.5, 63.9],
+          [-148.5, 29.1]
+        ]
+      ]
+    }'), 4326) AS g
+),
+repaired AS (
+    SELECT ST_CollectionExtract(h3_test_makevalid_structure(g), 3) AS g FROM geom
+)
+SELECT GeometryType(g) IN ('POLYGON', 'MULTIPOLYGON') FROM repaired;
+
+WITH geom AS (
+    SELECT ST_SetSRID(ST_GeomFromGeoJSON('{
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [-148.5, 29.1],
+          [-148.5, 63.9],
+          [-72.5, 29.1],
+          [-72.5, 63.9],
+          [-148.5, 29.1]
+        ]
+      ]
+    }'), 4326) AS g
+),
+repaired AS (
+    SELECT ST_CollectionExtract(h3_test_makevalid_structure(g), 3) AS g FROM geom
+)
+SELECT ST_IsValid(g) FROM repaired;
+
+WITH geom AS (
+    SELECT ST_SetSRID(ST_GeomFromGeoJSON('{
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [-148.5, 29.1],
+          [-148.5, 63.9],
+          [-72.5, 29.1],
+          [-72.5, 63.9],
+          [-148.5, 29.1]
+        ]
+      ]
+    }'), 4326) AS g
+),
+repaired AS (
+    SELECT ST_CollectionExtract(h3_test_makevalid_structure(g), 3) AS g FROM geom
+)
+SELECT COUNT(*) = 48256
+FROM repaired, LATERAL h3_polygon_to_cells(g, :invalid_res) AS cell(h3);
+
+DROP FUNCTION h3_test_makevalid_structure(geometry);
+RESET client_min_messages;
+
+-- geometrycollections of polygons are accepted by the PostGIS wrapper
+WITH cells AS (
+    SELECT h3_grid_disk(:hexagon, 1) AS h3
+),
+picked AS (
+    SELECT h3 FROM cells ORDER BY h3::text LIMIT 2
+),
+gc AS (
+    SELECT ST_SetSRID(
+        ST_GeomFromText(
+            'GEOMETRYCOLLECTION(' ||
+            (SELECT ST_AsText(h3_cell_to_boundary(h3)::geometry) FROM picked OFFSET 0 LIMIT 1) || ',' ||
+            (SELECT ST_AsText(h3_cell_to_boundary(h3)::geometry) FROM picked OFFSET 1 LIMIT 1) || ')'
+        ),
+        4326
+    ) AS g
+)
+SELECT GeometryType(g) = 'GEOMETRYCOLLECTION' FROM gc;
+
+WITH cells AS (
+    SELECT h3_grid_disk(:hexagon, 1) AS h3
+),
+picked AS (
+    SELECT h3 FROM cells ORDER BY h3::text LIMIT 2
+),
+gc AS (
+    SELECT ST_SetSRID(
+        ST_GeomFromText(
+            'GEOMETRYCOLLECTION(' ||
+            (SELECT ST_AsText(h3_cell_to_boundary(h3)::geometry) FROM picked OFFSET 0 LIMIT 1) || ',' ||
+            (SELECT ST_AsText(h3_cell_to_boundary(h3)::geometry) FROM picked OFFSET 1 LIMIT 1) || ')'
+        ),
+        4326
+    ) AS g
+)
+SELECT COUNT(*) = 2
+FROM gc, LATERAL h3_polygon_to_cells(g, :resolution) AS cell(h3);
+
+RESET client_min_messages;
+
 --
 -- Test h3_cell_to_boundary_wkb
 --
