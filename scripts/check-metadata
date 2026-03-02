@@ -6,7 +6,11 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 echo "[check-metadata] validating README workflow badge targets..."
-mapfile -t badge_workflows < <(rg -o 'actions/workflows/([^/]+\.yml)/badge\.svg' README.md -r '$1' | sort -u)
+mapfile -t badge_workflows < <(
+  grep -oE 'actions/workflows/[^/]+\.yml/badge\.svg' README.md \
+    | sed -E 's#actions/workflows/([^/]+)\.yml/badge\.svg#\1.yml#' \
+    | sort -u
+)
 
 if [[ ${#badge_workflows[@]} -eq 0 ]]; then
   echo "No workflow badge URLs found in README.md"
