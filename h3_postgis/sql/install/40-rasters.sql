@@ -1,5 +1,6 @@
 /*
- * Copyright 2024 Zacharias Knudsen
+ * Copyright 2023-2025 Zacharias Knudsen
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

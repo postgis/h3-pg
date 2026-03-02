@@ -37,7 +37,7 @@ avoid adding features or APIs which do not map onto the
 ## [4.2.3] - 2025-06-24
 - Add `h3_get_resolution_from_tile_zoom` (see [#176], thanks [@sleeping-h])
 - Alter function names containing `lat_lng` to `latlng` in order to align with other SQL bindings (see [#177])
-- Add support for PostgreSQL 18 ([#179], see thanks [@devrimgunduz])
+- Add support for PostgreSQL 18 (see [#179], thanks [@devrimgunduz])
 
 ## [4.2.2] - 2025-02-10
 - More upstream copy/paste in support of Debian package (see [#169], thanks [@df7cb])
@@ -89,7 +89,7 @@ avoid adding features or APIs which do not map onto the
 
 ## [4.0.2] - 2022-09-19
 
-- Fix broken function renames (see [#87], thanks [@Kompza], [@mngr777])
+- Fix broken function renames (see [#87], thanks [@Komzpa], [@mngr777])
 
 ## [4.0.1] - 2022-09-19
 
@@ -126,8 +126,8 @@ avoid adding features or APIs which do not map onto the
 
 ## [3.6.5] - 2020-08-14
 
-- Add support for partitioning by hash (see [#37], thanks [@abelvm])
-- Fix difference in function flags between fresh install and upgrades (see [#38], thanks [@abelvm])
+- Add support for partitioning by hash (see [#37], thanks [@AbelVM])
+- Fix difference in function flags between fresh install and upgrades (see [#38], thanks [@AbelVM])
 
 ## [3.6.4] - 2020-06-29
 
@@ -135,21 +135,21 @@ avoid adding features or APIs which do not map onto the
 
 ## [3.6.3] - 2020-04-08
 
-- Build `h3` core using release flag for 2x/3x performance (see [#23], thanks [@komzpa])
+- Build `h3` core using release flag for 2x/3x performance (see [#23], thanks [@Komzpa])
 
 ## [3.6.2] - 2020-04-07
 
 **This update will corrupt your h3indexes unless your are using a 32-bit build of PostgreSQL (see [#31]). If you upgrade to `4.0.4` you can use the function `h3_pg_migrate_pass_by_reference(h3index)` to retrieve your old h3 cells. See [#111].**
 
-- Add parallel safety flags to PostGIS functions (see [#19], thanks [@komzpa])
-- Add B-Tree sort support (see [#24], thanks [@komzpa])
-- ⚠️ Make type `h3index` pass-by-value on supported systems (see [#22], [#26], thanks [@komzpa])
+- Add parallel safety flags to PostGIS functions (see [#19], thanks [@Komzpa])
+- Add B-Tree sort support (see [#24], thanks [@Komzpa])
+- ⚠️ Make type `h3index` pass-by-value on supported systems (see [#22], [#26], thanks [@Komzpa])
 - Update `h3` core library to `v3.6.3`
 
 ## [3.6.1] - 2019-12-09
 
 - Add `&&`, `@>` and `<@` operators for overlaps, contains and contained by respectively
-- Fix PostgreSQL 12 build (see [#18], thanks [@komzpa])
+- Fix PostgreSQL 12 build (see [#18], thanks [@Komzpa])
 - Update `h3` core library to `v3.6.1`
 
 ## [3.6.0] - 2019-10-07
@@ -166,7 +166,7 @@ avoid adding features or APIs which do not map onto the
 - ⚠️ Replace `h3_edge_length_m` and `h3_edge_length_km` with `h3_edge_length`
 - ⚠️ Remove `hex_range`, `hex_ranges` and `hex_range_distances`
 - Remove `h3` core library version check, since we know which version we are linking
-- Fix PostgreSQL 12 build (see [#4], thanks [@komzpa])
+- Fix PostgreSQL 12 build (see [#4], thanks [@Komzpa])
 - Update `h3` core library to `v3.5.0`
 
 ## [3.4.1] - 2019-06-14
@@ -228,84 +228,84 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.2.3...HEAD
-[4.2.3]: https://github.com/zachasme/h3-pg/compare/v4.2.2...v4.2.3
-[4.2.2]: https://github.com/zachasme/h3-pg/compare/v4.2.1...v4.2.2
-[4.2.1]: https://github.com/zachasme/h3-pg/compare/v4.2.0...v4.2.1
-[4.2.0]: https://github.com/zachasme/h3-pg/compare/v4.1.4...v4.2.0
-[4.1.4]: https://github.com/zachasme/h3-pg/compare/v4.1.3...v4.1.4
-[4.1.3]: https://github.com/zachasme/h3-pg/compare/v4.1.2...v4.1.3
-[4.1.2]: https://github.com/zachasme/h3-pg/compare/v4.1.1...v4.1.2
-[4.1.1]: https://github.com/zachasme/h3-pg/compare/v4.1.0...v4.1.1
-[4.1.0]: https://github.com/zachasme/h3-pg/compare/v4.0.3...v4.1.0
-[4.0.3]: https://github.com/zachasme/h3-pg/compare/v4.0.2...v4.0.3
-[4.0.2]: https://github.com/zachasme/h3-pg/compare/v4.0.1...v4.0.2
-[4.0.1]: https://github.com/zachasme/h3-pg/compare/v4.0.0...v4.0.1
-[4.0.0]: https://github.com/zachasme/h3-pg/compare/v3.7.2...v4.0.0
-[3.7.2]: https://github.com/zachasme/h3-pg/compare/v3.7.1...v3.7.2
-[3.7.1]: https://github.com/zachasme/h3-pg/compare/v3.7.0...v3.7.1
-[3.7.0]: https://github.com/zachasme/h3-pg/compare/v3.6.5...v3.7.0
-[3.6.5]: https://github.com/zachasme/h3-pg/compare/v3.6.4...v3.6.5
-[3.6.4]: https://github.com/zachasme/h3-pg/compare/v3.6.3...v3.6.4
-[3.6.3]: https://github.com/zachasme/h3-pg/compare/v3.6.2...v3.6.3
-[3.6.2]: https://github.com/zachasme/h3-pg/compare/v3.6.1...v3.6.2
-[3.6.1]: https://github.com/zachasme/h3-pg/compare/v3.6.0...v3.6.1
-[3.6.0]: https://github.com/zachasme/h3-pg/compare/v3.5.0...v3.6.0
-[3.5.0]: https://github.com/zachasme/h3-pg/compare/v3.4.1...v3.5.0
-[3.4.1]: https://github.com/zachasme/h3-pg/compare/v3.4.0...v3.4.1
-[3.4.0]: https://github.com/zachasme/h3-pg/compare/v1.0.6...v3.4.0
-[1.0.6]: https://github.com/zachasme/h3-pg/compare/v1.0.5...v1.0.6
-[1.0.5]: https://github.com/zachasme/h3-pg/compare/v1.0.4...v1.0.5
-[1.0.4]: https://github.com/zachasme/h3-pg/compare/v1.0.3...v1.0.4
-[1.0.3]: https://github.com/zachasme/h3-pg/compare/v1.0.2...v1.0.3
-[1.0.2]: https://github.com/zachasme/h3-pg/compare/v1.0.1...v1.0.2
-[1.0.1]: https://github.com/zachasme/h3-pg/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/zachasme/h3-pg/compare/v0.4.0...v1.0.0
-[0.4.0]: https://github.com/zachasme/h3-pg/compare/v0.3.2...v0.4.0
-[0.3.2]: https://github.com/zachasme/h3-pg/compare/v0.3.1...v0.3.2
-[0.3.1]: https://github.com/zachasme/h3-pg/compare/v0.3.0...v0.3.1
-[#4]: https://github.com/zachasme/h3-pg/pull/4
-[#9]: https://github.com/zachasme/h3-pg/pull/9
-[#18]: https://github.com/zachasme/h3-pg/pull/18
-[#19]: https://github.com/zachasme/h3-pg/pull/19
-[#22]: https://github.com/zachasme/h3-pg/pull/22
-[#23]: https://github.com/zachasme/h3-pg/issues/23
-[#24]: https://github.com/zachasme/h3-pg/pull/24
-[#26]: https://github.com/zachasme/h3-pg/pull/26
-[#31]: https://github.com/zachasme/h3-pg/pull/31
-[#37]: https://github.com/zachasme/h3-pg/issues/37
-[#38]: https://github.com/zachasme/h3-pg/issues/38
-[#41]: https://github.com/zachasme/h3-pg/issues/41
-[#43]: https://github.com/zachasme/h3-pg/issues/43
-[#55]: https://github.com/zachasme/h3-pg/issues/55
-[#64]: https://github.com/zachasme/h3-pg/issues/64
-[#65]: https://github.com/zachasme/h3-pg/pull/65
-[#70]: https://github.com/zachasme/h3-pg/pull/70
-[#71]: https://github.com/zachasme/h3-pg/issues/71
-[#75]: https://github.com/zachasme/h3-pg/pull/75
-[#76]: https://github.com/zachasme/h3-pg/pull/76
-[#78]: https://github.com/zachasme/h3-pg/pull/78
-[#87]: https://github.com/zachasme/h3-pg/pull/87
-[#90]: https://github.com/zachasme/h3-pg/pull/90
-[#91]: https://github.com/zachasme/h3-pg/pull/91
-[#93]: https://github.com/zachasme/h3-pg/pull/93
-[#97]: https://github.com/zachasme/h3-pg/pull/97
-[#111]: https://github.com/zachasme/h3-pg/pull/111
-[#112]: https://github.com/zachasme/h3-pg/pull/112
-[#117]: https://github.com/zachasme/h3-pg/issues/117
-[#131]: https://github.com/zachasme/h3-pg/pull/131
-[#140]: https://github.com/zachasme/h3-pg/pull/140
-[#141]: https://github.com/zachasme/h3-pg/pull/141
-[#157]: https://github.com/zachasme/h3-pg/issues/157
-[#159]: https://github.com/zachasme/h3-pg/pull/159
-[#160]: https://github.com/zachasme/h3-pg/pull/160
-[#165]: https://github.com/zachasme/h3-pg/issues/165
-[#168]: https://github.com/zachasme/h3-pg/issues/168
-[#169]: https://github.com/zachasme/h3-pg/issues/169
-[#176]: https://github.com/zachasme/h3-pg/pull/176
-[#177]: https://github.com/zachasme/h3-pg/pull/177
-[#179]: https://github.com/zachasme/h3-pg/issues/179
-[@abelvm]: https://github.com/AbelVM
+[unreleased]: https://github.com/postgis/h3-pg/compare/v4.2.3...HEAD
+[4.2.3]: https://github.com/postgis/h3-pg/compare/v4.2.2...v4.2.3
+[4.2.2]: https://github.com/postgis/h3-pg/compare/v4.2.1...v4.2.2
+[4.2.1]: https://github.com/postgis/h3-pg/compare/v4.2.0...v4.2.1
+[4.2.0]: https://github.com/postgis/h3-pg/compare/v4.1.4...v4.2.0
+[4.1.4]: https://github.com/postgis/h3-pg/compare/v4.1.3...v4.1.4
+[4.1.3]: https://github.com/postgis/h3-pg/compare/v4.1.2...v4.1.3
+[4.1.2]: https://github.com/postgis/h3-pg/compare/v4.1.1...v4.1.2
+[4.1.1]: https://github.com/postgis/h3-pg/compare/v4.1.0...v4.1.1
+[4.1.0]: https://github.com/postgis/h3-pg/compare/v4.0.3...v4.1.0
+[4.0.3]: https://github.com/postgis/h3-pg/compare/v4.0.2...v4.0.3
+[4.0.2]: https://github.com/postgis/h3-pg/compare/v4.0.1...v4.0.2
+[4.0.1]: https://github.com/postgis/h3-pg/compare/v4.0.0...v4.0.1
+[4.0.0]: https://github.com/postgis/h3-pg/compare/v3.7.2...v4.0.0
+[3.7.2]: https://github.com/postgis/h3-pg/compare/v3.7.1...v3.7.2
+[3.7.1]: https://github.com/postgis/h3-pg/compare/v3.7.0...v3.7.1
+[3.7.0]: https://github.com/postgis/h3-pg/compare/v3.6.5...v3.7.0
+[3.6.5]: https://github.com/postgis/h3-pg/compare/v3.6.4...v3.6.5
+[3.6.4]: https://github.com/postgis/h3-pg/compare/v3.6.3...v3.6.4
+[3.6.3]: https://github.com/postgis/h3-pg/compare/v3.6.2...v3.6.3
+[3.6.2]: https://github.com/postgis/h3-pg/compare/v3.6.1...v3.6.2
+[3.6.1]: https://github.com/postgis/h3-pg/compare/v3.6.0...v3.6.1
+[3.6.0]: https://github.com/postgis/h3-pg/compare/v3.5.0...v3.6.0
+[3.5.0]: https://github.com/postgis/h3-pg/compare/v3.4.1...v3.5.0
+[3.4.1]: https://github.com/postgis/h3-pg/compare/v3.4.0...v3.4.1
+[3.4.0]: https://github.com/postgis/h3-pg/compare/v1.0.6...v3.4.0
+[1.0.6]: https://github.com/postgis/h3-pg/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/postgis/h3-pg/compare/v1.0.4...v1.0.5
+[1.0.4]: https://github.com/postgis/h3-pg/compare/v1.0.3...v1.0.4
+[1.0.3]: https://github.com/postgis/h3-pg/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/postgis/h3-pg/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/postgis/h3-pg/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/postgis/h3-pg/compare/v0.4.0...v1.0.0
+[0.4.0]: https://github.com/postgis/h3-pg/compare/v0.3.2...v0.4.0
+[0.3.2]: https://github.com/postgis/h3-pg/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/postgis/h3-pg/compare/v0.3.0...v0.3.1
+[#4]: https://github.com/postgis/h3-pg/pull/4
+[#9]: https://github.com/postgis/h3-pg/pull/9
+[#18]: https://github.com/postgis/h3-pg/pull/18
+[#19]: https://github.com/postgis/h3-pg/pull/19
+[#22]: https://github.com/postgis/h3-pg/pull/22
+[#23]: https://github.com/postgis/h3-pg/issues/23
+[#24]: https://github.com/postgis/h3-pg/pull/24
+[#26]: https://github.com/postgis/h3-pg/pull/26
+[#31]: https://github.com/postgis/h3-pg/pull/31
+[#37]: https://github.com/postgis/h3-pg/issues/37
+[#38]: https://github.com/postgis/h3-pg/issues/38
+[#41]: https://github.com/postgis/h3-pg/issues/41
+[#43]: https://github.com/postgis/h3-pg/issues/43
+[#55]: https://github.com/postgis/h3-pg/issues/55
+[#64]: https://github.com/postgis/h3-pg/issues/64
+[#65]: https://github.com/postgis/h3-pg/pull/65
+[#70]: https://github.com/postgis/h3-pg/pull/70
+[#71]: https://github.com/postgis/h3-pg/issues/71
+[#75]: https://github.com/postgis/h3-pg/pull/75
+[#76]: https://github.com/postgis/h3-pg/pull/76
+[#78]: https://github.com/postgis/h3-pg/pull/78
+[#87]: https://github.com/postgis/h3-pg/pull/87
+[#90]: https://github.com/postgis/h3-pg/pull/90
+[#91]: https://github.com/postgis/h3-pg/pull/91
+[#93]: https://github.com/postgis/h3-pg/pull/93
+[#97]: https://github.com/postgis/h3-pg/pull/97
+[#111]: https://github.com/postgis/h3-pg/pull/111
+[#112]: https://github.com/postgis/h3-pg/pull/112
+[#117]: https://github.com/postgis/h3-pg/issues/117
+[#131]: https://github.com/postgis/h3-pg/pull/131
+[#140]: https://github.com/postgis/h3-pg/pull/140
+[#141]: https://github.com/postgis/h3-pg/pull/141
+[#157]: https://github.com/postgis/h3-pg/issues/157
+[#159]: https://github.com/postgis/h3-pg/pull/159
+[#160]: https://github.com/postgis/h3-pg/pull/160
+[#165]: https://github.com/postgis/h3-pg/issues/165
+[#168]: https://github.com/postgis/h3-pg/issues/168
+[#169]: https://github.com/postgis/h3-pg/issues/169
+[#176]: https://github.com/postgis/h3-pg/pull/176
+[#177]: https://github.com/postgis/h3-pg/pull/177
+[#179]: https://github.com/postgis/h3-pg/issues/179
+[@AbelVM]: https://github.com/AbelVM
 [@bayandin]: https://github.com/bayandin
 [@BielStela]: https://github.com/BielStela
 [@devrimgunduz]: https://github.com/devrimgunduz
@@ -313,8 +313,8 @@ avoid adding features or APIs which do not map onto the
 [@jmealo]: https://github.com/jmealo
 [@kalenikaliaksandr]: https://github.com/kalenikaliaksandr
 [@kmacdough]: https://github.com/kmacdough
-[@komzpa]: https://github.com/Komzpa
-[@lokks]: https://github.com/Lokks
+[@Komzpa]: https://github.com/Komzpa
+[@Lokks]: https://github.com/Lokks
 [@mngr777]: https://github.com/mngr777
 [@robertozimek]: https://github.com/robertozimek
 [@rustprooflabs]: https://github.com/rustprooflabs

@@ -16,7 +16,7 @@ jobs:
       - name: Install PGXN Client
         run: sudo pip install pgxnclient
 
-      - name: Install PostgreSQL server dependencies
+      - name: Install PostgreSQL 14 + PostGIS dependencies (PGXN smoke test)
         run: |
           sudo apt-get update
           sudo apt-get install postgresql-server-dev-14 postgis
