@@ -174,7 +174,7 @@ h3index_contained_by(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = containment(a, b) < 0;
+	bool		ret = containment(a, b) < 0 || a == b;
 
 	PG_RETURN_BOOL(ret);
 }
