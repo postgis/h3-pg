@@ -1,5 +1,6 @@
 /*
- * Copyright 2023 Zacharias Knudsen
+ * Copyright 2023-2025 Zacharias Knudsen
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +44,16 @@
 	PGDLLEXPORT PG_FUNCTION_INFO_V1(oldfunc); \
 	Datum oldfunc(PG_FUNCTION_ARGS) \
 	{ \
-		H3_DEPRECATION(#oldfunc " will be deprecated in favor of " #newfunc " next major release"); \
+		/* \
+		 * Warn once per backend for each deprecated wrapper symbol. \
+		 * We set the flag before ereport(), because NOTICE/WARNING \
+		 * processing may not always return through this code path. \
+		 */ \
+		static bool warned_once = false; \
+		if (!warned_once) \
+		{ \
+			warned_once = true; \
+			H3_DEPRECATION(#oldfunc " will be deprecated in favor of " #newfunc " next major release"); \
+		} \
 		return newfunc(fcinfo); \
 	}

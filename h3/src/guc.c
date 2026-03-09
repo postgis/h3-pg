@@ -1,5 +1,6 @@
 /*
- * Copyright 2023 Zacharias Knudsen
+ * Copyright 2023-2024 Zacharias Knudsen
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +25,24 @@ bool		h3_guc_extend_antimeridian = false;
 void
 _guc_init(void)
 {
+	/*
+	 * @guc-doc h3.strict
+	 * Recommended: true for most PostGIS/SQL analytics sessions.
+	 *
+	 * true: reject longitude outside [-180, 180] and latitude outside [-90, 90].
+	 * Use this to catch wrong coordinate-system inputs early (for example
+	 * projected coordinates passed as lon/lat).
+	 *
+	 * false: keep upstream H3 default behavior (including wrapped coordinates).
+	 * Use only when wrapped-around data is intentional.
+	 *
+	 * Example:
+	 *   SET h3.strict TO true;
+	 *   SELECT h3_latlng_to_cell(POINT(6196902.235, 1413172.083), 10);
+	 */
 	DefineCustomBoolVariable("h3.strict",
 						 "Enable strict indexing (fail on invalid lng/lat).",
-							 NULL,
+							 "Controls coordinate validation for h3_latlng_to_cell.",
 							 &h3_guc_strict,
 							 false,
 							 PGC_USERSET,
@@ -35,9 +51,23 @@ _guc_init(void)
 							 NULL,
 							 NULL);
 
+	/*
+	 * @guc-doc h3.extend_antimeridian
+	 * Recommended: false for planar PostGIS geometry operations.
+	 *
+	 * false: use split-across-antimeridian behavior, usually preferred for
+	 * planar operations like overlays/intersections.
+	 *
+	 * true: keep upstream H3 antimeridian continuity behavior as-is.
+	 * Use for H3-first workflows that expect continuity semantics.
+	 *
+	 * Example:
+	 *   SET h3.extend_antimeridian TO false;
+	 *   SELECT h3_cell_to_boundary('8003fffffffffff'::h3index);
+	 */
 	DefineCustomBoolVariable("h3.extend_antimeridian",
 					   "Extend boundaries by 180th meridian, when possible.",
-							 NULL,
+							 "Controls antimeridian handling for h3_cell_to_boundary.",
 							 &h3_guc_extend_antimeridian,
 							 false,
 							 PGC_USERSET,

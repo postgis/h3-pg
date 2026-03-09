@@ -46,6 +46,9 @@ PostgreSQL_add_extension(postgresql_h3_postgis
 # link
 target_link_libraries(postgresql_h3_postgis PRIVATE postgresql_h3_shared h3)
 
+# Emit PostgreSQL JIT bitcode only after all include/link settings are final.
+PostgreSQL_add_extension_bitcode(postgresql_h3_postgis h3_postgis ${PROJECT_NAME})
+
 # test
 if(BUILD_TESTING AND PostgreSQL_PostGIS_FOUND)
   add_subdirectory(test)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Zacharias Knudsen
+ * Copyright 2022-2024 Zacharias Knudsen
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ h3_get_extension_version(PG_FUNCTION_ARGS)
 
 /*
  * Migration from pass-by-reference to pass-by-value
- * https://github.com/zachasme/h3-pg/issues/31
+ * https://github.com/postgis/h3-pg/issues/31
  */
 Datum
 h3_pg_migrate_pass_by_reference(PG_FUNCTION_ARGS)

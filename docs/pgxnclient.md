@@ -12,9 +12,9 @@ On Ubuntu you can install using `apt`
 apt-get install pgxnclient
 ```
 
-## MacOS
+## macOS
 
-On MacOs you can install using `brew`
+On macOS you can install using `brew`
 
 ```bash
 brew install pgxnclient

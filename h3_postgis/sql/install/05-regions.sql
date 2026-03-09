@@ -1,5 +1,6 @@
 /*
- * Copyright 2024 Zacharias Knudsen
+ * Copyright 2022-2025 Zacharias Knudsen
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +16,12 @@
  */
 
 --| # PostGIS Region Functions
+--|
+--| Note: `h3_polygon_to_cells*` assumes valid polygonal input in SRID 4326.
+--| If results look surprising, start by checking `ST_IsValid()` and `ST_SRID()`
+--| (and consider `SET h3.strict TO true` to catch out-of-range lon/lat).
+--| For collections, extract polygonal parts first: `ST_CollectionExtract(geom, 3)`.
+--| The "PostGIS Integration" section includes a validation/repair pattern.
 
 --@ availability: 4.0.0
 --@ refid: h3_polygon_to_cells_geometry
@@ -37,11 +44,21 @@ CREATE OR REPLACE FUNCTION h3_polygon_to_cells(multi geometry, resolution intege
             select (st_dump(multi)).geom as poly
         ) q_poly GROUP BY poly
     ) h3_polygon_to_cells; $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE CALLED ON NULL INPUT; -- NOT STRICT
+COMMENT ON FUNCTION
+    h3_polygon_to_cells(geometry, integer)
+IS 'Converts polygonal geometry to H3 cells.
+
+See "PostGIS Integration" for SRID/validity requirements.';
 
 --@ availability: 4.0.0
 --@ refid: h3_polygon_to_cells_geography
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells(multi geography, resolution integer) RETURNS SETOF h3index
 AS $$ SELECT h3_polygon_to_cells($1::geometry, $2) $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE CALLED ON NULL INPUT; -- NOT STRICT
+COMMENT ON FUNCTION
+    h3_polygon_to_cells(geography, integer)
+IS 'Converts polygonal geography to H3 cells.
+
+See "PostGIS Integration" for SRID/validity requirements.';
 
 --@ availability: 4.1.0
 --@ refid: h3_cells_to_multi_polygon_geometry
@@ -94,8 +111,18 @@ CREATE OR REPLACE FUNCTION h3_polygon_to_cells_experimental(multi geometry, reso
             select (st_dump(multi)).geom as poly
         ) q_poly GROUP BY poly
     ) h3_polygon_to_cells; $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE CALLED ON NULL INPUT; -- NOT STRICT
+COMMENT ON FUNCTION
+    h3_polygon_to_cells_experimental(geometry, integer, text)
+IS 'Converts polygonal geometry to H3 cells using experimental containment modes.
+
+See "PostGIS Integration" for SRID/validity requirements.';
 
 --@ availability: 4.2.0
 --@ refid: h3_polygon_to_cells_geography_experimental
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells_experimental(multi geography, resolution integer, containment_mode text DEFAULT 'center') RETURNS SETOF h3index
 AS $$ SELECT h3_polygon_to_cells_experimental($1::geometry, $2, $3) $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE CALLED ON NULL INPUT; -- NOT STRICT
+COMMENT ON FUNCTION
+    h3_polygon_to_cells_experimental(geography, integer, text)
+IS 'Converts polygonal geography to H3 cells using experimental containment modes.
+
+See "PostGIS Integration" for SRID/validity requirements.';

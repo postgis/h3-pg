@@ -86,5 +86,5 @@ These exist only in h3-pg, not other H3 language bindings.
 
 ## Documentation
 
-- API reference: https://github.com/zachasme/h3-pg/blob/main/docs/api.md
+- API reference: https://github.com/postgis/h3-pg/blob/main/docs/api.md
 - v3→v4 migration: https://h3geo.org/docs/library/migration-3.x/functions

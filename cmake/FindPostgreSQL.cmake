@@ -37,6 +37,46 @@ execute_process(COMMAND ${PostgreSQL_CONFIG} --pkgincludedir     OUTPUT_VARIABLE
 execute_process(COMMAND ${PostgreSQL_CONFIG} --includedir-server OUTPUT_VARIABLE PostgreSQL_SERVER_INCLUDE_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${PostgreSQL_CONFIG} --libdir            OUTPUT_VARIABLE PostgreSQL_LIBRARY_DIR        OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${PostgreSQL_CONFIG} --pkglibdir         OUTPUT_VARIABLE PostgreSQL_PKG_LIBRARY_DIR    OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND ${PostgreSQL_CONFIG} --configure         OUTPUT_VARIABLE PostgreSQL_CONFIGURE          OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# PostgreSQL can optionally be built with LLVM support (`--with-llvm`).
+# We mirror that capability to optionally emit extension bitcode for JIT.
+set(PostgreSQL_WITH_LLVM FALSE)
+if(PostgreSQL_CONFIGURE MATCHES "(^|[ '])--with-llvm($|[ '])")
+  set(PostgreSQL_WITH_LLVM TRUE)
+endif()
+
+# Prefer the exact CLANG/LLVM tools PostgreSQL was configured with.
+set(PostgreSQL_LLVM_CLANG "")
+set(PostgreSQL_LLVM_CONFIG "")
+if(PostgreSQL_CONFIGURE MATCHES "(^|[ '])CLANG=([^' ]+)")
+  set(PostgreSQL_LLVM_CLANG "${CMAKE_MATCH_2}")
+endif()
+if(PostgreSQL_CONFIGURE MATCHES "(^|[ '])LLVM_CONFIG=([^' ]+)")
+  set(PostgreSQL_LLVM_CONFIG "${CMAKE_MATCH_2}")
+endif()
+
+set(PostgreSQL_LLVM_HINTS "")
+if(PostgreSQL_LLVM_CLANG)
+  get_filename_component(PostgreSQL_LLVM_BIN_DIR "${PostgreSQL_LLVM_CLANG}" DIRECTORY)
+  list(APPEND PostgreSQL_LLVM_HINTS "${PostgreSQL_LLVM_BIN_DIR}")
+endif()
+if(PostgreSQL_LLVM_CONFIG)
+  get_filename_component(PostgreSQL_LLVM_BIN_DIR "${PostgreSQL_LLVM_CONFIG}" DIRECTORY)
+  list(APPEND PostgreSQL_LLVM_HINTS "${PostgreSQL_LLVM_BIN_DIR}")
+endif()
+
+find_program(PostgreSQL_LLVM_CLANG_BIN
+  NAMES clang
+  HINTS ${PostgreSQL_LLVM_HINTS}
+)
+if(PostgreSQL_LLVM_CLANG AND EXISTS "${PostgreSQL_LLVM_CLANG}")
+  set(PostgreSQL_LLVM_CLANG_BIN "${PostgreSQL_LLVM_CLANG}")
+endif()
+find_program(PostgreSQL_LLVM_LTO_BIN
+  NAMES llvm-lto
+  HINTS ${PostgreSQL_LLVM_HINTS}
+)
 
 # @TODO: Figure out if we need _INCLUDE_DIR and/or _PKG_INCLUDE_DIR
 

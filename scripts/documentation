@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # ensure we are in script dir
 cd "$(dirname "$0")"
@@ -6,11 +7,20 @@ cd "$(dirname "$0")"
 # go to python project dir
 cd sql2doc
 
+if ! command -v poetry >/dev/null 2>&1; then
+    echo "poetry is required to generate documentation" >&2
+    exit 127
+fi
+
 # ensure dependencies are present
 poetry install
 
 # generate markdown from sql files
+tmp_api="$(mktemp)"
+trap 'rm -f "$tmp_api"' EXIT
 poetry run -q -- python generate.py \
        -g "API Reference" "../../h3/sql/install/*.sql" \
        -g "PostGIS Integration" "../../h3_postgis/sql/install/*.sql" \
-       > "../../docs/api.md"
+       > "$tmp_api"
+
+mv "$tmp_api" "../../docs/api.md"

@@ -5,7 +5,7 @@ authors:
   given-names: "Zacharias"
   orcid:  https://orcid.org/0000-0003-3662-8396
 title: "h3-pg"
-version: v3.7.2
+version: v4.2.3
 doi: 10.5281/zenodo.6856596
-date-released: 2022-04-13
-url: "https://github.com/zachasme/h3-pg"
+date-released: 2025-06-24
+url: "https://github.com/postgis/h3-pg"
