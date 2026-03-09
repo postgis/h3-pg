@@ -470,24 +470,39 @@ Returns true if A contains B.
 Returns true if A is contained by B.
 
 
-## SP-GiST operator class (experimental)
-*This is still an experimental feature and may change in future versions.*
-Add an SP-GiST index using the `h3index_ops_experimental` operator class:
+## Spatial index operator classes (experimental)
+
+*These are experimental features and may change in future versions.*
+
+Both SP-GiST and GiST indexes support containment queries (`@>`, `<@`) and equality (`=`) on `h3index` columns. They differ in what else they support and how they perform:
+
+| Feature | SP-GiST | GiST |
+|---|---|---|
+| Containment (`@>`, `<@`) | Yes | Yes |
+| Equality (`=`) | Yes | Yes |
+| Overlap (`&&`) | No | Yes |
+| KNN distance (`<->`) | No | Yes |
+| Index build speed | Faster | Slower |
+| Mixed-resolution data | Good | Good |
+
+**Use SP-GiST** if you only need containment queries and want faster index builds. **Use GiST** if you need KNN nearest-neighbor search or overlap queries.
+
+### SP-GiST
 ```sql
--- CREATE INDEX [indexname] ON [tablename] USING spgist([column] h3index_ops_experimental);
 CREATE INDEX spgist_idx ON h3_data USING spgist(hex h3index_ops_experimental);
+
+-- containment queries
+SELECT * FROM h3_data WHERE hex <@ '831c02fffffffff'::h3index;
 ```
 
-## GiST operator class (experimental)
-*This is still an experimental feature and may change in future versions.*
-Add a GiST index using the `h3index_gist_ops_experimental` operator class:
+### GiST
 ```sql
--- CREATE INDEX [indexname] ON [tablename] USING gist([column] h3index_gist_ops_experimental);
 CREATE INDEX gist_idx ON h3_data USING gist(hex h3index_gist_ops_experimental);
-```
-The GiST index supports the same containment and overlap operators (`@>`, `<@`, `&&`) as the SP-GiST index, and also supports KNN distance ordering (`<->`):
-```sql
--- Find the 10 nearest hexagons to a given cell
+
+-- containment queries (same as SP-GiST)
+SELECT * FROM h3_data WHERE hex <@ '831c02fffffffff'::h3index;
+
+-- KNN nearest-neighbor ordering (GiST only)
 SELECT hex FROM h3_data ORDER BY hex <-> '831c02fffffffff'::h3index LIMIT 10;
 ```
 
