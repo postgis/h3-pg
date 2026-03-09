@@ -37,14 +37,24 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_overlaps);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_contains);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_contained_by);
 
-/* containment helper (non-static, also used by opclass_gist.c) */
+/*
+ * Containment helper (non-static, also used by opclass_gist.c).
+ * Returns +1 if a contains b (or a == b), -1 if b contains a, 0 otherwise.
+ */
 int
 containment(H3Index a, H3Index b)
 {
 	H3Index		aParent = a;
 	H3Index		bParent = b;
-	int			aRes = getResolution(a);
-	int			bRes = getResolution(b);
+	int			aRes,
+				bRes;
+
+	/* fast path: equality is containment in both directions */
+	if (a == b)
+		return 1;
+
+	aRes = getResolution(a);
+	bRes = getResolution(b);
 
 	if (aRes > bRes)
 		h3_assert(cellToParent(a, bRes, &aParent));
