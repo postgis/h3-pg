@@ -79,7 +79,7 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 			case RTContainsStrategyNumber:
 				PG_RETURN_BOOL(cmp > 0);
 			case RTContainedByStrategyNumber:
-				PG_RETURN_BOOL(cmp < 0);
+				PG_RETURN_BOOL(cmp < 0 || key == query);
 			default:
 				ereport(ERROR, (
 								errcode(ERRCODE_INTERNAL_ERROR),
@@ -332,16 +332,14 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 
 		if (size_change_l < size_change_r)
 		{
-			if (check_left != H3_NULL)
-				unionL = check_left;
+			unionL = check_left;
 			*left = i;
 			++left;
 			++(v->spl_nleft);
 		}
 		else
 		{
-			if (check_right != H3_NULL)
-				unionR = check_right;
+			unionR = check_right;
 			*right = i;
 			++right;
 			++(v->spl_nright);
@@ -399,7 +397,10 @@ h3index_gist_distance(PG_FUNCTION_ARGS)
 
 			if (key == H3_NULL)
 			{
-				retval = INFINITY;
+				/* H3_NULL on a leaf is genuinely invalid; on an internal
+				 * node it means a mixed-base subtree — return 0 so KNN
+				 * still explores it (recheck handles correctness). */
+				retval = GIST_LEAF(entry) ? INFINITY : 0.0;
 				break;
 			}
 
@@ -417,15 +418,15 @@ h3index_gist_distance(PG_FUNCTION_ARGS)
 			}
 			else
 			{
-				/* key is finer — get query parent at key resolution */
-				H3Index		queryParent;
-				error = cellToParent(query, keyRes, &queryParent);
+				/* key is finer — refine query to key resolution */
+				H3Index		queryChild;
+				error = cellToCenterChild(query, keyRes, &queryChild);
 				if (error)
 				{
 					retval = INFINITY;
 					break;
 				}
-				error = gridDistance(queryParent, key, &distance);
+				error = gridDistance(queryChild, key, &distance);
 			}
 
 			if (error)

@@ -22,8 +22,8 @@ SELECT COUNT(*) = 2 FROM h3_test_gist WHERE hex @> :hexagon;
 --
 -- TEST contained by (<@)
 --
--- children and center child are contained by hexagon (strict containment)
-SELECT COUNT(*) = 8 FROM h3_test_gist WHERE hex <@ :hexagon;
+-- hexagon itself, children, and center child are contained by hexagon
+SELECT COUNT(*) = 9 FROM h3_test_gist WHERE hex <@ :hexagon;
  t
 
 --
