@@ -18,3 +18,27 @@ SELECT COUNT(*) = 8 FROM h3_test_spgist WHERE hex <@ :hexagon;
 TRUNCATE TABLE h3_test_spgist;
 INSERT INTO h3_test_spgist (hex) SELECT h3_cell_to_children(h3_cell_to_center_child(:hexagon, 10), 15);
 SELECT COUNT(*) = 16807 FROM h3_test_spgist WHERE hex <@ :hexagon;
+
+--
+-- TEST SP-GiST with tree depth exceeding cell resolution
+-- When many duplicated cells from multiple base cells fill the tree,
+-- picksplit can be called at a level deeper than the cell resolution.
+-- This previously crashed with E_RES_MISMATCH (error code 12).
+--
+
+TRUNCATE TABLE h3_test_spgist;
+INSERT INTO h3_test_spgist (hex)
+  SELECT c
+  FROM (
+    SELECT h3_cell_to_children(bc, 3) AS c
+    FROM (VALUES ('8001fffffffffff'::h3index), ('8003fffffffffff'::h3index)) v(bc)
+  ) sub
+  CROSS JOIN generate_series(1, 200);
+
+-- Index must build without error
+REINDEX INDEX SPGIST_IDX;
+
+-- Containment query must still return correct results
+SELECT COUNT(*) = (SELECT COUNT(*) FROM h3_test_spgist)
+  FROM h3_test_spgist
+  WHERE hex <@ '8001fffffffffff'::h3index OR hex <@ '8003fffffffffff'::h3index;

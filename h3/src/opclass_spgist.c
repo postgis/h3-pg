@@ -195,9 +195,14 @@ h3index_spgist_choose(PG_FUNCTION_ARGS)
 		{
 			node = getBaseCellNumber(insert);
 		}
-		else
+		else if (resolution <= getResolution(insert))
 		{
 			node = H3_GET_INDEX_DIGIT(insert, resolution);
+		}
+		else
+		{
+			/* tree is deeper than cell resolution — route to center */
+			node = 0;
 		}
 
 		out->result.matchNode.nodeN = node;
@@ -247,18 +252,32 @@ h3index_spgist_picksplit(PG_FUNCTION_ARGS)
 	{
 		/* at finer resolutions there is exactly 7 nodes, one per child */
 		H3Index first = DatumGetH3Index(in->datums[0]);
-		H3Index parent;
-		H3Error error;
-		h3_assert(cellToParent(first, resolution, &parent));
-
+		int		firstRes = getResolution(first);
 
 		/*
 		 * TODO: consider decreasing nNodes for pentagons which only have 6
 		 * children?
 		 */
 		out->nNodes = H3_NUM_CHILDREN;
-		out->hasPrefix = true;
-		out->prefixDatum = H3IndexGetDatum(parent);
+
+		if (resolution <= firstRes)
+		{
+			H3Index parent;
+			h3_assert(cellToParent(first, resolution, &parent));
+			out->hasPrefix = true;
+			out->prefixDatum = H3IndexGetDatum(parent);
+		}
+		else
+		{
+			/*
+			 * Tree depth exceeds cell resolution.  This happens when many
+			 * identical (or nearly identical) cells cause the tree to grow
+			 * past the cell's resolution.  Use the cell itself as the prefix
+			 * since we cannot compute a finer parent.
+			 */
+			out->hasPrefix = true;
+			out->prefixDatum = H3IndexGetDatum(first);
+		}
 	}
 
 	/* map each leaf tuple to node in the new inner tuple */
