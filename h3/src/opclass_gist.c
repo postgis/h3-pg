@@ -330,7 +330,9 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 		else
 			size_change_r = getResolution(unionR) - getResolution(check_right);
 
-		if (size_change_l < size_change_r)
+		if (size_change_l < size_change_r ||
+			(size_change_l == size_change_r &&
+			 v->spl_nleft <= v->spl_nright))
 		{
 			unionL = check_left;
 			*left = i;
@@ -390,43 +392,57 @@ h3index_gist_distance(PG_FUNCTION_ARGS)
 	{
 		case RTKNNSearchStrategyNumber:
 		{
-			int			keyRes = getResolution(key);
-			int			queryRes = getResolution(query);
 			int64_t		distance;
 			H3Error		error;
 
-			if (key == H3_NULL)
+			/*
+			 * Internal nodes: return 0 as a conservative lower bound.
+			 * Using center-child distance is NOT a valid lower bound
+			 * because edge descendants can be closer than the center
+			 * child. GiST KNN requires lower bounds for correctness;
+			 * recheck (set above) ensures final ordering is exact.
+			 */
+			if (!GIST_LEAF(entry))
 			{
-				/* H3_NULL on a leaf is genuinely invalid; on an internal
-				 * node it means a mixed-base subtree — return 0 so KNN
-				 * still explores it (recheck handles correctness). */
-				retval = GIST_LEAF(entry) ? INFINITY : 0.0;
+				retval = 0.0;
 				break;
 			}
 
-			if (keyRes <= queryRes)
+			/* Leaf node: compute exact distance */
+			if (key == H3_NULL)
 			{
-				/* key is coarser — get center child at query resolution */
-				H3Index		child;
-				error = cellToCenterChild(key, queryRes, &child);
-				if (error)
-				{
-					retval = INFINITY;
-					break;
-				}
-				error = gridDistance(query, child, &distance);
+				retval = INFINITY;
+				break;
 			}
-			else
+
 			{
-				/* key is finer — refine query to key resolution */
-				H3Index		queryChild;
-				error = cellToCenterChild(query, keyRes, &queryChild);
-				if (error)
+				int			keyRes = getResolution(key);
+				int			queryRes = getResolution(query);
+
+				if (keyRes <= queryRes)
 				{
-					retval = INFINITY;
-					break;
+					/* key is coarser — get center child at query resolution */
+					H3Index		child;
+					error = cellToCenterChild(key, queryRes, &child);
+					if (error)
+					{
+						retval = INFINITY;
+						break;
+					}
+					error = gridDistance(query, child, &distance);
 				}
-				error = gridDistance(queryChild, key, &distance);
+				else
+				{
+					/* key is finer — refine query to key resolution */
+					H3Index		queryChild;
+					error = cellToCenterChild(query, keyRes, &queryChild);
+					if (error)
+					{
+						retval = INFINITY;
+						break;
+					}
+					error = gridDistance(queryChild, key, &distance);
+				}
 			}
 
 			if (error)
