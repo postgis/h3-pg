@@ -26,6 +26,8 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+- Add experimental GiST operator class (see [#42], thanks [@zachasme], [@abelvm], [@mattiZed])
+
 </details>
 
 ## [4.2.3] - 2025-06-24
@@ -270,6 +272,7 @@ avoid adding features or APIs which do not map onto the
 [#37]: https://github.com/zachasme/h3-pg/issues/37
 [#38]: https://github.com/zachasme/h3-pg/issues/38
 [#41]: https://github.com/zachasme/h3-pg/issues/41
+[#42]: https://github.com/zachasme/h3-pg/pull/42
 [#43]: https://github.com/zachasme/h3-pg/issues/43
 [#55]: https://github.com/zachasme/h3-pg/issues/55
 [#64]: https://github.com/zachasme/h3-pg/issues/64
@@ -311,4 +314,6 @@ avoid adding features or APIs which do not map onto the
 [@rustprooflabs]: https://github.com/rustprooflabs
 [@sleeping-h]: https://github.com/sleeping-h
 [@trylinka]: https://github.com/trylinka
+[@mattiZed]: https://github.com/mattiZed
 [@wolfgangwalther]: https://github.com/wolfgangwalther
+[@zachasme]: https://github.com/zachasme

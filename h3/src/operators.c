@@ -37,8 +37,8 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_overlaps);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_contains);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_contained_by);
 
-/* static helpers */
-static int
+/* containment helper (non-static, also used by opclass_gist.c) */
+int
 containment(H3Index a, H3Index b)
 {
 	H3Index		aParent = a;
