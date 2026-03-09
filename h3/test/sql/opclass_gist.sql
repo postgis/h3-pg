@@ -188,6 +188,36 @@ RESET enable_seqscan;
 DROP TABLE h3_test_multibase;
 
 --
+-- TEST picksplit with H3_NULL entries in seed selection
+-- Bug: when an internal page contained H3_NULL keys (from prior splits
+-- spanning multiple base cells), the seed-waste loop called containment(),
+-- getResolution(), and cellToChildrenSize() on H3_NULL — undefined behavior.
+-- Use many base cells to force deep re-splitting where H3_NULL appears.
+--
+CREATE TABLE h3_test_nullseed (hex h3index);
+-- insert children from 6 different base cells to force H3_NULL internal nodes
+INSERT INTO h3_test_nullseed SELECT h3_cell_to_children('831c02fffffffff'::h3index, 5);
+INSERT INTO h3_test_nullseed SELECT h3_cell_to_children('831c04fffffffff'::h3index, 5);
+INSERT INTO h3_test_nullseed SELECT h3_cell_to_children('831c06fffffffff'::h3index, 5);
+INSERT INTO h3_test_nullseed SELECT h3_cell_to_children('831c08fffffffff'::h3index, 5);
+INSERT INTO h3_test_nullseed SELECT h3_cell_to_children('831c0afffffffff'::h3index, 5);
+INSERT INTO h3_test_nullseed SELECT h3_cell_to_children('831c0cfffffffff'::h3index, 5);
+-- building the index must not crash (triggers picksplit on pages with H3_NULL)
+CREATE INDEX h3_test_nullseed_idx ON h3_test_nullseed USING gist(hex h3index_gist_ops_experimental);
+
+SET enable_seqscan = off;
+
+-- queries must still return correct results after the split
+SELECT COUNT(*) > 0 FROM h3_test_nullseed
+WHERE hex <@ '831c02fffffffff'::h3index;
+
+SELECT COUNT(*) > 0 FROM h3_test_nullseed
+WHERE hex <@ '831c0cfffffffff'::h3index;
+
+RESET enable_seqscan;
+DROP TABLE h3_test_nullseed;
+
+--
 -- TEST resolution 0 (base cell) boundary
 -- Bug: finest_common_ancestor loop used i > 0, missing res 0.
 -- Two cells in the same base cell diverging at res 1 returned H3_NULL.
