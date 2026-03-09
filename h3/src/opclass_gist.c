@@ -38,6 +38,9 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_distance);
 /* Number of random entries to sample when finding picksplit seeds */
 #define GIST_SAMPLE_SIZE 20
 
+/* Penalty for entries in different base cells (MAX_H3_RES + 1) */
+#define GIST_CROSS_BASE_PENALTY 16.0f
+
 /**
  * The GiST Consistent method for H3 indexes.
  * Should return false if for all data items x below entry,
@@ -63,6 +66,21 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 		PG_RETURN_BOOL(true);
 	}
 
+	/*
+	 * For equality, we only need key == query. Skip the more expensive
+	 * containment() call since it is not needed for this strategy.
+	 */
+	if (strategy == RTSameStrategyNumber && GIST_LEAF(entry))
+	{
+		*recheck = false;
+		PG_RETURN_BOOL(key == query);
+	}
+
+	/*
+	 * containment() returns +1 when a contains b (including a == b),
+	 * -1 when b contains a, and 0 when neither contains the other.
+	 * Note: containment(x, x) returns +1, not 0, because x == xParent.
+	 */
 	cmp = containment(key, query);
 
 	if (GIST_LEAF(entry))
@@ -74,8 +92,6 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 		{
 			case RTOverlapStrategyNumber:
 				PG_RETURN_BOOL(cmp != 0);
-			case RTSameStrategyNumber:
-				PG_RETURN_BOOL(key == query);
 			case RTContainsStrategyNumber:
 				PG_RETURN_BOOL(cmp > 0);
 			case RTContainedByStrategyNumber:
@@ -94,16 +110,13 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 		switch (strategy)
 		{
 			case RTOverlapStrategyNumber:
-				PG_RETURN_BOOL(cmp != 0);
-			case RTSameStrategyNumber:
-				/* key must contain query for query to possibly match */
-				PG_RETURN_BOOL(cmp > 0);
-			case RTContainsStrategyNumber:
-				/* key must contain query for children to possibly contain it */
-				PG_RETURN_BOOL(cmp > 0);
 			case RTContainedByStrategyNumber:
 				/* key must overlap query for children to be contained */
 				PG_RETURN_BOOL(cmp != 0);
+			case RTSameStrategyNumber:
+			case RTContainsStrategyNumber:
+				/* key must contain query for children to possibly match */
+				PG_RETURN_BOOL(cmp > 0);
 			default:
 				ereport(ERROR, (
 								errcode(ERRCODE_INTERNAL_ERROR),
@@ -155,7 +168,7 @@ h3index_gist_penalty(PG_FUNCTION_ARGS)
 	if (orig == H3_NULL || new == H3_NULL)
 	{
 		/* H3_NULL key — fixed maximum penalty */
-		*penalty = 16.0f;
+		*penalty = GIST_CROSS_BASE_PENALTY;
 		PG_RETURN_POINTER(penalty);
 	}
 
@@ -164,7 +177,7 @@ h3index_gist_penalty(PG_FUNCTION_ARGS)
 	if (ancestor == H3_NULL)
 	{
 		/* different base cells — fixed maximum penalty */
-		*penalty = 16.0f;
+		*penalty = GIST_CROSS_BASE_PENALTY;
 	}
 	else
 	{
@@ -194,7 +207,7 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 				seed_left,
 				seed_right;
 
-	int			seed_left_idx = FirstOffsetNumber,
+	OffsetNumber seed_left_idx = FirstOffsetNumber,
 				seed_right_idx = FirstOffsetNumber + 1;
 
 	int			sample_size;
@@ -321,12 +334,12 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 
 		/* Compute resolution change for each side */
 		if (check_left == H3_NULL)
-			size_change_l = 16;
+			size_change_l = (int) GIST_CROSS_BASE_PENALTY;
 		else
 			size_change_l = getResolution(unionL) - getResolution(check_left);
 
 		if (check_right == H3_NULL)
-			size_change_r = 16;
+			size_change_r = (int) GIST_CROSS_BASE_PENALTY;
 		else
 			size_change_r = getResolution(unionR) - getResolution(check_right);
 
@@ -383,7 +396,7 @@ h3index_gist_distance(PG_FUNCTION_ARGS)
 	/* Oid		subtype = PG_GETARG_OID(3); */
 	bool	   *recheck = (bool *) PG_GETARG_POINTER(4);
 	H3Index		key = DatumGetH3Index(entry->key);
-	double		retval;
+	double		retval = INFINITY;
 
 	/* internal node distances are lower bounds; leaf distances are exact */
 	*recheck = !GIST_LEAF(entry);
