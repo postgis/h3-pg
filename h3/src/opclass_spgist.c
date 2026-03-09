@@ -76,7 +76,7 @@ spgist_cmp(H3Index * a, H3Index * b)
 		if (cellToParent(*b, aRes, &bParent) == 0 && *a == bParent)
 			return 1;
 	}
-	else if (bRes <= aRes)
+	else
 	{
 		H3Index		aParent;
 		if (cellToParent(*a, bRes, &aParent) == 0 && *b == aParent)
