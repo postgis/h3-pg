@@ -54,6 +54,10 @@ h3_spgist_node(H3Index cell, int level)
 	return 0;
 }
 
+/*
+ * Compare two H3 indexes for containment.
+ * Returns 1 if a contains b, -1 if b contains a, 0 otherwise.
+ */
 static int
 spgist_cmp(H3Index * a, H3Index * b)
 {
