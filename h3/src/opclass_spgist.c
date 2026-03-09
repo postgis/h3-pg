@@ -44,23 +44,25 @@ spgist_cmp(H3Index * a, H3Index * b)
 {
 	int			aRes = getResolution(*a);
 	int			bRes = getResolution(*b);
-	H3Index		aParent;
-	H3Index		bParent;
-	H3Error		error;
 
-	cellToParent(*a, bRes, &aParent);
-	cellToParent(*b, aRes, &bParent);
-
-	/* a contains b */
-	if (*a == H3_ROOT_INDEX || *a == bParent)
-	{
+	/* a contains b: truncate b to a's resolution and compare */
+	if (*a == H3_ROOT_INDEX)
 		return 1;
+	if (*b == H3_ROOT_INDEX)
+		return -1;
+
+	if (aRes <= bRes)
+	{
+		H3Index		bParent;
+		if (cellToParent(*b, aRes, &bParent) == 0 && *a == bParent)
+			return 1;
 	}
 
-	/* a contained by b */
-	if (*b == H3_ROOT_INDEX || *b == aParent)
+	if (bRes <= aRes)
 	{
-		return -1;
+		H3Index		aParent;
+		if (cellToParent(*a, bRes, &aParent) == 0 && *b == aParent)
+			return -1;
 	}
 
 	/* no overlap */
@@ -186,27 +188,40 @@ h3index_spgist_choose(PG_FUNCTION_ARGS)
 	int			node;
 
 	out->resultType = spgMatchNode;
-	out->result.matchNode.levelAdd = 1;
 	out->result.matchNode.restDatum = H3IndexGetDatum(insert);
 
-	if (!in->allTheSame)
+	if (in->allTheSame)
 	{
-		if (resolution == 0)
-		{
-			node = getBaseCellNumber(insert);
-		}
-		else if (resolution <= getResolution(insert))
-		{
-			node = H3_GET_INDEX_DIGIT(insert, resolution);
-		}
-		else
-		{
-			/* tree is deeper than cell resolution — route to center */
-			node = 0;
-		}
-
-		out->result.matchNode.nodeN = node;
+		/*
+		 * When allTheSame is set, the core will override our nodeN with a
+		 * random choice (see spgdoinsert.c).  Do not advance the level so
+		 * that the next picksplit operates at the same resolution and can
+		 * produce a proper split once items from different subtrees are
+		 * mixed together.  This follows the pattern used by the built-in
+		 * quad-tree SP-GiST opclass.
+		 */
+		out->result.matchNode.levelAdd = 0;
+		out->result.matchNode.nodeN = 0;
+		PG_RETURN_VOID();
 	}
+
+	out->result.matchNode.levelAdd = 1;
+
+	if (resolution == 0)
+	{
+		node = getBaseCellNumber(insert);
+	}
+	else if (resolution <= getResolution(insert))
+	{
+		node = H3_GET_INDEX_DIGIT(insert, resolution);
+	}
+	else
+	{
+		/* tree is deeper than cell resolution — route to center */
+		node = 0;
+	}
+
+	out->result.matchNode.nodeN = node;
 
 	PG_RETURN_VOID();
 }
