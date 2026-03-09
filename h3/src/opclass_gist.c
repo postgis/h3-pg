@@ -258,9 +258,13 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 		for (int i = 0; i < sample_size; i++)
 		{
 			a = DatumGetH3Index(ent[sample[i]].key);
+			if (a == H3_NULL)
+				continue;
 			for (int j = i + 1; j < sample_size; j++)
 			{
 				b = DatumGetH3Index(ent[sample[j]].key);
+				if (b == H3_NULL)
+					continue;
 
 				/* if one contains the other, no waste */
 				if (containment(a, b) != 0)
