@@ -478,6 +478,19 @@ Add an SP-GiST index using the `h3index_ops_experimental` operator class:
 CREATE INDEX spgist_idx ON h3_data USING spgist(hex h3index_ops_experimental);
 ```
 
+## GiST operator class (experimental)
+*This is still an experimental feature and may change in future versions.*
+Add a GiST index using the `h3index_gist_ops_experimental` operator class:
+```sql
+-- CREATE INDEX [indexname] ON [tablename] USING gist([column] h3index_gist_ops_experimental);
+CREATE INDEX gist_idx ON h3_data USING gist(hex h3index_gist_ops_experimental);
+```
+The GiST index supports the same containment and overlap operators (`@>`, `<@`, `&&`) as the SP-GiST index, and also supports KNN distance ordering (`<->`):
+```sql
+-- Find the 10 nearest hexagons to a given cell
+SELECT hex FROM h3_data ORDER BY hex <-> '831c02fffffffff'::h3index LIMIT 10;
+```
+
 # Type casts
 
 ### `h3index` :: `bigint`
