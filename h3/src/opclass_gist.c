@@ -97,7 +97,7 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 				PG_RETURN_BOOL(cmp != 0);
 			case RTSameStrategyNumber:
 				/* key must contain query for query to possibly match */
-				PG_RETURN_BOOL(cmp >= 0);
+				PG_RETURN_BOOL(cmp > 0);
 			case RTContainsStrategyNumber:
 				/* key must contain query for children to possibly contain it */
 				PG_RETURN_BOOL(cmp > 0);
@@ -437,8 +437,9 @@ h3index_gist_distance(PG_FUNCTION_ARGS)
 			break;
 		}
 		default:
-			retval = -1;
-			break;
+			ereport(ERROR, (
+							errcode(ERRCODE_INTERNAL_ERROR),
+					   errmsg("unrecognized StrategyNumber: %d", strategy)));
 	}
 
 	PG_RETURN_FLOAT8(retval);

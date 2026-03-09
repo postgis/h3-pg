@@ -13,6 +13,9 @@ INSERT INTO h3_test_gist (hex) SELECT :hexagon;
 INSERT INTO h3_test_gist (hex) SELECT h3_cell_to_children(:hexagon);
 INSERT INTO h3_test_gist (hex) SELECT h3_cell_to_center_child(:hexagon, 15);
 
+-- Force index usage for all subsequent queries
+SET enable_seqscan = off;
+
 --
 -- TEST contains (@>)
 --
@@ -50,7 +53,9 @@ SELECT COUNT(*) > 9 FROM h3_test_gist WHERE hex <@ :hexagon;
 -- TEST KNN distance ordering
 --
 INSERT INTO h3_test_gist (hex) SELECT h3_grid_disk(:hexagon, 2);
-SELECT COUNT(*) > 0 FROM h3_test_gist WHERE hex <-> :hexagon = 0;
+SELECT hex = :hexagon FROM h3_test_gist ORDER BY hex <-> :hexagon LIMIT 1;
+
+RESET enable_seqscan;
 
 -- cleanup
 DROP TABLE h3_test_gist;

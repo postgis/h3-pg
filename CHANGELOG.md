@@ -26,7 +26,7 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
-- Add experimental GiST operator class (see [#42], thanks [@zachasme], [@abelvm], [@mattiZed])
+- Add experimental GiST operator class (see [#188], initial work in [#42], thanks [@zachasme], [@AbelVM], [@mattiZed])
 - Fix PostgreSQL 17+ maintenance-operation failures for `h3_postgis` SQL wrappers by schema-qualifying extension object references (see [#165], [#168])
 - Add `h3_postgis` regression coverage for `CREATE INDEX` expression functions and materialized view maintenance under restricted `search_path`
 - Add regression coverage for pg_dump/restore-style `search_path=''` expression-index replay on `h3_lat_lng_to_cell` (see [#168])
@@ -229,84 +229,6 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-<<<<<<< HEAD
-[unreleased]: https://github.com/zachasme/h3-pg/compare/v4.2.3...HEAD
-[4.2.3]: https://github.com/zachasme/h3-pg/compare/v4.2.2...v4.2.3
-[4.2.2]: https://github.com/zachasme/h3-pg/compare/v4.2.1...v4.2.2
-[4.2.1]: https://github.com/zachasme/h3-pg/compare/v4.2.0...v4.2.1
-[4.2.0]: https://github.com/zachasme/h3-pg/compare/v4.1.4...v4.2.0
-[4.1.4]: https://github.com/zachasme/h3-pg/compare/v4.1.3...v4.1.4
-[4.1.3]: https://github.com/zachasme/h3-pg/compare/v4.1.2...v4.1.3
-[4.1.2]: https://github.com/zachasme/h3-pg/compare/v4.1.1...v4.1.2
-[4.1.1]: https://github.com/zachasme/h3-pg/compare/v4.1.0...v4.1.1
-[4.1.0]: https://github.com/zachasme/h3-pg/compare/v4.0.3...v4.1.0
-[4.0.3]: https://github.com/zachasme/h3-pg/compare/v4.0.2...v4.0.3
-[4.0.2]: https://github.com/zachasme/h3-pg/compare/v4.0.1...v4.0.2
-[4.0.1]: https://github.com/zachasme/h3-pg/compare/v4.0.0...v4.0.1
-[4.0.0]: https://github.com/zachasme/h3-pg/compare/v3.7.2...v4.0.0
-[3.7.2]: https://github.com/zachasme/h3-pg/compare/v3.7.1...v3.7.2
-[3.7.1]: https://github.com/zachasme/h3-pg/compare/v3.7.0...v3.7.1
-[3.7.0]: https://github.com/zachasme/h3-pg/compare/v3.6.5...v3.7.0
-[3.6.5]: https://github.com/zachasme/h3-pg/compare/v3.6.4...v3.6.5
-[3.6.4]: https://github.com/zachasme/h3-pg/compare/v3.6.3...v3.6.4
-[3.6.3]: https://github.com/zachasme/h3-pg/compare/v3.6.2...v3.6.3
-[3.6.2]: https://github.com/zachasme/h3-pg/compare/v3.6.1...v3.6.2
-[3.6.1]: https://github.com/zachasme/h3-pg/compare/v3.6.0...v3.6.1
-[3.6.0]: https://github.com/zachasme/h3-pg/compare/v3.5.0...v3.6.0
-[3.5.0]: https://github.com/zachasme/h3-pg/compare/v3.4.1...v3.5.0
-[3.4.1]: https://github.com/zachasme/h3-pg/compare/v3.4.0...v3.4.1
-[3.4.0]: https://github.com/zachasme/h3-pg/compare/v1.0.6...v3.4.0
-[1.0.6]: https://github.com/zachasme/h3-pg/compare/v1.0.5...v1.0.6
-[1.0.5]: https://github.com/zachasme/h3-pg/compare/v1.0.4...v1.0.5
-[1.0.4]: https://github.com/zachasme/h3-pg/compare/v1.0.3...v1.0.4
-[1.0.3]: https://github.com/zachasme/h3-pg/compare/v1.0.2...v1.0.3
-[1.0.2]: https://github.com/zachasme/h3-pg/compare/v1.0.1...v1.0.2
-[1.0.1]: https://github.com/zachasme/h3-pg/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/zachasme/h3-pg/compare/v0.4.0...v1.0.0
-[0.4.0]: https://github.com/zachasme/h3-pg/compare/v0.3.2...v0.4.0
-[0.3.2]: https://github.com/zachasme/h3-pg/compare/v0.3.1...v0.3.2
-[0.3.1]: https://github.com/zachasme/h3-pg/compare/v0.3.0...v0.3.1
-[#4]: https://github.com/zachasme/h3-pg/pull/4
-[#9]: https://github.com/zachasme/h3-pg/pull/9
-[#18]: https://github.com/zachasme/h3-pg/pull/18
-[#19]: https://github.com/zachasme/h3-pg/pull/19
-[#22]: https://github.com/zachasme/h3-pg/pull/22
-[#23]: https://github.com/zachasme/h3-pg/issues/23
-[#24]: https://github.com/zachasme/h3-pg/pull/24
-[#26]: https://github.com/zachasme/h3-pg/pull/26
-[#31]: https://github.com/zachasme/h3-pg/pull/31
-[#37]: https://github.com/zachasme/h3-pg/issues/37
-[#38]: https://github.com/zachasme/h3-pg/issues/38
-[#41]: https://github.com/zachasme/h3-pg/issues/41
-[#42]: https://github.com/zachasme/h3-pg/pull/42
-[#43]: https://github.com/zachasme/h3-pg/issues/43
-[#55]: https://github.com/zachasme/h3-pg/issues/55
-[#64]: https://github.com/zachasme/h3-pg/issues/64
-[#65]: https://github.com/zachasme/h3-pg/pull/65
-[#70]: https://github.com/zachasme/h3-pg/pull/70
-[#71]: https://github.com/zachasme/h3-pg/issues/71
-[#75]: https://github.com/zachasme/h3-pg/pull/75
-[#76]: https://github.com/zachasme/h3-pg/pull/76
-[#78]: https://github.com/zachasme/h3-pg/pull/78
-[#87]: https://github.com/zachasme/h3-pg/pull/87
-[#90]: https://github.com/zachasme/h3-pg/pull/90
-[#91]: https://github.com/zachasme/h3-pg/pull/91
-[#93]: https://github.com/zachasme/h3-pg/pull/93
-[#97]: https://github.com/zachasme/h3-pg/pull/97
-[#111]: https://github.com/zachasme/h3-pg/pull/111
-[#112]: https://github.com/zachasme/h3-pg/pull/112
-[#117]: https://github.com/zachasme/h3-pg/issues/117
-[#131]: https://github.com/zachasme/h3-pg/pull/131
-[#140]: https://github.com/zachasme/h3-pg/pull/140
-[#141]: https://github.com/zachasme/h3-pg/pull/141
-[#159]: https://github.com/zachasme/h3-pg/pull/159
-[#160]: https://github.com/zachasme/h3-pg/pull/160
-[#169]: https://github.com/zachasme/h3-pg/issues/169
-[#176]: https://github.com/zachasme/h3-pg/pull/176
-[#177]: https://github.com/zachasme/h3-pg/pull/177
-[#179]: https://github.com/zachasme/h3-pg/issues/179
-[@abelvm]: https://github.com/AbelVM
-=======
 [unreleased]: https://github.com/postgis/h3-pg/compare/v4.2.3...HEAD
 [4.2.3]: https://github.com/postgis/h3-pg/compare/v4.2.2...v4.2.3
 [4.2.2]: https://github.com/postgis/h3-pg/compare/v4.2.1...v4.2.2
@@ -355,6 +277,7 @@ avoid adding features or APIs which do not map onto the
 [#37]: https://github.com/postgis/h3-pg/issues/37
 [#38]: https://github.com/postgis/h3-pg/issues/38
 [#41]: https://github.com/postgis/h3-pg/issues/41
+[#42]: https://github.com/postgis/h3-pg/pull/42
 [#43]: https://github.com/postgis/h3-pg/issues/43
 [#55]: https://github.com/postgis/h3-pg/issues/55
 [#64]: https://github.com/postgis/h3-pg/issues/64
@@ -384,8 +307,8 @@ avoid adding features or APIs which do not map onto the
 [#176]: https://github.com/postgis/h3-pg/pull/176
 [#177]: https://github.com/postgis/h3-pg/pull/177
 [#179]: https://github.com/postgis/h3-pg/issues/179
+[#188]: https://github.com/postgis/h3-pg/pull/188
 [@AbelVM]: https://github.com/AbelVM
->>>>>>> upstream/main
 [@bayandin]: https://github.com/bayandin
 [@BielStela]: https://github.com/BielStela
 [@devrimgunduz]: https://github.com/devrimgunduz
