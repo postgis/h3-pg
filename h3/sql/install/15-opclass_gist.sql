@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Zacharias Knudsen
+ * Copyright 2019-2025 Bytes & Brains
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,44 @@
  * limitations under the License.
  */
 
--- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+--| ## GiST operator class (experimental)
+--|
+--| *This is still an experimental feature and may change in future versions.*
+--| Add a GiST index using the `h3index_gist_ops_experimental` operator class:
+--|
+--| ```sql
+--| -- CREATE INDEX [indexname] ON [tablename] USING gist([column] h3index_gist_ops_experimental);
+--| CREATE INDEX gist_idx ON h3_data USING gist(hex h3index_gist_ops_experimental);
+--| ```
 
--- ---------- ---------- ---------- ---------- ---------- ---------- ----------
--- GiST Operator Class (opclass_gist.c)
--- ---------- ---------- ---------- ---------- ---------- ---------- ----------
-
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_gist_consistent(internal, h3index, smallint, oid, internal) RETURNS boolean
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_gist_union(internal, internal) RETURNS h3index
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_gist_penalty(internal, internal, internal) RETURNS internal
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_gist_picksplit(internal, internal) RETURNS internal
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_gist_same(h3index, h3index, internal) RETURNS internal
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+--@ internal
 CREATE OR REPLACE FUNCTION h3index_gist_distance(internal, h3index, smallint, oid, internal) RETURNS float8
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+-- intentionally *not* marked as DEFAULT,
+-- until we are satisfied with the implementation
 CREATE OPERATOR CLASS h3index_gist_ops_experimental
 FOR TYPE h3index USING gist
 AS
-    OPERATOR  3   &&  ,
-    OPERATOR  6   =   ,
-    OPERATOR  7   @>  ,
-    OPERATOR  8   <@  ,
+    OPERATOR  3   &&  ,  -- RTOverlapStrategyNumber
+    OPERATOR  6   =   ,  -- RTSameStrategyNumber
+    OPERATOR  7   @>  ,  -- RTContainsStrategyNumber
+    OPERATOR  8   <@  ,  -- RTContainedByStrategyNumber
     OPERATOR  15  <-> (h3index, h3index) FOR ORDER BY float_ops,
     FUNCTION  1  h3index_gist_consistent(internal, h3index, smallint, oid, internal),
     FUNCTION  2  h3index_gist_union(internal, internal),

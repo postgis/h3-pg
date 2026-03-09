@@ -26,6 +26,7 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
+- Add experimental GiST operator class (see [#188], initial work in [#42], thanks [@zachasme], [@yocontra], [@Komzpa], [@AbelVM], and [@mattiZed])
 - Fix PostgreSQL 17+ maintenance-operation failures for `h3_postgis` SQL wrappers by schema-qualifying extension object references (see [#165], [#168])
 - Add `h3_postgis` regression coverage for `CREATE INDEX` expression functions and materialized view maintenance under restricted `search_path`
 - Add regression coverage for pg_dump/restore-style `search_path=''` expression-index replay on `h3_lat_lng_to_cell` (see [#168])
@@ -276,6 +277,7 @@ avoid adding features or APIs which do not map onto the
 [#37]: https://github.com/postgis/h3-pg/issues/37
 [#38]: https://github.com/postgis/h3-pg/issues/38
 [#41]: https://github.com/postgis/h3-pg/issues/41
+[#42]: https://github.com/postgis/h3-pg/pull/42
 [#43]: https://github.com/postgis/h3-pg/issues/43
 [#55]: https://github.com/postgis/h3-pg/issues/55
 [#64]: https://github.com/postgis/h3-pg/issues/64
@@ -305,6 +307,7 @@ avoid adding features or APIs which do not map onto the
 [#176]: https://github.com/postgis/h3-pg/pull/176
 [#177]: https://github.com/postgis/h3-pg/pull/177
 [#179]: https://github.com/postgis/h3-pg/issues/179
+[#188]: https://github.com/postgis/h3-pg/pull/188
 [@AbelVM]: https://github.com/AbelVM
 [@bayandin]: https://github.com/bayandin
 [@BielStela]: https://github.com/BielStela
@@ -320,4 +323,7 @@ avoid adding features or APIs which do not map onto the
 [@rustprooflabs]: https://github.com/rustprooflabs
 [@sleeping-h]: https://github.com/sleeping-h
 [@trylinka]: https://github.com/trylinka
+[@mattiZed]: https://github.com/mattiZed
 [@wolfgangwalther]: https://github.com/wolfgangwalther
+[@yocontra]: https://github.com/yocontra
+[@zachasme]: https://github.com/zachasme
