@@ -431,7 +431,7 @@ All the pentagon H3 indexes at the specified resolution.
 *Since v3.7.0*
 
 
-Returns the distance in grid cells between the two indices (at the lowest resolution of the two).
+Returns the distance in grid cells between the two indices (at the lowest resolution of the two). Returns Infinity when gridDistance fails (e.g. near pentagons).
 
 
 ## B-tree operators
@@ -470,40 +470,20 @@ Returns true if A contains B.
 Returns true if A is contained by B.
 
 
-## Spatial index operator classes (experimental)
-
-*These are experimental features and may change in future versions.*
-
-Both SP-GiST and GiST indexes support containment queries (`@>`, `<@`) and equality (`=`) on `h3index` columns. They differ in what else they support and how they perform:
-
-| Feature | SP-GiST | GiST |
-|---|---|---|
-| Containment (`@>`, `<@`) | Yes | Yes |
-| Equality (`=`) | Yes | Yes |
-| Overlap (`&&`) | No | Yes |
-| KNN distance (`<->`) | No | Yes |
-| Index build speed | Faster | Slower |
-| Mixed-resolution data | Good | Good |
-
-**Use SP-GiST** if you only need containment queries and want faster index builds. **Use GiST** if you need KNN nearest-neighbor search or overlap queries.
-
-### SP-GiST
+## SP-GiST operator class (experimental)
+*This is still an experimental feature and may change in future versions.*
+Add an SP-GiST index using the `h3index_ops_experimental` operator class:
 ```sql
+-- CREATE INDEX [indexname] ON [tablename] USING spgist([column] h3index_ops_experimental);
 CREATE INDEX spgist_idx ON h3_data USING spgist(hex h3index_ops_experimental);
-
--- containment queries
-SELECT * FROM h3_data WHERE hex <@ '831c02fffffffff'::h3index;
 ```
 
-### GiST
+## GiST operator class (experimental)
+*This is still an experimental feature and may change in future versions.*
+Add a GiST index using the `h3index_gist_ops_experimental` operator class:
 ```sql
+-- CREATE INDEX [indexname] ON [tablename] USING gist([column] h3index_gist_ops_experimental);
 CREATE INDEX gist_idx ON h3_data USING gist(hex h3index_gist_ops_experimental);
-
--- containment queries (same as SP-GiST)
-SELECT * FROM h3_data WHERE hex <@ '831c02fffffffff'::h3index;
-
--- KNN nearest-neighbor ordering (GiST only)
-SELECT hex FROM h3_data ORDER BY hex <-> '831c02fffffffff'::h3index LIMIT 10;
 ```
 
 # Type casts
