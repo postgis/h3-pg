@@ -296,5 +296,34 @@ SELECT COUNT(*) > 0 FROM (
 RESET enable_seqscan;
 DROP TABLE h3_test_pentagon;
 
+--
+-- TEST <-> returns Infinity (not -1) when gridDistance fails
+-- Bug: the <-> operator returned -1 on gridDistance failure (common near
+-- pentagons), which sorted before 0 and broke all KNN ordering. The operator
+-- also returned bigint instead of float8, preventing GiST KNN ordered scans.
+--
+-- :hexagon's grid disk includes cells where gridDistance fails;
+-- verify those get Infinity, not a negative value
+SELECT COUNT(*) = 0 FROM (
+    SELECT hex, hex <-> :hexagon AS dist
+    FROM (SELECT h3_grid_disk(:hexagon, 3) AS hex) t
+) t2
+WHERE dist < 0;
+
+-- verify the self-distance is exactly 0
+SELECT :hexagon <-> :hexagon = 0;
+
+-- verify KNN with the GiST index returns self first even when
+-- the dataset contains cells with Infinity distance
+CREATE TABLE h3_test_dist (hex h3index);
+INSERT INTO h3_test_dist SELECT h3_grid_disk(:hexagon, 3);
+CREATE INDEX h3_test_dist_idx ON h3_test_dist USING gist(hex h3index_gist_ops_experimental);
+
+SET enable_seqscan = off;
+SELECT hex = :hexagon FROM h3_test_dist ORDER BY hex <-> :hexagon LIMIT 1;
+
+RESET enable_seqscan;
+DROP TABLE h3_test_dist;
+
 -- cleanup
 DROP TABLE h3_test_gist;
