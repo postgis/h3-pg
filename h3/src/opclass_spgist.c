@@ -39,28 +39,48 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_spgist_leaf_consistent);
 
 #define H3_NUM_CHILDREN 7
 
+/*
+ * Map an H3 cell to its SP-GiST node number at the given tree level.
+ * Level 0 uses base cell number; deeper levels use index digit 0-6.
+ * If the tree is deeper than the cell's resolution, routes to node 0.
+ */
+static int
+h3_spgist_node(H3Index cell, int level)
+{
+	if (level == 0)
+		return getBaseCellNumber(cell);
+	if (level <= getResolution(cell))
+		return H3_GET_INDEX_DIGIT(cell, level);
+	return 0;
+}
+
+/*
+ * Compare two H3 indexes for containment.
+ * Returns 1 if a contains b, -1 if b contains a, 0 otherwise.
+ */
 static int
 spgist_cmp(H3Index * a, H3Index * b)
 {
 	int			aRes = getResolution(*a);
 	int			bRes = getResolution(*b);
-	H3Index		aParent;
-	H3Index		bParent;
-	H3Error		error;
 
-	cellToParent(*a, bRes, &aParent);
-	cellToParent(*b, aRes, &bParent);
-
-	/* a contains b */
-	if (*a == H3_ROOT_INDEX || *a == bParent)
-	{
+	/* a contains b: truncate b to a's resolution and compare */
+	if (*a == H3_ROOT_INDEX)
 		return 1;
-	}
-
-	/* a contained by b */
-	if (*b == H3_ROOT_INDEX || *b == aParent)
-	{
+	if (*b == H3_ROOT_INDEX)
 		return -1;
+
+	if (aRes <= bRes)
+	{
+		H3Index		bParent;
+		if (cellToParent(*b, aRes, &bParent) == 0 && *a == bParent)
+			return 1;
+	}
+	else
+	{
+		H3Index		aParent;
+		if (cellToParent(*a, bRes, &aParent) == 0 && *b == aParent)
+			return -1;
 	}
 
 	/* no overlap */
@@ -183,25 +203,27 @@ h3index_spgist_choose(PG_FUNCTION_ARGS)
 
 	int			resolution = in->level;
 	H3Index     insert = DatumGetH3Index(in->datum);
-	int			node;
 
 	out->resultType = spgMatchNode;
-	out->result.matchNode.levelAdd = 1;
 	out->result.matchNode.restDatum = H3IndexGetDatum(insert);
 
-	if (!in->allTheSame)
+	if (in->allTheSame)
 	{
-		if (resolution == 0)
-		{
-			node = getBaseCellNumber(insert);
-		}
-		else
-		{
-			node = H3_GET_INDEX_DIGIT(insert, resolution);
-		}
-
-		out->result.matchNode.nodeN = node;
+		/*
+		 * When allTheSame is set, the core will override our nodeN with a
+		 * random choice (see spgdoinsert.c).  Do not advance the level so
+		 * that the next picksplit operates at the same resolution and can
+		 * produce a proper split once items from different subtrees are
+		 * mixed together.  This follows the pattern used by the built-in
+		 * quad-tree SP-GiST opclass.
+		 */
+		out->result.matchNode.levelAdd = 0;
+		out->result.matchNode.nodeN = 0;
+		PG_RETURN_VOID();
 	}
+
+	out->result.matchNode.levelAdd = 1;
+	out->result.matchNode.nodeN = h3_spgist_node(insert, resolution);
 
 	PG_RETURN_VOID();
 }
@@ -247,10 +269,7 @@ h3index_spgist_picksplit(PG_FUNCTION_ARGS)
 	{
 		/* at finer resolutions there is exactly 7 nodes, one per child */
 		H3Index first = DatumGetH3Index(in->datums[0]);
-		H3Index parent;
-		H3Error error;
-		h3_assert(cellToParent(first, resolution, &parent));
-
+		int		firstRes = getResolution(first);
 
 		/*
 		 * TODO: consider decreasing nNodes for pentagons which only have 6
@@ -258,33 +277,32 @@ h3index_spgist_picksplit(PG_FUNCTION_ARGS)
 		 */
 		out->nNodes = H3_NUM_CHILDREN;
 		out->hasPrefix = true;
-		out->prefixDatum = H3IndexGetDatum(parent);
+
+		if (resolution <= firstRes)
+		{
+			H3Index parent;
+			h3_assert(cellToParent(first, resolution, &parent));
+			out->prefixDatum = H3IndexGetDatum(parent);
+		}
+		else
+		{
+			/*
+			 * Tree depth exceeds cell resolution.  This happens when many
+			 * identical (or nearly identical) cells cause the tree to grow
+			 * past the cell's resolution.  Use the cell itself as the prefix
+			 * since we cannot compute a finer parent.
+			 */
+			out->prefixDatum = H3IndexGetDatum(first);
+		}
 	}
 
 	/* map each leaf tuple to node in the new inner tuple */
 	for (int i = 0; i < in->nTuples; i++)
 	{
-		H3Index     insert = DatumGetH3Index(in->datums[i]);
-		int			node;
-
-		if (resolution == 0)
-		{
-			/* first resolution is base cells */
-			node = getBaseCellNumber(insert);
-		}
-		else if (getResolution(insert) >= resolution)
-		{
-			/* finer resolutions use index digit 0-6 */
-			node = H3_GET_INDEX_DIGIT(insert, resolution);
-		}
-		else
-		{
-			/* coarse indexes are put into center node */
-			node = 0;
-		}
+		H3Index		insert = DatumGetH3Index(in->datums[i]);
 
 		out->leafTupleDatums[i] = H3IndexGetDatum(insert);
-		out->mapTuplesToNodes[i] = node;
+		out->mapTuplesToNodes[i] = h3_spgist_node(insert, resolution);
 	}
 
 	PG_RETURN_VOID();
