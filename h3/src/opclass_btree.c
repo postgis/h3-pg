@@ -30,12 +30,12 @@ h3index_cmp(PG_FUNCTION_ARGS)
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
 
-	uint32_t	ret = 0;
+	int32_t		ret = 0;
 
 	if (a < b)
-		ret = 1;
-	else if (a > b)
 		ret = -1;
+	else if (a > b)
+		ret = 1;
 
 	PG_RETURN_INT32(ret);
 }
@@ -47,9 +47,9 @@ h3index_cmp_abbrev(Datum x, Datum y, SortSupport ssup)
 	if (x == y)
 		return 0;
 	else if (x < y)
-		return 1;
-	else
 		return -1;
+	else
+		return 1;
 }
 
 static int
@@ -61,8 +61,8 @@ h3index_cmp_full(Datum x, Datum y, SortSupport ssup)
 	if (a == b)
 		return 0;
 	else if (a < b)
-		return 1;
-	return -1;
+		return -1;
+	return 1;
 }
 
 static bool
