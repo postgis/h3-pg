@@ -8,6 +8,20 @@ CREATE INDEX h3_test_gist_idx
           ON h3_test_gist
        USING gist(hex h3index_gist_ops_experimental);
 
+-- GiST sortsupport proc 11 is available on PostgreSQL 14+
+SELECT (current_setting('server_version_num')::int >= 140000) = EXISTS (
+    SELECT 1
+    FROM pg_amproc ap
+    JOIN pg_opfamily f ON f.oid = ap.amprocfamily
+    JOIN pg_am am ON am.oid = f.opfmethod
+    JOIN pg_proc p ON p.oid = ap.amproc
+    WHERE am.amname = 'gist'
+      AND f.opfname = 'h3index_gist_ops_experimental'
+      AND ap.amprocnum = 11
+      AND p.proname = 'h3index_gist_sortsupport'
+      AND oidvectortypes(p.proargtypes) = 'internal'
+);
+
 -- insert parent, the hexagon itself, immediate children, and a deep center child
 INSERT INTO h3_test_gist (hex) SELECT h3_cell_to_parent(:hexagon);
 INSERT INTO h3_test_gist (hex) SELECT :hexagon;
@@ -64,7 +78,8 @@ RESET enable_seqscan;
 
 --
 -- TEST self-containment: a <@ a must be true
--- Bug: containment(a,a) returned 1, so <@ operator said false.
+-- Bug: the <@ path treated equality as false even though containment(a,a)
+-- reports equality as containment.
 -- This caused seqscan and index scan to disagree.
 --
 -- Verify via the operator directly (no index involvement)
@@ -93,6 +108,20 @@ DROP TABLE h3_test_self;
 -- TEST self-containment for @> as well (symmetric check)
 --
 SELECT :hexagon @> :hexagon;
+
+--
+-- TEST public <-> mixed-resolution semantics directly
+-- The coarser input should be refined to its center child at the finer
+-- resolution, and the operator should stay commutative across resolutions.
+--
+SELECT h3_cell_to_parent(:hexagon, 1) <-> :hexagon
+    = h3_cell_to_center_child(
+        h3_cell_to_parent(:hexagon, 1),
+        h3_get_resolution(:hexagon)
+      ) <-> :hexagon;
+
+SELECT h3_cell_to_parent(:hexagon, 1) <-> :hexagon
+    = :hexagon <-> h3_cell_to_parent(:hexagon, 1);
 
 --
 -- TEST KNN returns correct ordering beyond the first result
@@ -297,24 +326,29 @@ RESET enable_seqscan;
 DROP TABLE h3_test_pentagon;
 
 --
--- TEST <-> returns Infinity (not -1) when gridDistance fails
+-- TEST <-> returns a large positive sentinel (not -1) when gridDistance fails
 -- Bug: the <-> operator returned -1 on gridDistance failure (common near
--- pentagons), which sorted before 0 and broke all KNN ordering. The operator
--- also returned bigint instead of float8, preventing GiST KNN ordered scans.
+-- pentagons), which sorted before 0 and broke all KNN ordering.
 --
 -- :hexagon's grid disk includes cells where gridDistance fails;
--- verify those get Infinity, not a negative value
+-- verify those now sort last instead of producing a negative distance
 SELECT COUNT(*) = 0 FROM (
     SELECT hex, hex <-> :hexagon AS dist
     FROM (SELECT h3_grid_disk(:hexagon, 3) AS hex) t
 ) t2
 WHERE dist < 0;
 
+SELECT COUNT(*) > 0 FROM (
+    SELECT hex, hex <-> :hexagon AS dist
+    FROM (SELECT h3_grid_disk(:hexagon, 3) AS hex) t
+) t2
+WHERE dist = 9223372036854775807;
+
 -- verify the self-distance is exactly 0
 SELECT :hexagon <-> :hexagon = 0;
 
 -- verify KNN with the GiST index returns self first even when
--- the dataset contains cells with Infinity distance
+-- the dataset contains cells with sentinel-max distance
 CREATE TABLE h3_test_dist (hex h3index);
 INSERT INTO h3_test_dist SELECT h3_grid_disk(:hexagon, 3);
 CREATE INDEX h3_test_dist_idx ON h3_test_dist USING gist(hex h3index_gist_ops_experimental);

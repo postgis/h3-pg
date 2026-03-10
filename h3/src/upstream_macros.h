@@ -52,11 +52,27 @@ typedef enum {
 
 /* SOURCE h3Index.h */
 
+/** The bit offset of the resolution field in an H3 index. */
+#define H3_RES_OFFSET 52
+
 /** The number of bits in a single H3 resolution digit. */
 #define H3_PER_DIGIT_OFFSET 3
 
+/** H3 version 1 supports resolutions 0 through 15. */
+#define MAX_H3_RES 15
+
+/** 1's in the 4 resolution bits, 0's everywhere else. */
+#define H3_RES_MASK (UINT64_C(15) << H3_RES_OFFSET)
+
+/** 0's in the 4 resolution bits, 1's everywhere else. */
+#define H3_RES_MASK_NEGATIVE (~H3_RES_MASK)
+
 /** 1's in the 3 bits of res 15 digit bits, 0's everywhere else. */
 #define H3_DIGIT_MASK ((uint64_t)(7))
+
+/** Sets the integer resolution of h3. */
+#define H3_SET_RESOLUTION(h3, res) \
+	(h3) = (((h3)&H3_RES_MASK_NEGATIVE) | (((uint64_t)(res)) << H3_RES_OFFSET))
 
 /**
  * Gets the resolution res integer digit (0-7) of h3.

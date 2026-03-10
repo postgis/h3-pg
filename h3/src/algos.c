@@ -1,5 +1,7 @@
 /*
- * Copyright 2024-2025 Zacharias Knudsen, Eric Schoffstall
+ * Copyright 2024-2025 Zacharias Knudsen
+ * Copyright 2026 Eric Schoffstall
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +16,42 @@
  * limitations under the License.
  */
 
+#include <postgres.h>
+#include <port/pg_bitutils.h>
+
 #include <h3api.h>
 #include "algos.h"
-#include "error.h"
+#include "upstream_macros.h"
+
+/* Low 45 bits holding all 15 encoded H3 index digits. */
+#define H3_INDEX_DIGITS_MASK UINT64_C(0x1fffffffffff)
+
+/*
+ * Compare only the index digits that participate in the shared-resolution
+ * prefix, ignoring deeper child digits from the finer input.
+ */
+static inline uint64
+h3index_prefix_digit_diff(H3Index a, H3Index b, int sharedRes)
+{
+	int			ignoredBits = (MAX_H3_RES - sharedRes) * H3_PER_DIGIT_OFFSET;
+
+	return ((((uint64) (a ^ b)) & H3_INDEX_DIGITS_MASK) >> ignoredBits);
+}
+
+/*
+ * Bitwise equivalent of upstream cellToParent for already-validated input.
+ * The H3 encoding fills child digits beyond the new resolution with 7.
+ */
+static inline H3Index
+h3index_cell_to_parent_fast(H3Index h, int parentRes)
+{
+	H3_SET_RESOLUTION(h, parentRes);
+	return h | (H3_INDEX_DIGITS_MASK >> (parentRes * H3_PER_DIGIT_OFFSET));
+}
 
 H3Index
 finest_common_ancestor(H3Index a, H3Index b)
 {
-	int			aRes,
-				bRes,
-				coarsestRes;
-	H3Index		aParent,
-				bParent;
-
 	/* guard against invalid indexes */
 	if (a == H3_NULL || b == H3_NULL)
 		return H3_NULL;
@@ -38,42 +63,37 @@ finest_common_ancestor(H3Index a, H3Index b)
 	if (getBaseCellNumber(a) != getBaseCellNumber(b))
 		return H3_NULL;
 
-	aRes = getResolution(a);
-	bRes = getResolution(b);
-	coarsestRes = (aRes < bRes) ? aRes : bRes;
-
-	/*
-	 * Binary search for the finest resolution where parents match.
-	 * H3 parent containment is monotonic: if parents match at resolution R,
-	 * they also match at all resolutions < R. This gives us O(log(maxRes))
-	 * cellToParent calls instead of O(maxRes).
-	 *
-	 * This is also a good candidate for upstream h3 — a bitwise approach
-	 * using the 3-bit digit layout could do this in O(1) without any
-	 * cellToParent calls at all.
-	 */
 	{
-		int			lo = 0,
-					hi = coarsestRes;
-		H3Index		result = H3_NULL;
+		int			aRes = getResolution(a);
+		int			bRes = getResolution(b);
+		int			coarsestRes = (aRes < bRes) ? aRes : bRes;
+		uint64		digitDiff = h3index_prefix_digit_diff(a, b, coarsestRes);
 
-		while (lo <= hi)
+		if (digitDiff == 0)
+			return (aRes <= bRes) ? a : b;
+
 		{
-			int			mid = (lo + hi) / 2;
+			int commonRes = coarsestRes -
+				(pg_leftmost_one_pos64(digitDiff) / H3_PER_DIGIT_OFFSET) - 1;
 
-			h3_assert(cellToParent(a, mid, &aParent));
-			h3_assert(cellToParent(b, mid, &bParent));
-			if (aParent == bParent)
-			{
-				result = aParent;
-				lo = mid + 1;	/* try finer */
-			}
-			else
-			{
-				hi = mid - 1;	/* try coarser */
-			}
+			return h3index_cell_to_parent_fast(a, commonRes);
 		}
-
-		return result;
 	}
+}
+
+/*
+ * Returns +1 if a contains b (or a == b), -1 if b contains a, 0 otherwise.
+ * This is derived from the shared ancestor relation so all callers use the
+ * same containment semantics.
+ */
+int
+containment(H3Index a, H3Index b)
+{
+	H3Index		ancestor = finest_common_ancestor(a, b);
+
+	if (ancestor == a)
+		return 1;
+	if (ancestor == b)
+		return -1;
+	return 0;
 }

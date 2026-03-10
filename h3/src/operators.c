@@ -1,5 +1,6 @@
 /*
  * Copyright 2022-2024 Zacharias Knudsen
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +15,13 @@
  * limitations under the License.
  */
 
-#include <math.h>			 // INFINITY
-
 #include <postgres.h>
 #include <h3api.h>
 
 #include <fmgr.h> // PG_FUNCTION_ARGS
 
-#include "error.h"
+#include "algos.h"
+#include "operators.h"
 #include "type.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_distance);
@@ -40,62 +40,51 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_contains);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_contained_by);
 
 /*
- * Containment helper (non-static, also used by opclass_gist.c).
- * Returns +1 if a contains b (or a == b), -1 if b contains a, 0 otherwise.
+ * Compute grid distance after refining the coarser input to the finer
+ * resolution's center child, matching the SQL-visible <-> operator semantics.
  */
-int
-containment(H3Index a, H3Index b)
+H3Error
+h3index_grid_distance(H3Index a, H3Index b, int64_t *distance)
 {
-	H3Index		aParent = a;
-	H3Index		bParent = b;
-	int			aRes,
-				bRes;
+	int			resA = getResolution(a);
+	int			resB = getResolution(b);
 
-	/* fast path: equality is containment in both directions */
-	if (a == b)
-		return 1;
+	if (resA < resB)
+	{
+		H3Error error = cellToCenterChild(a, resB, &a);
 
-	aRes = getResolution(a);
-	bRes = getResolution(b);
+		if (error)
+			return error;
+	}
+	else if (resB < resA)
+	{
+		H3Error error = cellToCenterChild(b, resA, &b);
 
-	if (aRes > bRes)
-		h3_assert(cellToParent(a, bRes, &aParent));
-	else if (aRes < bRes)
-		h3_assert(cellToParent(b, aRes, &bParent));
+		if (error)
+			return error;
+	}
 
-	/* a contains b */
-	if (a == bParent)
-		return 1;
-
-	/* a contained by b */
-	if (b == aParent)
-		return -1;
-
-	/* no overlap */
-	return 0;
+	return gridDistance(a, b, distance);
 }
 
-/* distance operator allowing for different resolutions */
+/*
+ * Distance operator allowing for different resolutions.
+ *
+ * Keep the SQL-visible type as bigint so extension upgrades do not need to
+ * drop and recreate the operator. gridDistance failures sort last by using
+ * the maximum bigint sentinel instead of the old negative error marker.
+ */
 Datum
 h3index_distance(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	int			resA = getResolution(a);
-	int			resB = getResolution(b);
-	H3Error		error;
 	int64_t		distance;
 
-	if (resA < resB)
-		h3_assert(cellToCenterChild(a, resB, &a));
-	else if (resB < resA)
-		h3_assert(cellToCenterChild(b, resA, &b));
+	if (h3index_grid_distance(a, b, &distance))
+		PG_RETURN_INT64(PG_INT64_MAX);
 
-	error = gridDistance(a, b, &distance);
-	if (error)
-		PG_RETURN_FLOAT8(INFINITY);
-
-	PG_RETURN_FLOAT8((double) distance);
+	PG_RETURN_INT64(distance);
 }
 
 /* b-tree operators */
@@ -104,9 +93,8 @@ h3index_eq(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = a == b;
 
-	PG_RETURN_BOOL(ret);
+	PG_RETURN_BOOL(a == b);
 }
 
 Datum
@@ -114,9 +102,8 @@ h3index_ne(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = a != b;
 
-	PG_RETURN_BOOL(ret);
+	PG_RETURN_BOOL(a != b);
 }
 
 Datum
@@ -124,9 +111,8 @@ h3index_lt(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = a < b;
 
-	PG_RETURN_BOOL(ret);
+	PG_RETURN_BOOL(a < b);
 }
 
 Datum
@@ -134,9 +120,8 @@ h3index_le(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = a <= b;
 
-	PG_RETURN_BOOL(ret);
+	PG_RETURN_BOOL(a <= b);
 }
 
 Datum
@@ -144,9 +129,8 @@ h3index_gt(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = a > b;
 
-	PG_RETURN_BOOL(ret);
+	PG_RETURN_BOOL(a > b);
 }
 
 Datum
@@ -154,9 +138,8 @@ h3index_ge(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = a >= b;
 
-	PG_RETURN_BOOL(ret);
+	PG_RETURN_BOOL(a >= b);
 }
 
 /* r-tree operators */
@@ -165,9 +148,8 @@ h3index_overlaps(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = containment(a, b) != 0;
 
-	PG_RETURN_BOOL(ret);
+	PG_RETURN_BOOL(containment(a, b) != 0);
 }
 
 Datum
@@ -175,9 +157,8 @@ h3index_contains(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = containment(a, b) > 0;
 
-	PG_RETURN_BOOL(ret);
+	PG_RETURN_BOOL(containment(a, b) > 0);
 }
 
 Datum
@@ -185,7 +166,6 @@ h3index_contained_by(PG_FUNCTION_ARGS)
 {
 	H3Index		a = PG_GETARG_H3INDEX(0);
 	H3Index		b = PG_GETARG_H3INDEX(1);
-	bool		ret = containment(a, b) < 0 || a == b;
 
-	PG_RETURN_BOOL(ret);
+	PG_RETURN_BOOL(containment(b, a) > 0);
 }

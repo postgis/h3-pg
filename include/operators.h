@@ -1,5 +1,6 @@
 /*
  * Copyright 2024 Zacharias Knudsen
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +18,10 @@
 #ifndef H3_OPERATORS_H
 #define H3_OPERATORS_H
 
+#include <stdint.h>
+
 #include <h3api.h>
 
-int containment(H3Index a, H3Index b);
+H3Error h3index_grid_distance(H3Index a, H3Index b, int64_t *distance);
 
 #endif /* H3_OPERATORS_H */

@@ -1,5 +1,7 @@
 /*
- * Copyright 2024-2025 Zacharias Knudsen, Eric Schoffstall
+ * Copyright 2024-2025 Zacharias Knudsen
+ * Copyright 2026 Eric Schoffstall
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +16,20 @@
  * limitations under the License.
  */
 
-#include <math.h>			 // INFINITY
+#include <limits.h>
+#include <math.h>
 
-#include <postgres.h>		 // Datum, etc.
-#include <fmgr.h>			 // PG_FUNCTION_ARGS, etc.
-#include <access/stratnum.h> // RTOverlapStrategyNumber, etc.
-#include <access/gist.h>	 // GiST
+#include <postgres.h>
+#include <fmgr.h>
+#include <access/gist.h>
+#include <access/stratnum.h>
+#include <utils/sortsupport.h>
 
-#include <h3api.h> // Main H3 include
+#include <h3api.h>
 #include "algos.h"
-#include "error.h"
 #include "operators.h"
 #include "type.h"
+#include "upstream_macros.h"
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_consistent);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_union);
@@ -34,9 +38,27 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_penalty);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_picksplit);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_same);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_distance);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_sortsupport);
 
-/* Penalty for entries in different base cells (MAX_H3_RES + 1) */
+/* Fixed penalty for unions that cross base-cell boundaries. */
 #define GIST_CROSS_BASE_PENALTY 16.0f
+#define GIST_LIMIT_RATIO 0.3333333333333333
+/*
+ * Leaf-page fanout observed on PostgreSQL 18 by bulk-building large
+ * h3index_gist_ops_experimental indexes and inspecting them with
+ * pageinspect.
+ */
+#define GIST_INDEX_TUPLES_PER_PAGE 407
+
+/*
+ * Maximum grid distance from a cell's center child to any descendant at the
+ * given additional depth. This was verified empirically for both hexagons and
+ * pentagons and follows the exact recurrence r(d) = 7 * r(d - 2) + 4.
+ */
+static const int64_t gist_descendant_radius[MAX_H3_RES + 1] = {
+	0, 1, 4, 11, 32, 81, 228, 571,
+	1600, 4001, 11204, 28011, 78432, 196081, 549028, 1372571
+};
 
 /* Entry for sorting in picksplit */
 typedef struct
@@ -45,6 +67,74 @@ typedef struct
 	H3Index		key;
 } SortEntry;
 
+/* Candidate next assignment while the greedy split grows inward. */
+typedef struct
+{
+	bool		to_left;
+	H3Index		unionL;
+	H3Index		unionR;
+	float		widen;
+	int			nleft;
+	int			nright;
+} PickSplitMove;
+
+/* Return index itself or its center child at the requested resolution. */
+static inline bool
+h3index_center_child_at(H3Index index, int resolution, H3Index *out)
+{
+	int			index_res = getResolution(index);
+
+	if (index_res == resolution)
+	{
+		*out = index;
+		return true;
+	}
+
+	if (index_res > resolution)
+		return false;
+
+	return cellToCenterChild(index, resolution, out) == E_SUCCESS;
+}
+
+/*
+ * Bound the nearest possible descendant distance by comparing center-child
+ * representatives across candidate resolutions and subtracting the maximum
+ * descendant radius for the indexed subtree at each resolution.
+ */
+static double
+h3index_gist_distance_lower_bound(H3Index key, H3Index query)
+{
+	int			key_res = getResolution(key);
+	int			min_res = Max(key_res, getResolution(query));
+	int64_t		best = INT64_MAX;
+
+	for (int resolution = min_res; resolution <= MAX_H3_RES; resolution++)
+	{
+		H3Index		key_at_resolution;
+		H3Index		query_at_resolution;
+		int64_t		distance;
+
+		if (!h3index_center_child_at(key, resolution, &key_at_resolution) ||
+			!h3index_center_child_at(query, resolution, &query_at_resolution))
+			continue;
+
+		if (gridDistance(key_at_resolution, query_at_resolution, &distance))
+			continue;
+
+		distance = Max(distance - gist_descendant_radius[resolution - key_res], 0);
+		best = Min(best, distance);
+
+		if (best == 0)
+			break;
+	}
+
+	if (best == INT64_MAX)
+		return 0.0;
+
+	return (double) best;
+}
+
+/* qsort comparator for the picksplit input array. */
 static int
 sort_entry_cmp(const void *a, const void *b)
 {
@@ -56,6 +146,92 @@ sort_entry_cmp(const void *a, const void *b)
 	if (ka > kb)
 		return 1;
 	return 0;
+}
+
+/* Compare abbreviated H3 datums during sortsupport-driven sorts. */
+static int
+h3index_gist_cmp_abbrev(Datum x, Datum y, SortSupport ssup)
+{
+	if (x == y)
+		return 0;
+	else if (x < y)
+		return -1;
+	return 1;
+}
+
+/* Compare full H3 datums when abbreviation is unavailable or disabled. */
+static int
+h3index_gist_cmp_full(Datum x, Datum y, SortSupport ssup)
+{
+	H3Index		a = DatumGetH3Index(x);
+	H3Index		b = DatumGetH3Index(y);
+
+	if (a == b)
+		return 0;
+	else if (a < b)
+		return -1;
+	return 1;
+}
+
+/* Keep abbreviation enabled; H3 keys already fit cleanly in a Datum. */
+static bool
+h3index_gist_abbrev_abort(int memtupcount, SortSupport ssup)
+{
+	return false;
+}
+
+/* Reuse the pass-by-value h3index datum itself as the abbreviated key. */
+static Datum
+h3index_gist_abbrev_convert(Datum original, SortSupport ssup)
+{
+	return DatumGetH3Index(original);
+}
+
+/* Measure how much coarser a union becomes after adding a key. */
+static inline float
+h3index_union_widening(H3Index current, H3Index next_union)
+{
+	if (current == H3_NULL || current == next_union)
+		return 0.0f;
+	if (next_union == H3_NULL)
+		return GIST_CROSS_BASE_PENALTY;
+	return (float) (getResolution(current) - getResolution(next_union));
+}
+
+/* Score how well two candidate unions stay separated from one another. */
+static int
+h3index_union_separation_score(H3Index unionL, H3Index unionR)
+{
+	if (unionL == H3_NULL || unionR == H3_NULL)
+		return INT_MAX;
+	if (getBaseCellNumber(unionL) != getBaseCellNumber(unionR))
+		return -1;
+
+	H3Index ancestor = finest_common_ancestor(unionL, unionR);
+
+	if (ancestor == H3_NULL)
+		return -1;
+	return getResolution(ancestor);
+}
+
+/* Match the natural H3 key order used by picksplit and buffered GiST build. */
+Datum
+h3index_gist_sortsupport(PG_FUNCTION_ARGS)
+{
+	SortSupport ssup = (SortSupport) PG_GETARG_POINTER(0);
+
+	ssup->comparator = h3index_gist_cmp_full;
+	ssup->ssup_extra = NULL;
+
+	if (ssup->abbreviate && sizeof(Datum) == 8)
+	{
+		ssup->comparator = h3index_gist_cmp_abbrev;
+		ssup->abbrev_converter = h3index_gist_abbrev_convert;
+		ssup->abbrev_abort = h3index_gist_abbrev_abort;
+		ssup->abbrev_full_comparator = h3index_gist_cmp_full;
+	}
+
+	PG_RETURN_VOID();
 }
 
 /**
@@ -74,7 +250,6 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 	/* Oid subtype = PG_GETARG_OID(3); */
 	bool	   *recheck = (bool *) PG_GETARG_POINTER(4);
 	H3Index		key = DatumGetH3Index(entry->key);
-	int			cmp;
 
 	/* H3_NULL key means union of entries from different base cells */
 	if (key == H3_NULL)
@@ -93,12 +268,8 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 		PG_RETURN_BOOL(key == query);
 	}
 
-	/*
-	 * containment() returns +1 when a contains b (including a == b),
-	 * -1 when b contains a, and 0 when neither contains the other.
-	 * Note: containment(x, x) returns +1, not 0, because x == xParent.
-	 */
-	cmp = containment(key, query);
+	/* containment() returns +1 for contains/equality, -1 for contained-by. */
+	int cmp = containment(key, query);
 
 	if (GIST_LEAF(entry))
 	{
@@ -141,7 +312,6 @@ h3index_gist_consistent(PG_FUNCTION_ARGS)
 		}
 	}
 
-	/* unreachable, but keep compiler happy */
 	PG_RETURN_BOOL(false);
 }
 
@@ -154,22 +324,17 @@ h3index_gist_union(PG_FUNCTION_ARGS)
 {
 	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
 	GISTENTRY  *entries = entryvec->vector;
-	int			n = entryvec->n;
 	H3Index		out = DatumGetH3Index(entries[0].key);
-	H3Index		tmp;
 
-	for (int i = 1; i < n; i++)
-	{
-		tmp = DatumGetH3Index(entries[i].key);
-		out = finest_common_ancestor(out, tmp);
-	}
+	for (int i = 1; i < entryvec->n; i++)
+		out = finest_common_ancestor(out, DatumGetH3Index(entries[i].key));
 
 	PG_RETURN_H3INDEX(out);
 }
 
 /**
  * The GiST Penalty method for H3 indexes.
- * Uses the resolution change required to accommodate the new entry as penalty.
+ * Uses the widening required to accommodate the new entry as penalty.
  */
 Datum
 h3index_gist_penalty(PG_FUNCTION_ARGS)
@@ -180,20 +345,36 @@ h3index_gist_penalty(PG_FUNCTION_ARGS)
 
 	H3Index		orig = DatumGetH3Index(origentry->key);
 	H3Index		new = DatumGetH3Index(newentry->key);
-	H3Index		ancestor;
 
-	if (orig == H3_NULL || new == H3_NULL)
+	if (orig == H3_NULL)
 	{
-		/* H3_NULL key — fixed maximum penalty */
+		/*
+		 * H3_NULL already represents a mixed-base union, so adding another
+		 * entry cannot widen it any further.
+		 */
+		*penalty = 0.0f;
+		PG_RETURN_POINTER(penalty);
+	}
+
+	if (new == H3_NULL)
+	{
+		/* Mixed-base subtrees immediately widen any concrete union fully. */
 		*penalty = GIST_CROSS_BASE_PENALTY;
 		PG_RETURN_POINTER(penalty);
 	}
 
-	ancestor = finest_common_ancestor(orig, new);
+	H3Index ancestor = finest_common_ancestor(orig, new);
+
+	if (ancestor == orig)
+	{
+		/* Existing unions should accept descendants at zero insertion cost. */
+		*penalty = 0.0f;
+		PG_RETURN_POINTER(penalty);
+	}
 
 	if (ancestor == H3_NULL)
 	{
-		/* different base cells — fixed maximum penalty */
+		/* Different base cells always pay the fixed cross-base penalty. */
 		*penalty = GIST_CROSS_BASE_PENALTY;
 	}
 	else
@@ -207,10 +388,9 @@ h3index_gist_penalty(PG_FUNCTION_ARGS)
 /**
  * The GiST PickSplit method for H3 indexes.
  *
- * Sorts entries by H3 index value and splits at the median. H3's natural
- * ordering groups by base cell then hierarchical digits, providing good
- * spatial locality. This replaces the previous O(n^2) seed-selection
- * approach with a simple O(n log n) sort.
+ * Sorts entries by H3 index value, seeds both sides from the extremes, and
+ * greedily grows inward. H3's natural ordering groups by base cell then
+ * hierarchical digits, providing good spatial locality.
  */
 Datum
 h3index_gist_picksplit(PG_FUNCTION_ARGS)
@@ -219,22 +399,16 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 	GIST_SPLITVEC *v = (GIST_SPLITVEC *) PG_GETARG_POINTER(1);
 	OffsetNumber maxoff = entryvec->n - 1;
 	GISTENTRY  *ent = entryvec->vector;
-	int			nbytes;
 	int			nentries = maxoff;
-	int			split;
 	OffsetNumber *left,
 			   *right;
-	H3Index		unionL,
-				unionR;
 	SortEntry  *sorted;
 
-	nbytes = (maxoff + 1) * sizeof(OffsetNumber);
-
-	v->spl_left = (OffsetNumber *) palloc(nbytes);
+	v->spl_left = (OffsetNumber *) palloc((maxoff + 1) * sizeof(OffsetNumber));
 	left = v->spl_left;
 	v->spl_nleft = 0;
 
-	v->spl_right = (OffsetNumber *) palloc(nbytes);
+	v->spl_right = (OffsetNumber *) palloc((maxoff + 1) * sizeof(OffsetNumber));
 	right = v->spl_right;
 	v->spl_nright = 0;
 
@@ -247,29 +421,101 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 	}
 	qsort(sorted, nentries, sizeof(SortEntry), sort_entry_cmp);
 
-	/* Split at median */
-	split = nentries / 2;
+	/* Seed both sides from the extremes, then greedily grow inward. */
+	H3Index unionL = sorted[0].key;
+	*left++ = sorted[0].offset;
+	++(v->spl_nleft);
 
-	/* Left side: first half of sorted entries */
-	unionL = sorted[0].key;
-	for (int i = 0; i < split; i++)
-	{
-		if (i > 0)
-			unionL = finest_common_ancestor(unionL, sorted[i].key);
-		*left = sorted[i].offset;
-		++left;
-		++(v->spl_nleft);
-	}
+	H3Index unionR = sorted[nentries - 1].key;
+	*right++ = sorted[nentries - 1].offset;
+	++(v->spl_nright);
 
-	/* Right side: second half of sorted entries */
-	unionR = sorted[split].key;
-	for (int i = split; i < nentries; i++)
+	int minfill = (int) ceil(GIST_LIMIT_RATIO * (double) nentries);
+	if (nentries > GIST_INDEX_TUPLES_PER_PAGE &&
+		nentries <= 2 * GIST_INDEX_TUPLES_PER_PAGE)
+		minfill = Max(minfill, nentries - GIST_INDEX_TUPLES_PER_PAGE);
+	minfill = Max(minfill, 1);
+
+	int lo = 1;
+	int hi = nentries - 2;
+
+	while (lo <= hi)
 	{
-		if (i > split)
-			unionR = finest_common_ancestor(unionR, sorted[i].key);
-		*right = sorted[i].offset;
-		++right;
-		++(v->spl_nright);
+		int remaining = hi - lo + 1;
+
+		if (v->spl_nleft + remaining <= minfill)
+		{
+			unionL = finest_common_ancestor(unionL, sorted[lo].key);
+			*left++ = sorted[lo++].offset;
+			++(v->spl_nleft);
+			continue;
+		}
+
+		if (v->spl_nright + remaining <= minfill)
+		{
+			unionR = finest_common_ancestor(unionR, sorted[hi].key);
+			*right++ = sorted[hi--].offset;
+			++(v->spl_nright);
+			continue;
+		}
+
+		{
+			PickSplitMove leftMove = {
+				.to_left = true,
+				.unionL = finest_common_ancestor(unionL, sorted[lo].key),
+				.unionR = unionR,
+				.nleft = v->spl_nleft + 1,
+				.nright = v->spl_nright
+			};
+			PickSplitMove rightMove = {
+				.to_left = false,
+				.unionL = unionL,
+				.unionR = finest_common_ancestor(unionR, sorted[hi].key),
+				.nleft = v->spl_nleft,
+				.nright = v->spl_nright + 1
+			};
+			int			leftConcrete;
+			int			rightConcrete;
+			int			leftSeparation;
+			int			rightSeparation;
+			int			leftBalance;
+			int			rightBalance;
+
+			leftMove.widen = h3index_union_widening(unionL, leftMove.unionL);
+			rightMove.widen = h3index_union_widening(unionR, rightMove.unionR);
+
+			leftConcrete = (leftMove.unionL != H3_NULL) +
+				(leftMove.unionR != H3_NULL);
+			rightConcrete = (rightMove.unionL != H3_NULL) +
+				(rightMove.unionR != H3_NULL);
+			leftSeparation = h3index_union_separation_score(
+				leftMove.unionL, leftMove.unionR);
+			rightSeparation = h3index_union_separation_score(
+				rightMove.unionL, rightMove.unionR);
+			leftBalance = abs(leftMove.nleft - leftMove.nright);
+			rightBalance = abs(rightMove.nleft - rightMove.nright);
+
+			if (leftConcrete > rightConcrete ||
+				(leftConcrete == rightConcrete &&
+				 (leftSeparation < rightSeparation ||
+				  (leftSeparation == rightSeparation &&
+				   (leftMove.widen < rightMove.widen ||
+					(leftMove.widen == rightMove.widen &&
+					 (leftBalance < rightBalance ||
+					  (leftBalance == rightBalance &&
+					   leftMove.to_left && !rightMove.to_left))))))))
+			{
+				unionL = leftMove.unionL;
+				*left++ = sorted[lo++].offset;
+				++(v->spl_nleft);
+			}
+			else
+			{
+				unionR = rightMove.unionR;
+				*right++ = sorted[hi--].offset;
+				++(v->spl_nright);
+			}
+		}
 	}
 
 	pfree(sorted);
@@ -309,7 +555,6 @@ h3index_gist_distance(PG_FUNCTION_ARGS)
 	/* Oid		subtype = PG_GETARG_OID(3); */
 	bool	   *recheck = (bool *) PG_GETARG_POINTER(4);
 	H3Index		key = DatumGetH3Index(entry->key);
-	double		retval = INFINITY;
 
 	/* internal node distances are lower bounds; leaf distances are exact */
 	*recheck = !GIST_LEAF(entry);
@@ -319,71 +564,21 @@ h3index_gist_distance(PG_FUNCTION_ARGS)
 		case RTKNNSearchStrategyNumber:
 		{
 			int64_t		distance;
-			H3Error		error;
 
-			/*
-			 * Internal nodes: return 0 as a conservative lower bound.
-			 * Using center-child distance is NOT a valid lower bound
-			 * because edge descendants can be closer than the center
-			 * child. GiST KNN requires lower bounds for correctness;
-			 * recheck (set above) ensures final ordering is exact.
-			 */
-			if (!GIST_LEAF(entry))
-			{
-				retval = 0.0;
-				break;
-			}
-
-			/* Leaf node: compute exact distance */
 			if (key == H3_NULL)
-			{
-				retval = INFINITY;
-				break;
-			}
+				PG_RETURN_FLOAT8(GIST_LEAF(entry) ? INFINITY : 0.0);
 
-			{
-				int			keyRes = getResolution(key);
-				int			queryRes = getResolution(query);
+			if (!GIST_LEAF(entry))
+				PG_RETURN_FLOAT8(h3index_gist_distance_lower_bound(key, query));
 
-				if (keyRes <= queryRes)
-				{
-					/* key is coarser — get center child at query resolution */
-					H3Index		child;
-					error = cellToCenterChild(key, queryRes, &child);
-					if (error)
-					{
-						retval = INFINITY;
-						break;
-					}
-					error = gridDistance(query, child, &distance);
-				}
-				else
-				{
-					/* key is finer — refine query to key resolution */
-					H3Index		queryChild;
-					error = cellToCenterChild(query, keyRes, &queryChild);
-					if (error)
-					{
-						retval = INFINITY;
-						break;
-					}
-					error = gridDistance(queryChild, key, &distance);
-				}
-			}
+			if (h3index_grid_distance(key, query, &distance))
+				PG_RETURN_FLOAT8(INFINITY);
 
-			if (error)
-			{
-				retval = INFINITY;
-				break;
-			}
-			retval = (double) distance;
-			break;
+			PG_RETURN_FLOAT8((double) distance);
 		}
 		default:
 			ereport(ERROR, (
 							errcode(ERRCODE_INTERNAL_ERROR),
 					   errmsg("unrecognized StrategyNumber: %d", strategy)));
 	}
-
-	PG_RETURN_FLOAT8(retval);
 }

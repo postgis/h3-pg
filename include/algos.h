@@ -1,5 +1,7 @@
 /*
- * Copyright 2024-2025 Zacharias Knudsen, Eric Schoffstall
+ * Copyright 2024-2025 Zacharias Knudsen
+ * Copyright 2026 Eric Schoffstall
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,5 +22,6 @@
 #include <h3api.h>
 
 H3Index finest_common_ancestor(H3Index, H3Index);
+int containment(H3Index, H3Index);
 
 #endif /* H3_ALGOS_H */

@@ -1,5 +1,6 @@
 /*
  * Copyright 2020-2024 Zacharias Knudsen
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +18,7 @@
 --| # Operators
 
 --@ internal
-CREATE OR REPLACE FUNCTION h3index_distance(h3index, h3index) RETURNS float8
+CREATE OR REPLACE FUNCTION h3index_distance(h3index, h3index) RETURNS bigint
     AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 --@ availability: 3.7.0
 CREATE OPERATOR <-> (
@@ -27,7 +28,7 @@ CREATE OPERATOR <-> (
   COMMUTATOR = <->
 );
 COMMENT ON OPERATOR <-> (h3index, h3index) IS
-  'Returns the distance in grid cells between the two indices (at the lowest resolution of the two). Returns Infinity when gridDistance fails (e.g. near pentagons).';
+  'Returns the distance in grid cells between the two indices after refining the coarser input to its center child at the finer resolution. Returns the maximum bigint value when gridDistance fails (e.g. near pentagons).';
 
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 --| ## B-tree operators
