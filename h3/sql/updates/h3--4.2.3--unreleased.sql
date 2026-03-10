@@ -33,6 +33,8 @@ CREATE OPERATOR <-> (
   PROCEDURE = h3index_distance,
   COMMUTATOR = <->
 );
+COMMENT ON OPERATOR <-> (h3index, h3index) IS
+  'Returns the distance in grid cells between the two indices (at the lowest resolution of the two). Returns Infinity when gridDistance fails (e.g. near pentagons).';
 
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 -- GiST Operator Class (opclass_gist.c)

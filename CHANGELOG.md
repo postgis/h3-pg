@@ -325,4 +325,4 @@ avoid adding features or APIs which do not map onto the
 [@trylinka]: https://github.com/trylinka
 [@mattiZed]: https://github.com/mattiZed
 [@wolfgangwalther]: https://github.com/wolfgangwalther
-[@zachasme]: https://github.com/zachasme
+[@zachasme]: https://github.com/postgis/h3-pg/commits?author=zachasme
