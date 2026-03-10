@@ -12,3 +12,73 @@ SELECT hex = :hexagon FROM (
 ) q;
  t
 
+--
+-- TEST ORDER BY uses correct sort direction
+-- The first cell in ascending uint64 order should be less than the last.
+-- If the comparator is inverted, ORDER BY ASC would produce descending order.
+--
+SELECT first < last FROM (
+  SELECT
+    (SELECT hex FROM h3_test_btree ORDER BY hex ASC LIMIT 1) AS first,
+    (SELECT hex FROM h3_test_btree ORDER BY hex DESC LIMIT 1) AS last
+) q;
+ t
+
+--
+-- TEST range scans: cross-validate index scan vs seq scan
+-- Pick a pivot cell and count how many cells are greater/less than it.
+--
+SET enable_seqscan = off;
+SELECT COUNT(*) AS idx_gt INTO TEMP btree_idx_gt
+  FROM h3_test_btree WHERE hex > :hexagon;
+SELECT COUNT(*) AS idx_lt INTO TEMP btree_idx_lt
+  FROM h3_test_btree WHERE hex < :hexagon;
+RESET enable_seqscan;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+SELECT COUNT(*) AS seq_gt INTO TEMP btree_seq_gt
+  FROM h3_test_btree WHERE hex > :hexagon;
+SELECT COUNT(*) AS seq_lt INTO TEMP btree_seq_lt
+  FROM h3_test_btree WHERE hex < :hexagon;
+RESET enable_indexscan;
+RESET enable_bitmapscan;
+-- Index and seq scan must agree on counts
+SELECT i.idx_gt = s.seq_gt FROM btree_idx_gt i, btree_seq_gt s;
+ t
+
+SELECT i.idx_lt = s.seq_lt FROM btree_idx_lt i, btree_seq_lt s;
+ t
+
+-- Both should be non-zero (our pivot is not the min or max)
+SELECT i.idx_gt > 0 FROM btree_idx_gt i;
+ t
+
+SELECT i.idx_lt > 0 FROM btree_idx_lt i;
+ t
+
+-- gt + lt + 1 (the pivot itself) should equal the total row count
+SELECT i.idx_gt + j.idx_lt + 1 = (SELECT COUNT(*) FROM h3_test_btree)
+  FROM btree_idx_gt i, btree_idx_lt j;
+ t
+
+DROP TABLE btree_idx_gt, btree_idx_lt, btree_seq_gt, btree_seq_lt;
+--
+-- TEST BETWEEN via index
+--
+SET enable_seqscan = off;
+SELECT COUNT(*) AS idx_between INTO TEMP btree_idx_bw
+  FROM h3_test_btree WHERE hex BETWEEN '8001fffffffffff'::h3index AND '8005fffffffffff'::h3index;
+RESET enable_seqscan;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+SELECT COUNT(*) AS seq_between INTO TEMP btree_seq_bw
+  FROM h3_test_btree WHERE hex BETWEEN '8001fffffffffff'::h3index AND '8005fffffffffff'::h3index;
+RESET enable_indexscan;
+RESET enable_bitmapscan;
+SELECT i.idx_between = s.seq_between FROM btree_idx_bw i, btree_seq_bw s;
+ t
+
+SELECT i.idx_between > 0 FROM btree_idx_bw i;
+ t
+
+DROP TABLE btree_idx_bw, btree_seq_bw;
