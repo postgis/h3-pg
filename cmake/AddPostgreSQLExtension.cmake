@@ -90,6 +90,10 @@ function(PostgreSQL_add_extension_bitcode LIBRARY_NAME EXTENSION_NAME EXTENSION_
   set(EXTENSION_BITCODE_DEFINE_ARGS
     "-DPOSTGRESQL_VERSION_MAJOR=${PostgreSQL_VERSION_MAJOR}"
   )
+  set(EXTENSION_BITCODE_COMPILE_ARGS "")
+  if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+    list(APPEND EXTENSION_BITCODE_COMPILE_ARGS "-fno-semantic-interposition")
+  endif()
 
   foreach(source_file ${EXTENSION_SOURCES})
     get_filename_component(SOURCE_ABS "${source_file}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -108,6 +112,7 @@ function(PostgreSQL_add_extension_bitcode LIBRARY_NAME EXTENSION_NAME EXTENSION_
         -O2
         -flto=thin
         -fPIC
+        ${EXTENSION_BITCODE_COMPILE_ARGS}
         ${EXTENSION_BITCODE_INCLUDE_ARGS}
         ${EXTENSION_BITCODE_DEFINE_ARGS}
         "${SOURCE_ABS}"
@@ -180,6 +185,11 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
     # Link extension to PostgreSQL
     target_link_libraries(${LIBRARY_NAME} PRIVATE PostgreSQL::PostgreSQL)
 
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+      # Allow cross-TU optimization of internal calls inside the extension DSO.
+      target_compile_options(${LIBRARY_NAME} PRIVATE -fno-semantic-interposition)
+    endif()
+
     # Handle macOS specifics
     if(APPLE)
       # Fix apple missing symbols
@@ -209,11 +219,26 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
 
   endif()
 
-  # Generate .control file
+  # Materialize build-tree extension metadata under a share-root layout that
+  # PostgreSQL can discover through extension_control_path.
   string(REPLACE ";" ", " EXTENSION_REQUIRES "${EXTENSION_REQUIRES}")
+  set(EXTENSION_BUILD_SHARE_DIR "${CMAKE_BINARY_DIR}/share")
+  set(EXTENSION_BUILD_EXTENSION_DIR "${EXTENSION_BUILD_SHARE_DIR}/extension")
+  file(MAKE_DIRECTORY "${EXTENSION_BUILD_EXTENSION_DIR}")
   configure_file(
     ${CMAKE_SOURCE_DIR}/cmake/control.in
-    ${EXTENSION_NAME}.control
+    ${CMAKE_CURRENT_BINARY_DIR}/${EXTENSION_NAME}.control
+    @ONLY
+  )
+  configure_file(
+    ${CMAKE_SOURCE_DIR}/cmake/control.in
+    ${EXTENSION_BUILD_EXTENSION_DIR}/${EXTENSION_NAME}.control
+    @ONLY
+  )
+  configure_file(
+    ${CMAKE_SOURCE_DIR}/cmake/control.in
+    ${CMAKE_CURRENT_BINARY_DIR}/${EXTENSION_NAME}.control.install
+    @ONLY
   )
 
   # Generate .sql install file
@@ -232,28 +257,44 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
     file(APPEND "${EXTENSION_INSTALL}.in" "${CONTENTS}")
   endforeach()
   configure_file("${EXTENSION_INSTALL}.in" "${EXTENSION_INSTALL}" COPYONLY)
+  configure_file(
+    "${EXTENSION_INSTALL}"
+    "${EXTENSION_BUILD_EXTENSION_DIR}/${EXTENSION_NAME}--${EXTENSION_VERSION}.sql"
+    COPYONLY
+  )
 
   # Apply the same compatibility preprocessing to update scripts.
   set(EXTENSION_UPDATES_PROCESSED "")
   foreach(file ${EXTENSION_UPDATES})
+    get_filename_component(UPDATE_NAME "${file}" NAME)
+    set(UPDATE_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${UPDATE_NAME}")
     if(PostgreSQL_VERSION_MAJOR VERSION_LESS "16")
-      get_filename_component(UPDATE_NAME "${file}" NAME)
-      set(UPDATE_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${UPDATE_NAME}")
       file(READ "${file}" UPDATE_CONTENTS)
       string(REPLACE "@extschema:h3@." "" UPDATE_CONTENTS "${UPDATE_CONTENTS}")
       string(REPLACE "@extschema:postgis@." "" UPDATE_CONTENTS "${UPDATE_CONTENTS}")
       string(REPLACE "@extschema:postgis_raster@." "" UPDATE_CONTENTS "${UPDATE_CONTENTS}")
       file(WRITE "${UPDATE_OUTPUT}" "${UPDATE_CONTENTS}")
-      list(APPEND EXTENSION_UPDATES_PROCESSED "${UPDATE_OUTPUT}")
     else()
-      list(APPEND EXTENSION_UPDATES_PROCESSED "${file}")
+      configure_file("${file}" "${UPDATE_OUTPUT}" COPYONLY)
     endif()
+    configure_file(
+      "${UPDATE_OUTPUT}"
+      "${EXTENSION_BUILD_EXTENSION_DIR}/${UPDATE_NAME}"
+      COPYONLY
+    )
+    list(APPEND EXTENSION_UPDATES_PROCESSED "${UPDATE_OUTPUT}")
   endforeach()
 
   # Install everything else into share-dir
   install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXTENSION_NAME}.control.install
+    DESTINATION "${PostgreSQL_SHARE_DIR}/extension"
+    RENAME ${EXTENSION_NAME}.control
+    COMPONENT ${EXTENSION_COMPONENT}
+  )
+
+  install(
     FILES
-      ${CMAKE_CURRENT_BINARY_DIR}/${EXTENSION_NAME}.control
       ${EXTENSION_INSTALL}
       ${EXTENSION_UPDATES_PROCESSED}
     DESTINATION "${PostgreSQL_SHARE_DIR}/extension"

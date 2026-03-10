@@ -53,7 +53,7 @@ fi
 
 echo "[check-metadata] validating there are no legacy repository URLs..."
 set +e
-legacy_matches="$(git grep -n -E 'github\.com/zachasme(/h3-pg)?')"
+legacy_matches="$(git grep -n -E 'github\.com[:/]zachasme/h3-pg(\.git)?')"
 legacy_status=$?
 set -e
 

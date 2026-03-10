@@ -22,6 +22,10 @@ set_target_properties(h3 PROPERTIES
   C_VISIBILITY_PRESET          hidden
 )
 
+if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(h3 PRIVATE -fno-semantic-interposition)
+endif()
+
 # Export vendored H3 headers for downstream extension/tooling steps.
 # In particular, LLVM bitcode generation for `h3`/`h3_postgis` needs this path.
 set(H3_INCLUDE_DIR ${h3_BINARY_DIR}/src/h3lib/include CACHE INTERNAL "Vendored H3 include directory")

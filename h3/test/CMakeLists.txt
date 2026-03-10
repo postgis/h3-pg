@@ -2,7 +2,6 @@ set(TESTS
   clustering
   deprecated
   edge
-  extension
   hierarchy
   indexing
   inspection
@@ -16,6 +15,8 @@ set(TESTS
   traversal
   type
   vertex
+  # Keep this last: it drops and recreates h3 to exercise upgrades.
+  extension
 )
 
 if(PostgreSQL_REGRESS)
@@ -40,7 +41,7 @@ if(PostgreSQL_REGRESS)
     "dynamic_library_path = '${H3_REGRESS_TEMP_CONFIG_DYNAMIC_LIBRARY_PATH}'\n")
   if(PostgreSQL_VERSION_MAJOR VERSION_GREATER_EQUAL "18")
     string(PREPEND H3_REGRESS_TEMP_CONFIG_CONTENT
-      "extension_control_path = '${CMAKE_BINARY_DIR}/h3${H3_REGRESS_PATH_SEP}$system'\n")
+      "extension_control_path = '${CMAKE_BINARY_DIR}/share${H3_REGRESS_PATH_SEP}$system'\n")
   endif()
   if(CMAKE_CONFIGURATION_TYPES)
     file(GENERATE OUTPUT "${H3_REGRESS_TEMP_CONFIG}" CONTENT "${H3_REGRESS_TEMP_CONFIG_CONTENT}")

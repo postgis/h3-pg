@@ -24,4 +24,6 @@ install:
 	cmake --install build --component h3-pg
 
 installcheck:
-	ctest --output-on-failure --build-config Release
+	cmake -B build -DCMAKE_BUILD_TYPE=Release
+	cmake --build build
+	ctest --test-dir build --output-on-failure --build-config Release

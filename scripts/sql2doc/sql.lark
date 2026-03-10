@@ -13,6 +13,7 @@ custom_decorated_statement: [custom_decorators] statement
           | create_oper_stmt
           | create_func_stmt
           | create_agg_stmt
+          | do_stmt
           | comment_on_stmt
 
 custom_decorators: ("--@" /([^\n])+/)+
@@ -125,6 +126,10 @@ agg_param: "sfunc" "=" fun_name
          | "stype" "=" datatype
          | "finalfunc" "=" fun_name
          | "parallel" "=" ("safe"|"restricted"|"unsafe")
+
+// -----------------------------------------------------------------------------
+// DO $$ ... $$
+do_stmt: "DO" string ["LANGUAGE" CNAME]
 
 // -----------------------------------------------------------------------------
 // COMMENT ON

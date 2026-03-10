@@ -361,6 +361,10 @@ class SQLTransformer(Transformer):
     def create_agg_stmt(self, name: str, arguments, *params):
         return CreateAggregateStmt(name, arguments)
 
+    # -- DO -------------------------------------------------------------------
+    def do_stmt(self, children):
+        return visitors.Discard
+
     # -- CREATE COMMENT --------------------------------------------------------
     @v_args(inline=True)
     def comment_on_stmt(self, child, text):
