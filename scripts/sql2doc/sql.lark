@@ -40,8 +40,8 @@ create_cast_stmt: "CREATE" "CAST" "(" datatype "AS" datatype ")" "WITH" "FUNCTIO
 //    | STORAGE storage_type
 //   } [, ... ]
 create_opcl_stmt: "CREATE" "OPERATOR" "CLASS" CNAME "DEFAULT"? "FOR" "TYPE" CNAME "USING" CNAME "AS" create_opcl_list
-create_opcl_opts: "OPERATOR" SIGNED_NUMBER OPERATOR
-| "FUNCTION" SIGNED_NUMBER fun_name "(" [argument_list] ")"
+create_opcl_opts: "OPERATOR" SIGNED_NUMBER OPERATOR ["(" datatype "," datatype ")"] ["FOR" ("SEARCH" | "ORDER" "BY" CNAME)]
+| "FUNCTION" SIGNED_NUMBER ["(" datatype ["," datatype] ")"] fun_name "(" [argument_list] ")"
 create_opcl_list: create_opcl_opts ("," create_opcl_opts)*
 
 // -----------------------------------------------------------------------------
@@ -158,6 +158,9 @@ DATATYPE_SCALAR: "h3index"
         | "cstring"
         | "double" WS "precision"
         | "float"
+        | "float8"
+        | "smallint"
+        | "oid"
         | "geography"
         | "geometry"
         | "bytea"
