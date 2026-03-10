@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <math.h>			 // INFINITY
+
 #include <postgres.h>
 #include <h3api.h>
 
@@ -90,11 +92,10 @@ h3index_distance(PG_FUNCTION_ARGS)
 		h3_assert(cellToCenterChild(b, resA, &b));
 
 	error = gridDistance(a, b, &distance);
-	/* h3_assert(error); */
 	if (error)
-		distance = -1;
+		PG_RETURN_FLOAT8(INFINITY);
 
-	PG_RETURN_INT64(distance);
+	PG_RETURN_FLOAT8((double) distance);
 }
 
 /* b-tree operators */

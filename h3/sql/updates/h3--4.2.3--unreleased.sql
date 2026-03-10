@@ -18,6 +18,23 @@
 \echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
 
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+-- Fix <-> operator: return float8 (was bigint) so GiST KNN works with
+-- FOR ORDER BY float_ops, and return INFINITY instead of -1 on error.
+-- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+
+DROP OPERATOR IF EXISTS <-> (h3index, h3index);
+DROP FUNCTION IF EXISTS h3index_distance(h3index, h3index);
+
+CREATE OR REPLACE FUNCTION h3index_distance(h3index, h3index) RETURNS float8
+    AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+CREATE OPERATOR <-> (
+  LEFTARG = h3index,
+  RIGHTARG = h3index,
+  PROCEDURE = h3index_distance,
+  COMMUTATOR = <->
+);
+
+-- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 -- GiST Operator Class (opclass_gist.c)
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
