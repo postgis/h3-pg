@@ -1,5 +1,6 @@
 /*
  * Copyright 2024-2025 Zacharias Knudsen
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +18,15 @@
 --| ## SP-GiST operator class (experimental)
 --|
 --| *This is still an experimental feature and may change in future versions.*
+--| Supports containment queries (`@>`, `<@`) and equality (`=`) on `h3index` columns.
 --| Add an SP-GiST index using the `h3index_ops_experimental` operator class:
 --|
 --| ```sql
 --| -- CREATE INDEX [indexname] ON [tablename] USING spgist([column] h3index_ops_experimental);
 --| CREATE INDEX spgist_idx ON h3_data USING spgist(hex h3index_ops_experimental);
+--|
+--| -- containment query
+--| SELECT * FROM h3_data WHERE hex <@ '831c02fffffffff'::h3index;
 --| ```
 
 --@ internal

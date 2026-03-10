@@ -1,5 +1,6 @@
 /*
  * Copyright 2024-2025 Zacharias Knudsen
+ * Copyright 2026 Darafei Praliaskouski
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +36,6 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_spgist_leaf_consistent);
 
 #define H3_ROOT_INDEX -1
 #define NUM_BASE_CELLS 122
-#define MAX_H3_RES 15
 
 #define H3_NUM_CHILDREN 7
 
@@ -56,30 +56,35 @@ h3_spgist_node(H3Index cell, int level)
 
 /*
  * Compare two H3 indexes for containment.
- * Returns 1 if a contains b, -1 if b contains a, 0 otherwise.
+ * Returns 1 if a contains b (including equality), -1 if b contains a,
+ * 0 otherwise.
  */
 static int
-spgist_cmp(H3Index * a, H3Index * b)
+spgist_cmp(H3Index a, H3Index b)
 {
-	int			aRes = getResolution(*a);
-	int			bRes = getResolution(*b);
-
 	/* a contains b: truncate b to a's resolution and compare */
-	if (*a == H3_ROOT_INDEX)
+	if (a == H3_ROOT_INDEX)
 		return 1;
-	if (*b == H3_ROOT_INDEX)
+	if (b == H3_ROOT_INDEX)
 		return -1;
+	if (a == b)
+		return 1;
+
+	int aRes = getResolution(a);
+	int bRes = getResolution(b);
 
 	if (aRes <= bRes)
 	{
-		H3Index		bParent;
-		if (cellToParent(*b, aRes, &bParent) == 0 && *a == bParent)
+		H3Index bParent;
+
+		if (cellToParent(b, aRes, &bParent) == 0 && a == bParent)
 			return 1;
 	}
 	else
 	{
-		H3Index		aParent;
-		if (cellToParent(*a, bRes, &aParent) == 0 && *b == aParent)
+		H3Index aParent;
+
+		if (cellToParent(a, bRes, &aParent) == 0 && b == aParent)
 			return -1;
 	}
 
@@ -203,27 +208,13 @@ h3index_spgist_choose(PG_FUNCTION_ARGS)
 
 	int			resolution = in->level;
 	H3Index     insert = DatumGetH3Index(in->datum);
+	int			node;
 
 	out->resultType = spgMatchNode;
+	out->result.matchNode.levelAdd = in->allTheSame ? 0 : 1;
 	out->result.matchNode.restDatum = H3IndexGetDatum(insert);
-
-	if (in->allTheSame)
-	{
-		/*
-		 * When allTheSame is set, the core will override our nodeN with a
-		 * random choice (see spgdoinsert.c).  Do not advance the level so
-		 * that the next picksplit operates at the same resolution and can
-		 * produce a proper split once items from different subtrees are
-		 * mixed together.  This follows the pattern used by the built-in
-		 * quad-tree SP-GiST opclass.
-		 */
-		out->result.matchNode.levelAdd = 0;
-		out->result.matchNode.nodeN = 0;
-		PG_RETURN_VOID();
-	}
-
-	out->result.matchNode.levelAdd = 1;
-	out->result.matchNode.nodeN = h3_spgist_node(insert, resolution);
+	node = h3_spgist_node(insert, resolution);
+	out->result.matchNode.nodeN = node;
 
 	PG_RETURN_VOID();
 }
@@ -269,7 +260,11 @@ h3index_spgist_picksplit(PG_FUNCTION_ARGS)
 	{
 		/* at finer resolutions there is exactly 7 nodes, one per child */
 		H3Index first = DatumGetH3Index(in->datums[0]);
-		int		firstRes = getResolution(first);
+		H3Index parent;
+		int			prefixResolution = Min(resolution - 1, getResolution(first));
+
+		h3_assert(cellToParent(first, prefixResolution, &parent));
+
 
 		/*
 		 * TODO: consider decreasing nNodes for pentagons which only have 6
@@ -277,29 +272,13 @@ h3index_spgist_picksplit(PG_FUNCTION_ARGS)
 		 */
 		out->nNodes = H3_NUM_CHILDREN;
 		out->hasPrefix = true;
-
-		if (resolution <= firstRes)
-		{
-			H3Index parent;
-			h3_assert(cellToParent(first, resolution, &parent));
-			out->prefixDatum = H3IndexGetDatum(parent);
-		}
-		else
-		{
-			/*
-			 * Tree depth exceeds cell resolution.  This happens when many
-			 * identical (or nearly identical) cells cause the tree to grow
-			 * past the cell's resolution.  Use the cell itself as the prefix
-			 * since we cannot compute a finer parent.
-			 */
-			out->prefixDatum = H3IndexGetDatum(first);
-		}
+		out->prefixDatum = H3IndexGetDatum(parent);
 	}
 
 	/* map each leaf tuple to node in the new inner tuple */
 	for (int i = 0; i < in->nTuples; i++)
 	{
-		H3Index		insert = DatumGetH3Index(in->datums[i]);
+		H3Index     insert = DatumGetH3Index(in->datums[i]);
 
 		out->leafTupleDatums[i] = H3IndexGetDatum(insert);
 		out->mapTuplesToNodes[i] = h3_spgist_node(insert, resolution);
@@ -321,9 +300,6 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 	spgInnerConsistentIn *in = (spgInnerConsistentIn *) PG_GETARG_POINTER(0);
 	spgInnerConsistentOut *out = (spgInnerConsistentOut *) PG_GETARG_POINTER(1);
 	H3Index     parent = H3_NULL;
-	int			bc,
-				i;
-	bool		stop;
 	int			innerNodes = in->nNodes;
 
 	if (in->hasPrefix)
@@ -336,15 +312,17 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 		/* Report that all nodes should be visited */
 		out->nNodes = in->nNodes;
 		out->nodeNumbers = (int *) palloc(sizeof(int) * in->nNodes);
-		for (i = 0; i < in->nNodes; i++)
+		out->levelAdds = palloc(sizeof(int) * in->nNodes);
+		for (int i = 0; i < in->nNodes; i++)
 		{
 			out->nodeNumbers[i] = i;
+			out->levelAdds[i] = 0;
 		}
 		PG_RETURN_VOID();
 	}
 
 	out->levelAdds = palloc(sizeof(int) * innerNodes);
-	for (i = 0; i < innerNodes; ++i)
+	for (int i = 0; i < innerNodes; ++i)
 		out->levelAdds[i] = 1;
 
 	/* We must descend into the quadrant(s) identified by which */
@@ -352,9 +330,10 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 	out->nNodes = 0;
 
 	/* "which" is a bitmask of child nodes that satisfy all constraints */
-	bc = -1;
-	stop = false;
-	for (i = 0; i < in->nkeys; i++)
+	int bc = -1;
+	bool stop = false;
+
+	for (int i = 0; i < in->nkeys; i++)
 	{
 		/* each scankey is a constraint to be checked against */
 		StrategyNumber strategy = in->scankeys[i].sk_strategy;
@@ -370,21 +349,15 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 		}
 		else
 		{
+			int cmp = spgist_cmp(parent, query);
+
 			switch (strategy)
 			{
 				case RTSameStrategyNumber:
-					if (spgist_cmp(&parent, &query) == 0)
-						stop = true;
-					break;
 				case RTContainsStrategyNumber:
-					if (spgist_cmp(&parent, &query) == 0)
-						stop = true;
-					/* no overlap */
-					break;
 				case RTContainedByStrategyNumber:
-					if (spgist_cmp(&parent, &query) == 0)
+					if (cmp == 0)
 						stop = true;
-					/* no overlap */
 					break;
 				default:
 					elog(ERROR, "unrecognized strategy number: %d", strategy);
@@ -405,7 +378,7 @@ h3index_spgist_inner_consistent(PG_FUNCTION_ARGS)
 		}
 		else
 		{
-			for (i = 0; i < innerNodes; i++)
+			for (int i = 0; i < innerNodes; i++)
 			{
 				out->nodeNumbers[out->nNodes] = i;
 				out->nNodes++;
@@ -449,11 +422,11 @@ h3index_spgist_leaf_consistent(PG_FUNCTION_ARGS)
 				break;
 			case RTContainsStrategyNumber:
 				/* leaf contains the query */
-				retval = (spgist_cmp(&leaf, &query) > 0);
+				retval = (spgist_cmp(leaf, query) > 0);
 				break;
 			case RTContainedByStrategyNumber:
 				/* leaf is contained by the query */
-				retval = (spgist_cmp(&leaf, &query) < 0);
+				retval = (spgist_cmp(query, leaf) > 0);
 				break;
 			default:
 				ereport(ERROR, (

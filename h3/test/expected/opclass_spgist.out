@@ -15,6 +15,25 @@ SELECT COUNT(*) = 8 FROM h3_test_spgist WHERE hex <@ :hexagon;
  t
 
 --
+-- TEST SP-GiST self-containment through the index path
+-- The indexed path must agree with seqscan semantics for a <@ a.
+--
+CREATE TABLE h3_test_spgist_self (hex h3index);
+INSERT INTO h3_test_spgist_self VALUES (:hexagon);
+CREATE INDEX SPGIST_SELF_IDX ON h3_test_spgist_self USING spgist(hex h3index_ops_experimental);
+SET enable_seqscan = off;
+SELECT COUNT(*) = 1 FROM h3_test_spgist_self WHERE hex = :hexagon;
+ t
+
+SELECT COUNT(*) = 1 FROM h3_test_spgist_self WHERE hex @> :hexagon;
+ t
+
+SELECT COUNT(*) = 1 FROM h3_test_spgist_self WHERE hex <@ :hexagon;
+ t
+
+RESET enable_seqscan;
+DROP TABLE h3_test_spgist_self;
+--
 -- TEST SP-GiST with large descendant set
 --
 TRUNCATE TABLE h3_test_spgist;
@@ -89,3 +108,4 @@ SELECT COUNT(*) = (SELECT COUNT(*) FROM h3_test_spgist)
   WHERE hex <@ '8001fffffffffff'::h3index OR hex <@ '8003fffffffffff'::h3index;
  t
 
+DROP TABLE h3_test_spgist;
