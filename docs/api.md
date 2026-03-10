@@ -431,7 +431,7 @@ All the pentagon H3 indexes at the specified resolution.
 *Since v3.7.0*
 
 
-Returns the distance in grid cells between the two indices (at the lowest resolution of the two). Returns Infinity when gridDistance fails (e.g. near pentagons).
+Returns the distance in grid cells between the two indices after refining the coarser input to its center child at the finer resolution. Returns the maximum bigint value when gridDistance fails (e.g. near pentagons).
 
 
 ## B-tree operators
@@ -472,18 +472,27 @@ Returns true if A is contained by B.
 
 ## SP-GiST operator class (experimental)
 *This is still an experimental feature and may change in future versions.*
+Supports containment queries (`@>`, `<@`) and equality (`=`) on `h3index` columns.
 Add an SP-GiST index using the `h3index_ops_experimental` operator class:
 ```sql
 -- CREATE INDEX [indexname] ON [tablename] USING spgist([column] h3index_ops_experimental);
 CREATE INDEX spgist_idx ON h3_data USING spgist(hex h3index_ops_experimental);
+-- containment query
+SELECT * FROM h3_data WHERE hex <@ '831c02fffffffff'::h3index;
 ```
 
 ## GiST operator class (experimental)
 *This is still an experimental feature and may change in future versions.*
+Supports containment queries (`@>`, `<@`), overlap (`&&`), equality (`=`),
+and KNN distance ordering (`<->`) on `h3index` columns.
 Add a GiST index using the `h3index_gist_ops_experimental` operator class:
 ```sql
 -- CREATE INDEX [indexname] ON [tablename] USING gist([column] h3index_gist_ops_experimental);
 CREATE INDEX gist_idx ON h3_data USING gist(hex h3index_gist_ops_experimental);
+-- containment query
+SELECT * FROM h3_data WHERE hex <@ '831c02fffffffff'::h3index;
+-- KNN nearest-neighbor ordering
+SELECT hex FROM h3_data ORDER BY hex <-> '831c02fffffffff'::h3index LIMIT 10;
 ```
 
 # Type casts
