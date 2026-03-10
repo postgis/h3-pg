@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 Bytes & Brains
+ * Copyright 2024-2025 Zacharias Knudsen, Eric Schoffstall
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,11 +35,28 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_picksplit);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_same);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_gist_distance);
 
-/* Number of random entries to sample when finding picksplit seeds */
-#define GIST_SAMPLE_SIZE 20
-
 /* Penalty for entries in different base cells (MAX_H3_RES + 1) */
 #define GIST_CROSS_BASE_PENALTY 16.0f
+
+/* Entry for sorting in picksplit */
+typedef struct
+{
+	OffsetNumber offset;
+	H3Index		key;
+} SortEntry;
+
+static int
+sort_entry_cmp(const void *a, const void *b)
+{
+	H3Index		ka = ((const SortEntry *) a)->key;
+	H3Index		kb = ((const SortEntry *) b)->key;
+
+	if (ka < kb)
+		return -1;
+	if (ka > kb)
+		return 1;
+	return 0;
+}
 
 /**
  * The GiST Consistent method for H3 indexes.
@@ -189,7 +206,11 @@ h3index_gist_penalty(PG_FUNCTION_ARGS)
 
 /**
  * The GiST PickSplit method for H3 indexes.
- * Uses a sampled seed-selection approach to avoid O(n^2) on large pages.
+ *
+ * Sorts entries by H3 index value and splits at the median. H3's natural
+ * ordering groups by base cell then hierarchical digits, providing good
+ * spatial locality. This replaces the previous O(n^2) seed-selection
+ * approach with a simple O(n log n) sort.
  */
 Datum
 h3index_gist_picksplit(PG_FUNCTION_ARGS)
@@ -199,19 +220,13 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 	OffsetNumber maxoff = entryvec->n - 1;
 	GISTENTRY  *ent = entryvec->vector;
 	int			nbytes;
+	int			nentries = maxoff;
+	int			split;
 	OffsetNumber *left,
 			   *right;
-
 	H3Index		unionL,
-				unionR,
-				seed_left,
-				seed_right;
-
-	OffsetNumber seed_left_idx = FirstOffsetNumber,
-				seed_right_idx = FirstOffsetNumber + 1;
-
-	int			sample_size;
-	OffsetNumber *sample;
+				unionR;
+	SortEntry  *sorted;
 
 	nbytes = (maxoff + 1) * sizeof(OffsetNumber);
 
@@ -223,147 +238,41 @@ h3index_gist_picksplit(PG_FUNCTION_ARGS)
 	right = v->spl_right;
 	v->spl_nright = 0;
 
-	/* Build a sample of entries for seed selection */
-	sample_size = Min(maxoff, GIST_SAMPLE_SIZE);
-	sample = (OffsetNumber *) palloc(sample_size * sizeof(OffsetNumber));
-
-	if (maxoff <= GIST_SAMPLE_SIZE)
-	{
-		/* Small enough to check all entries */
-		for (int i = 0; i < sample_size; i++)
-			sample[i] = FirstOffsetNumber + i;
-	}
-	else
-	{
-		/* Pick evenly spaced entries as sample */
-		for (int i = 0; i < sample_size; i++)
-			sample[i] = FirstOffsetNumber + (i * maxoff) / sample_size;
-	}
-
-	/* Find the seed pair with maximum waste among the sample */
-	{
-		int64_t		max_waste = -1;
-		H3Index		a,
-					b,
-					seed_union;
-		int			res_a,
-					res_b,
-					res_finest;
-		int64_t		waste,
-					nchildren;
-
-		seed_left = DatumGetH3Index(ent[sample[0]].key);
-		seed_right = DatumGetH3Index(ent[sample[sample_size > 1 ? 1 : 0]].key);
-
-		for (int i = 0; i < sample_size; i++)
-		{
-			a = DatumGetH3Index(ent[sample[i]].key);
-			if (a == H3_NULL)
-				continue;
-			for (int j = i + 1; j < sample_size; j++)
-			{
-				b = DatumGetH3Index(ent[sample[j]].key);
-				if (b == H3_NULL)
-					continue;
-
-				/* if one contains the other, no waste */
-				if (containment(a, b) != 0)
-				{
-					waste = 0;
-				}
-				else
-				{
-					seed_union = finest_common_ancestor(a, b);
-					if (seed_union == H3_NULL)
-					{
-						/* different base cells — very high waste */
-						waste = INT64_MAX;
-					}
-					else
-					{
-						res_a = getResolution(a);
-						res_b = getResolution(b);
-						res_finest = (res_a > res_b) ? res_a : res_b;
-
-						h3_assert(cellToChildrenSize(seed_union, res_finest, &waste));
-						h3_assert(cellToChildrenSize(a, res_finest, &nchildren));
-						waste -= nchildren;
-						h3_assert(cellToChildrenSize(b, res_finest, &nchildren));
-						waste -= nchildren;
-					}
-				}
-
-				if (waste > max_waste)
-				{
-					max_waste = waste;
-					seed_left = a;
-					seed_right = b;
-					seed_left_idx = sample[i];
-					seed_right_idx = sample[j];
-				}
-			}
-		}
-	}
-
-	pfree(sample);
-
-	/* Pre-assign seed entries to guarantee both sides are non-empty */
-	unionL = seed_left;
-	unionR = seed_right;
-
-	*left = seed_left_idx;
-	++left;
-	v->spl_nleft = 1;
-
-	*right = seed_right_idx;
-	++right;
-	v->spl_nright = 1;
-
-	/* Assign remaining entries to the closest seed */
+	/* Sort entries by H3 index value for spatial locality */
+	sorted = (SortEntry *) palloc(nentries * sizeof(SortEntry));
 	for (OffsetNumber i = FirstOffsetNumber; i <= maxoff; i = OffsetNumberNext(i))
 	{
-		H3Index		a;
-		H3Index		check_left,
-					check_right;
-		int			size_change_l,
-					size_change_r;
-
-		/* Skip seed entries — already assigned */
-		if (i == seed_left_idx || i == seed_right_idx)
-			continue;
-
-		a = DatumGetH3Index(ent[i].key);
-		check_left = finest_common_ancestor(unionL, a);
-		check_right = finest_common_ancestor(unionR, a);
-
-		/* Compute resolution change for each side */
-		if (check_left == H3_NULL)
-			size_change_l = (int) GIST_CROSS_BASE_PENALTY;
-		else
-			size_change_l = getResolution(unionL) - getResolution(check_left);
-
-		if (check_right == H3_NULL)
-			size_change_r = (int) GIST_CROSS_BASE_PENALTY;
-		else
-			size_change_r = getResolution(unionR) - getResolution(check_right);
-
-		if (size_change_l < size_change_r ||
-			(size_change_l == size_change_r &&
-			 v->spl_nleft <= v->spl_nright))
-		{
-			unionL = check_left;
-			*left = i;
-			++left;
-			++(v->spl_nleft);
-		}
-		else
-		{
-			unionR = check_right;
-			*right = i;
-			++right;
-			++(v->spl_nright);
-		}
+		sorted[i - FirstOffsetNumber].offset = i;
+		sorted[i - FirstOffsetNumber].key = DatumGetH3Index(ent[i].key);
 	}
+	qsort(sorted, nentries, sizeof(SortEntry), sort_entry_cmp);
+
+	/* Split at median */
+	split = nentries / 2;
+
+	/* Left side: first half of sorted entries */
+	unionL = sorted[0].key;
+	for (int i = 0; i < split; i++)
+	{
+		if (i > 0)
+			unionL = finest_common_ancestor(unionL, sorted[i].key);
+		*left = sorted[i].offset;
+		++left;
+		++(v->spl_nleft);
+	}
+
+	/* Right side: second half of sorted entries */
+	unionR = sorted[split].key;
+	for (int i = split; i < nentries; i++)
+	{
+		if (i > split)
+			unionR = finest_common_ancestor(unionR, sorted[i].key);
+		*right = sorted[i].offset;
+		++right;
+		++(v->spl_nright);
+	}
+
+	pfree(sorted);
 
 	v->spl_ldatum = H3IndexGetDatum(unionL);
 	v->spl_rdatum = H3IndexGetDatum(unionR);
