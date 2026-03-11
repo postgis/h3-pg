@@ -130,6 +130,31 @@ END
 $$;
 
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+-- Btree comparator sign fix: existing btree indexes on h3index columns are
+-- physically sorted in the wrong order.  REINDEX every btree index that uses
+-- the h3index_ops operator class so the on-disk sort matches the corrected
+-- comparator.
+-- ---------- ---------- ---------- ---------- ---------- ---------- ----------
+
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN
+        SELECT ci.oid::regclass AS idx
+        FROM pg_index i
+        JOIN pg_class ci ON ci.oid = i.indexrelid
+        JOIN pg_am am ON am.oid = ci.relam
+        JOIN pg_opclass opc ON opc.oid = i.indclass[0]
+        WHERE am.amname = 'btree'
+          AND opc.opcname = 'h3index_ops'
+    LOOP
+        EXECUTE format('REINDEX INDEX %s', r.idx);
+    END LOOP;
+END
+$$;
+
+-- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 -- GiST Operator Class (opclass_gist.c)
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
