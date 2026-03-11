@@ -108,4 +108,68 @@ SELECT COUNT(*) = (SELECT COUNT(*) FROM h3_test_spgist)
   WHERE hex <@ '8001fffffffffff'::h3index OR hex <@ '8003fffffffffff'::h3index;
  t
 
+--
+-- TEST SP-GiST picksplit with cells spanning many parents
+-- When cells from a single base cell are spread across many different
+-- parents, picksplit must use the finest common ancestor as prefix.
+-- Otherwise cells under different parents get placed under a wrong
+-- prefix and are silently dropped by inner_consistent.
+--
+TRUNCATE TABLE h3_test_spgist;
+INSERT INTO h3_test_spgist (hex)
+  SELECT h3_cell_to_center_child(c, 12)
+  FROM (SELECT h3_cell_to_children('802bfffffffffff'::h3index, 5) AS c) sub;
+-- Cross-validate: index scan must match seq scan
+SET enable_seqscan = off;
+SELECT COUNT(*) AS idx_count INTO TEMP idx_multi
+  FROM h3_test_spgist WHERE hex <@ '832a10fffffffff'::h3index;
+RESET enable_seqscan;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+SELECT COUNT(*) AS seq_count INTO TEMP seq_multi
+  FROM h3_test_spgist WHERE hex <@ '832a10fffffffff'::h3index;
+RESET enable_indexscan;
+RESET enable_bitmapscan;
+-- Both should find 49 cells (7^2 center children of res-5 cells under one res-3 cell)
+SELECT i.idx_count = s.seq_count FROM idx_multi i, seq_multi s;
+ t
+
+SELECT i.idx_count = 49 FROM idx_multi i;
+ t
+
+DROP TABLE idx_multi, seq_multi;
+--
+-- TEST SP-GiST cross-base-cell picksplit fallback
+-- When tuples span different base cells, the FCA falls back to
+-- base-cell routing (NUM_BASE_CELLS nodes, no prefix).
+--
+TRUNCATE TABLE h3_test_spgist;
+INSERT INTO h3_test_spgist (hex)
+  SELECT h3_cell_to_children(bc, 4)
+  FROM (
+    VALUES ('8001fffffffffff'::h3index),
+           ('8003fffffffffff'::h3index),
+           ('8005fffffffffff'::h3index)
+  ) v(bc);
+REINDEX INDEX SPGIST_IDX;
+SET enable_seqscan = off;
+-- Each base cell individually should find 2401 (7^4)
+SELECT COUNT(*) = 2401 FROM h3_test_spgist
+  WHERE hex <@ '8001fffffffffff'::h3index;
+ t
+
+SELECT COUNT(*) = 2401 FROM h3_test_spgist
+  WHERE hex <@ '8003fffffffffff'::h3index;
+ t
+
+SELECT COUNT(*) = 2401 FROM h3_test_spgist
+  WHERE hex <@ '8005fffffffffff'::h3index;
+ t
+
+-- No cross-contamination
+SELECT COUNT(*) = 0 FROM h3_test_spgist
+  WHERE hex <@ '8007fffffffffff'::h3index;
+ t
+
+RESET enable_seqscan;
 DROP TABLE h3_test_spgist;

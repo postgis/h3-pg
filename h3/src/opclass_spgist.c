@@ -21,6 +21,7 @@
 #include "catalog/pg_type.h"
 
 #include <h3api.h> // Main H3 include
+#include "algos.h"
 #include "type.h"
 #include "error.h"
 
@@ -258,13 +259,17 @@ h3index_spgist_picksplit(PG_FUNCTION_ARGS)
 	}
 	else
 	{
-		/* at finer resolutions there is exactly 7 nodes, one per child */
+		/*
+		 * At finer resolutions there are exactly 7 nodes, one per child.
+		 *
+		 * Compute the finest common ancestor (FCA) of all input tuples so
+		 * that the prefix is valid for every tuple in the batch.  Using
+		 * only the first tuple's parent is incorrect when the batch mixes
+		 * cells from different parents at this resolution — those cells
+		 * would be placed under a wrong prefix and later pruned by
+		 * inner_consistent, silently dropping query results.
+		 */
 		H3Index first = DatumGetH3Index(in->datums[0]);
-		H3Index parent;
-		int			prefixResolution = Min(resolution - 1, getResolution(first));
-
-		h3_assert(cellToParent(first, prefixResolution, &parent));
-
 
 		/*
 		 * TODO: consider decreasing nNodes for pentagons which only have 6
@@ -272,16 +277,58 @@ h3index_spgist_picksplit(PG_FUNCTION_ARGS)
 		 */
 		out->nNodes = H3_NUM_CHILDREN;
 		out->hasPrefix = true;
-		out->prefixDatum = H3IndexGetDatum(parent);
+
+		/*
+		 * Start with the first tuple's ancestor at this resolution,
+		 * then fold in every other tuple via FCA.
+		 */
+		H3Index prefix;
+		if (resolution <= getResolution(first))
+			h3_assert(cellToParent(first, resolution, &prefix));
+		else
+			prefix = first;
+
+		for (int i = 1; i < in->nTuples; i++)
+		{
+			H3Index cell = DatumGetH3Index(in->datums[i]);
+			H3Index ancestor;
+			if (resolution <= getResolution(cell))
+			{
+				if (cellToParent(cell, resolution, &ancestor) != 0)
+					ancestor = cell;
+			}
+			else
+				ancestor = cell;
+
+			if (ancestor != prefix)
+			{
+				prefix = finest_common_ancestor(prefix, ancestor);
+				if (prefix == H3_NULL)
+				{
+					/*
+					 * Tuples span different base cells.  Fall back to
+					 * base-cell routing with no prefix, same as level 0.
+					 */
+					out->hasPrefix = false;
+					out->nNodes = NUM_BASE_CELLS;
+					break;
+				}
+			}
+		}
+
+		if (out->hasPrefix)
+			out->prefixDatum = H3IndexGetDatum(prefix);
 	}
 
 	/* map each leaf tuple to node in the new inner tuple */
 	for (int i = 0; i < in->nTuples; i++)
 	{
-		H3Index     insert = DatumGetH3Index(in->datums[i]);
+		H3Index		insert = DatumGetH3Index(in->datums[i]);
 
 		out->leafTupleDatums[i] = H3IndexGetDatum(insert);
-		out->mapTuplesToNodes[i] = h3_spgist_node(insert, resolution);
+		out->mapTuplesToNodes[i] = out->hasPrefix
+			? h3_spgist_node(insert, resolution)
+			: getBaseCellNumber(insert);
 	}
 
 	PG_RETURN_VOID();
