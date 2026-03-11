@@ -2,9 +2,9 @@
 \set string '\'801dfffffffffff\''
 \set hexagon ':string::h3index'
 
-CREATE TABLE h3_test_btree (hex h3index PRIMARY KEY);
+CREATE TABLE h3_test_btree (hex h3index NOT NULL);
 INSERT INTO h3_test_btree (hex) SELECT * from h3_get_res_0_cells();
-CREATE INDEX h3_btree ON h3_test_btree USING btree (hex);
+CREATE UNIQUE INDEX h3_btree ON h3_test_btree USING btree (hex);
 --
 -- TEST b-tree operator class
 --
@@ -16,12 +16,20 @@ SELECT hex = :hexagon FROM (
 -- TEST ORDER BY uses correct sort direction
 -- The first cell in ascending uint64 order should be less than the last.
 -- If the comparator is inverted, ORDER BY ASC would produce descending order.
+-- Disable index scans so the planner must use a tuplesort, which exercises
+-- h3index_cmp_abbrev and h3index_cmp_full directly.
 --
+SET enable_indexscan = off;
+SET enable_indexonlyscan = off;
+SET enable_bitmapscan = off;
 SELECT first < last FROM (
   SELECT
     (SELECT hex FROM h3_test_btree ORDER BY hex ASC LIMIT 1) AS first,
     (SELECT hex FROM h3_test_btree ORDER BY hex DESC LIMIT 1) AS last
 ) q;
+RESET enable_indexscan;
+RESET enable_indexonlyscan;
+RESET enable_bitmapscan;
 
 --
 -- TEST range scans: cross-validate index scan vs seq scan
