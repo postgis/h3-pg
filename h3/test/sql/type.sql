@@ -15,6 +15,11 @@ SELECT :pentagon <@ h3_cell_to_parent(:pentagon);
 SELECT bool_and(:pentagon @> c) FROM (
     SELECT h3_cell_to_children(:pentagon) c
 ) q;
+-- self-containment: cell @> cell and cell <@ cell should both be true
+SELECT :hexagon @> :hexagon;
+SELECT :hexagon <@ :hexagon;
+SELECT :pentagon @> :pentagon;
+SELECT :pentagon <@ :pentagon;
 
 --
 -- TEST bigint casting

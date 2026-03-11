@@ -26,6 +26,19 @@ SELECT bool_and(:pentagon @> c) FROM (
 ) q;
  t
 
+-- self-containment: cell @> cell and cell <@ cell should both be true
+SELECT :hexagon @> :hexagon;
+ t
+
+SELECT :hexagon <@ :hexagon;
+ t
+
+SELECT :pentagon @> :pentagon;
+ t
+
+SELECT :pentagon <@ :pentagon;
+ t
+
 --
 -- TEST bigint casting
 --
