@@ -147,6 +147,7 @@ BEGIN
         JOIN pg_am am ON am.oid = ci.relam
         JOIN pg_opclass opc ON opc.oid = ANY(i.indclass)
         WHERE am.amname = 'btree'
+          AND ci.relkind = 'i'
           AND opc.opcname = 'h3index_ops'
     LOOP
         EXECUTE format('REINDEX INDEX %s', r.idx);
