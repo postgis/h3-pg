@@ -29,6 +29,7 @@ avoid adding features or APIs which do not map onto the
 - Fix SP-GiST picksplit crash when tree depth exceeds cell resolution (see [#187], thanks [@yocontra])
 - Fix SP-GiST picksplit using wrong prefix when batch has mixed parents, silently dropping containment query results (see [#189], thanks [@yocontra])
 - Fix `<@` operator and SP-GiST returning false for self-containment (see [#191], thanks [@yocontra])
+- ⚠️ Fix btree comparator returning wrong sign, causing reversed `ORDER BY` and incorrect range scans; upgrade auto-reindexes affected indexes (see [#190], thanks [@yocontra])
 - Add experimental GiST operator class (see [#188], initial work in [#42], thanks [@zachasme], [@yocontra], [@Komzpa], [@AbelVM], and [@mattiZed])
 - Fix PostgreSQL 17+ maintenance-operation failures for `h3_postgis` SQL wrappers by schema-qualifying extension object references (see [#165], [#168])
 - Add `h3_postgis` regression coverage for `CREATE INDEX` expression functions and materialized view maintenance under restricted `search_path`
