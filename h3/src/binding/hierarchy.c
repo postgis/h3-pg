@@ -33,6 +33,14 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_child_pos_to_cell);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_compact_cells);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_uncompact_cells);
 
+typedef struct
+{
+	H3Index		parent;
+	int			child_resolution;
+	int64_t		next_child_pos;
+	int64_t		child_count;
+} H3ChildrenFctx;
+
 /* Returns the parent (coarser) index containing given index */
 Datum
 h3_cell_to_parent(PG_FUNCTION_ARGS)
@@ -50,47 +58,49 @@ h3_cell_to_parent(PG_FUNCTION_ARGS)
 Datum
 h3_cell_to_children(PG_FUNCTION_ARGS)
 {
-	/* stuff done only on the first call of the function */
 	if (SRF_IS_FIRSTCALL())
 	{
-		int64_t		max;
-		int64_t		size;
-		H3Index    *children;
-
-		/* create a function context for cross-call persistence */
 		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
-
-		/* switch to memory context appropriate for multiple function calls */
 		MemoryContext oldcontext =
 		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
+		H3ChildrenFctx *user_fctx = palloc(sizeof(H3ChildrenFctx));
 
-		/* BEGIN One-time setup code */
+		/* Stream children in the same order defined by childPosToCell(). */
+		user_fctx->parent = PG_GETARG_H3INDEX(0);
+		user_fctx->child_resolution = PG_GETARG_OPTIONAL_RES(1, user_fctx->parent, 1);
+		user_fctx->next_child_pos = 0;
 
-		/* ensure valid resolution target */
-		H3Index		origin = PG_GETARG_H3INDEX(0);
-		int			resolution = PG_GETARG_OPTIONAL_RES(1, origin, 1);
+		h3_assert(cellToChildrenSize(
+			user_fctx->parent,
+			user_fctx->child_resolution,
+			&user_fctx->child_count
+		));
 
-		h3_assert(cellToChildrenSize(origin, resolution, &max));
-
-		size = max * sizeof(H3Index);
-		ASSERT(
-			   AllocSizeIsValid(size),
-			   ERRCODE_OUT_OF_MEMORY,
-			   "Cannot allocate necessary amount memory, try using h3_cell_to_children_slow()"
-			);
-		children = palloc(size);
-
-		h3_assert(cellToChildren(origin, resolution, children));
-
-		funcctx->user_fctx = children;
-		funcctx->max_calls = max;
-
-		/* END One-time setup code */
-
+		funcctx->user_fctx = user_fctx;
+		funcctx->max_calls = user_fctx->child_count;
 		MemoryContextSwitchTo(oldcontext);
 	}
 
-	SRF_RETURN_H3_INDEXES_FROM_USER_FCTX();
+	{
+		FuncCallContext *funcctx = SRF_PERCALL_SETUP();
+		H3ChildrenFctx *user_fctx = funcctx->user_fctx;
+
+		if (user_fctx->next_child_pos < user_fctx->child_count)
+		{
+			H3Index		child;
+
+			h3_assert(childPosToCell(
+				user_fctx->next_child_pos++,
+				user_fctx->parent,
+				user_fctx->child_resolution,
+				&child
+			));
+
+			SRF_RETURN_NEXT(funcctx, H3IndexGetDatum(child));
+		}
+
+		SRF_RETURN_DONE(funcctx);
+	}
 }
 
 /* Returns the center child (finer) index contained by input index at given resolution */

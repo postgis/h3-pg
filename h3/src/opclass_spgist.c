@@ -214,7 +214,13 @@ h3index_spgist_choose(PG_FUNCTION_ARGS)
 	out->resultType = spgMatchNode;
 	out->result.matchNode.levelAdd = in->allTheSame ? 0 : 1;
 	out->result.matchNode.restDatum = H3IndexGetDatum(insert);
-	node = h3_spgist_node(insert, resolution);
+	/*
+	 * Prefix-less tuples route by base cell, both at the root and when a
+	 * deeper mixed-base picksplit falls back to NUM_BASE_CELLS children.
+	 */
+	node = in->hasPrefix
+		? h3_spgist_node(insert, resolution)
+		: getBaseCellNumber(insert);
 	out->result.matchNode.nodeN = node;
 
 	PG_RETURN_VOID();

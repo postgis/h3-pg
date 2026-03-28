@@ -57,6 +57,74 @@ SELECT h3pg_s.h3_latlng_to_cell(
     10
 )::text = '8a63a9a99047fff';
 
+SELECT h3pg_s.h3_get_resolution_from_tile_zoom(10) = 6;
+
+SELECT bool_and(c::text = '8a63a9a99047fff') AND COUNT(*) = 1
+FROM h3pg_s.h3_polygon_to_cells(
+    h3pg_s.h3_cell_to_boundary_geometry('8a63a9a99047fff'::h3_s.h3index),
+    10
+) AS c;
+
+SELECT postgis_s.ST_GeometryType(
+    h3pg_s.h3_cells_to_multi_polygon_geometry(
+        ARRAY['8a63a9a99047fff'::h3_s.h3index]
+    )
+) IN ('ST_Polygon', 'ST_MultiPolygon');
+
+SELECT COUNT(*) > 0
+FROM h3pg_s.h3_grid_path_cells_recursive(
+    '842ca2bffffffff'::h3_s.h3index,
+    '842e611ffffffff'::h3_s.h3index
+);
+
+CREATE TABLE h3pg_s.h3_schema_raster_test AS
+SELECT postgis_s.ST_AddBand(
+    postgis_s.ST_MakeEmptyRaster(
+        2, 2,
+        55.668, 12.592,
+        0.001, -0.001,
+        0, 0,
+        4326
+    ),
+    '8BUI'::text,
+    1::double precision,
+    0::double precision
+) AS rast;
+
+SELECT COUNT(*) > 0
+FROM h3pg_s.h3_schema_raster_test,
+LATERAL h3pg_s.h3_raster_summary_clip(rast, 10);
+
+SELECT COUNT(*) > 0
+FROM h3pg_s.h3_schema_raster_test,
+LATERAL h3pg_s.h3_raster_summary_centroids(rast, 10);
+
+SELECT COUNT(*) > 0
+FROM h3pg_s.h3_schema_raster_test,
+LATERAL h3pg_s.h3_raster_summary_subpixel(rast, 15);
+
+SELECT COUNT(*) > 0
+FROM h3pg_s.h3_schema_raster_test,
+LATERAL h3pg_s.h3_raster_summary(rast, 10);
+
+SELECT COUNT(*) > 0
+FROM h3pg_s.h3_schema_raster_test,
+LATERAL h3pg_s.h3_raster_class_summary_clip(rast, 10);
+
+SELECT COUNT(*) > 0
+FROM h3pg_s.h3_schema_raster_test,
+LATERAL h3pg_s.h3_raster_class_summary_centroids(rast, 10);
+
+SELECT COUNT(*) > 0
+FROM h3pg_s.h3_schema_raster_test,
+LATERAL h3pg_s.h3_raster_class_summary_subpixel(rast, 15);
+
+SELECT COUNT(*) > 0
+FROM h3pg_s.h3_schema_raster_test,
+LATERAL h3pg_s.h3_raster_class_summary(rast, 10);
+
+DROP TABLE h3pg_s.h3_schema_raster_test;
+
 -- pg_dump/restore sets search_path='' and should still replay expression
 -- indexes that call deprecated wrappers.
 SELECT pg_catalog.set_config('search_path', '', false) = '';

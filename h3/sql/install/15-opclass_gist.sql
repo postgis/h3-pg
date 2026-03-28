@@ -74,7 +74,7 @@ AS
 
 DO $$
 BEGIN
-    IF current_setting('server_version_num')::int >= 140000 THEN
+    IF pg_catalog.current_setting('server_version_num')::int >= 140000 THEN
         EXECUTE $sql$
             ALTER OPERATOR FAMILY h3index_gist_ops_experimental USING gist ADD
                 FUNCTION 11 (h3index, h3index) h3index_gist_sortsupport(internal)

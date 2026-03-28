@@ -36,8 +36,8 @@ project(
 # set this to "${PROJECT_VERSION}" on release
 #set(INSTALL_VERSION "${PROJECT_VERSION}")
 set(INSTALL_VERSION "unreleased")
-set(H3_CORE_VERSION 4.2.0)
-set(H3_CORE_SHA256 438db46fc2b388785d2a0d8e26aa5509739240a7b50b2510c416778d871a4e11)
+set(H3_CORE_VERSION 4.4.1)
+set(H3_CORE_SHA256 9df719eb878f218c203e424dc5ffca9b98eca4d78ba83928773987649ead404d)
 
 # If you set any CMAKE_ variables, that can go here.
 # (But usually don't do this, except maybe for C++ standard)

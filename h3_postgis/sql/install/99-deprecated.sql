@@ -36,7 +36,7 @@ IS 'DEPRECATED: Use `h3_latlng_to_cell` instead..';
 --@ availability: 4.0.0
 --@ deprecated
 CREATE OR REPLACE FUNCTION h3_lat_lng_to_cell(@extschema:postgis@.geography, resolution integer) RETURNS h3index
-    AS $$ SELECT @extschema:h3@.h3_lat_lng_to_cell($1::@extschema:postgis@.geometry, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+    AS $$ SELECT @extschema:h3@.h3_lat_lng_to_cell(($1::@extschema:postgis@.geometry)::point, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_lat_lng_to_cell(geometry, resolution integer)
 IS 'DEPRECATED: Use `h3_latlng_to_cell` instead..';

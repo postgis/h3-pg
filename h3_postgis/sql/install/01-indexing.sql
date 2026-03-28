@@ -69,9 +69,10 @@
 --| # PostGIS Indexing Functions
 --|
 --| PostgreSQL 17+ executes CREATE INDEX (and other maintenance operations)
---| with a restricted search_path. Use @extschema:*@ placeholders so wrapper
---| functions can always resolve cross-extension symbols safely.
---| Keep wrappers as plain SQL without STRICT to preserve SQL-function inlining.
+--| with a restricted search_path. `h3_postgis` wrapper functions are defined
+--| to stay safe in that environment, so expression indexes and materialized
+--| views continue to work even when `h3`, `h3_postgis`, and PostGIS are not
+--| installed in `public`.
 
 --@ availability: 4.2.3
 --@ refid: h3_latlng_to_cell_geometry
@@ -84,7 +85,7 @@ IS 'Indexes the location at the specified resolution.';
 --@ availability: 4.2.3
 --@ refid: h3_latlng_to_cell_geography
 CREATE OR REPLACE FUNCTION h3_latlng_to_cell(@extschema:postgis@.geography, resolution integer) RETURNS h3index
-    AS $$ SELECT @extschema:h3@.h3_latlng_to_cell($1::@extschema:postgis@.geometry, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+    AS $$ SELECT @extschema:h3@.h3_latlng_to_cell(($1::@extschema:postgis@.geometry)::point, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_latlng_to_cell(geometry, resolution integer)
 IS 'Indexes the location at the specified resolution.';
@@ -100,7 +101,7 @@ IS 'Finds the centroid of the index.';
 --@ availability: 4.0.0
 --@ refid: h3_cell_to_geography
 CREATE OR REPLACE FUNCTION h3_cell_to_geography(h3index) RETURNS @extschema:postgis@.geography
-  AS $$ SELECT @extschema@.h3_cell_to_geometry($1)::@extschema:postgis@.geography $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+  AS $$ SELECT @extschema:postgis@.ST_SetSRID(@extschema:h3@.h3_cell_to_latlng($1)::@extschema:postgis@.geometry, 4326)::@extschema:postgis@.geography $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 COMMENT ON FUNCTION
     h3_cell_to_geography(h3index)
 IS 'Finds the centroid of the index.';
@@ -108,7 +109,25 @@ IS 'Finds the centroid of the index.';
 --@ availability: 4.0.0
 --@ refid: h3_cell_to_boundary_geometry
 CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index) RETURNS @extschema:postgis@.geometry
-  AS $$ SELECT @extschema:h3@.h3_cell_to_boundary_wkb($1)::@extschema:postgis@.geometry $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+AS $$
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+    wkb bytea;
+BEGIN
+    EXECUTE pg_catalog.format(
+        'SELECT %I.h3_cell_to_boundary_wkb($1)',
+        self_schema
+    )
+    INTO wkb
+    USING $1;
+
+    RETURN wkb::@extschema:postgis@.geometry;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 COMMENT ON FUNCTION
     h3_cell_to_boundary_geometry(h3index)
 IS 'Finds the boundary of the index.
@@ -118,7 +137,25 @@ Splits polygons when crossing 180th meridian.';
 --@ availability: 4.0.0
 --@ refid: h3_cell_to_boundary_geography
 CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index) RETURNS @extschema:postgis@.geography
-  AS $$ SELECT @extschema:h3@.h3_cell_to_boundary_wkb($1)::@extschema:postgis@.geography $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+AS $$
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+    wkb bytea;
+BEGIN
+    EXECUTE pg_catalog.format(
+        'SELECT %I.h3_cell_to_boundary_wkb($1)',
+        self_schema
+    )
+    INTO wkb
+    USING $1;
+
+    RETURN wkb::@extschema:postgis@.geography;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 COMMENT ON FUNCTION
     h3_cell_to_boundary_geography(h3index)
 IS 'Finds the boundary of the index.
@@ -136,8 +173,8 @@ CREATE OR REPLACE FUNCTION h3_get_resolution_from_tile_zoom(
 ) RETURNS integer
 AS $$
 DECLARE
-    e0  CONSTANT numeric := h3_get_hexagon_edge_length_avg(0,'m'); -- res-0 edge
-    ln7 CONSTANT numeric := LN(SQRT(7.0));                         -- = ln(√7)
+    e0  CONSTANT numeric := @extschema:h3@.h3_get_hexagon_edge_length_avg(0,'m'); -- res-0 edge
+    ln7 CONSTANT numeric := pg_catalog.LN(pg_catalog.SQRT(7.0));  -- = ln(√7)
     desired_edge numeric;
     r_est        integer;
 BEGIN
@@ -147,7 +184,7 @@ BEGIN
 
     desired_edge := 40075016.6855785 / (tile_size * 2 ^ z) * hex_edge_pixels;
 
-    r_est := ROUND( LN(e0 / desired_edge) / ln7 );
+    r_est := pg_catalog.ROUND(pg_catalog.LN(e0 / desired_edge) / ln7);
 
     RETURN GREATEST(min_h3_resolution,
            LEAST(r_est, max_h3_resolution));

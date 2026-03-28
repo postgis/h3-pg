@@ -27,6 +27,7 @@
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_disk);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_disk_distances);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_ring);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_ring_unsafe);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_distance);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_path_cells);
@@ -127,9 +128,45 @@ h3_grid_disk_distances(PG_FUNCTION_ARGS)
 }
 
 /*
+ * Produces the set of cells exactly k steps from origin.
+ *
+ * Upstream gridRing falls back to a slower safe algorithm near pentagons.
+ * The output buffer may contain zeros in those cases; the SRF helper skips
+ * them so SQL callers only see valid cells.
+ */
+Datum
+h3_grid_ring(PG_FUNCTION_ARGS)
+{
+	if (SRF_IS_FIRSTCALL())
+	{
+		FuncCallContext *funcctx = SRF_FIRSTCALL_INIT();
+		MemoryContext oldcontext =
+		MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
+
+		H3Index    *indices;
+		H3Index		origin = PG_GETARG_H3INDEX(0);
+		int			k = PG_GETARG_INT32(1);
+		int64_t		maxSize;
+
+		h3_assert(maxGridRingSize(k, &maxSize));
+
+		indices = palloc0(maxSize * sizeof(H3Index));
+
+		h3_assert(gridRing(origin, k, indices));
+
+		funcctx->user_fctx = indices;
+		funcctx->max_calls = maxSize;
+		MemoryContextSwitchTo(oldcontext);
+	}
+
+	SRF_RETURN_H3_INDEXES_FROM_USER_FCTX();
+}
+
+/*
  * Produces the hollow hexagonal ring centered at origin with sides of length k.
  *
- * Throws if pentagonal distortion was encountered.
+ * This is the fast-path traversal-order implementation. It throws if the
+ * origin or traversed ring hits pentagonal distortion.
  */
 Datum
 h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
@@ -145,23 +182,9 @@ h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 		H3Index		origin = PG_GETARG_H3INDEX(0);
 		int			k = PG_GETARG_INT32(1);
 
-		/*
-		 * Find the size of the ring. If k is 0, then it is the same as
-		 * k_ring.
-		 *
-		 * If k is larger than 0, the ring is the size of the circle with k,
-		 * minus the circle with k-1
-		 */
 		int64_t		maxSize;
-		int64_t		innerSize;
 
-		h3_assert(maxGridDiskSize(k, &maxSize));
-
-		if (k > 0)
-		{
-			h3_assert(maxGridDiskSize(k - 1, &innerSize));
-			maxSize -= innerSize;
-		}
+		h3_assert(maxGridRingSize(k, &maxSize));
 		indices = palloc(maxSize * sizeof(H3Index));
 
 		h3_assert(gridRingUnsafe(origin, k, indices));

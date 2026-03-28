@@ -56,28 +56,49 @@ or base cell, and provide utilities for converting into and out of the
 *Since v1.0.0*
 
 
-Returns the resolution of the index.
+Returns the H3 resolution encoded in the index (0 through 15).
 
 
 ### h3_get_base_cell_number(`h3index`) ⇒ `integer`
 *Since v4.0.0*
 
 
-Returns the base cell number of the index.
+Returns the base cell number (0 through 121) associated with the index.
+
+
+### h3_get_index_digit(`h3index`, resolution `integer`) ⇒ `integer`
+*Since vunreleased*
+
+
+Returns the index digit at a specific resolution step. Resolution numbering is 1-based: pass 1 for the first digit below the base cell, 2 for the next, and so on.
+
+
+### h3_construct_cell(resolution `integer`, base_cell_number `integer`, digits `integer[]`) ⇒ `h3index`
+*Since vunreleased*
+
+
+Builds a valid H3 cell from explicit components: the target resolution, the base cell number, and a digits array ordered from resolution 1 up to the target resolution. The digits array must contain exactly one non-NULL entry per resolution step.
 
 
 ### h3_is_valid_cell(`h3index`) ⇒ `boolean`
 *Since v1.0.0*
 
 
-Returns true if the given H3Index is valid.
+Returns true only for valid H3 cell indexes (hexagons or pentagons). Directed edges, vertices, and malformed values return false.
+
+
+### h3_is_valid_index(`h3index`) ⇒ `boolean`
+*Since vunreleased*
+
+
+Returns true for any valid H3 index mode: cell, directed edge, or vertex.
 
 
 ### h3_is_res_class_iii(`h3index`) ⇒ `boolean`
 *Since v1.0.0*
 
 
-Returns true if this index has a resolution with Class III orientation.
+Returns true when the index is at a Class III resolution.
 
 
 ### h3_is_pentagon(`h3index`) ⇒ `boolean`
@@ -91,7 +112,7 @@ Returns true if this index represents a pentagonal cell.
 *Since v4.0.0*
 
 
-Find all icosahedron faces intersected by a given H3 index.
+Returns the icosahedron face numbers intersected by the index. Some cells span more than one face.
 
 
 # Grid traversal functions
@@ -102,21 +123,28 @@ determining how to traverse the grid from one cell to another.
 *Since v4.0.0*
 
 
-Produces indices within "k" distance of the origin index.
+Preferred disk API. Returns all cells with grid distance less than or equal to k from origin, including cases near pentagons. Row order is not guaranteed.
 
 
 ### h3_grid_disk_distances(origin `h3index`, [k `integer` = 1], OUT index `h3index`, OUT distance `int`) ⇒ SETOF `record`
 *Since v4.0.0*
 
 
-Produces indices within "k" distance of the origin index paired with their distance to the origin.
+Preferred disk API with distances. Like h3_grid_disk(), but also returns the grid distance from origin for each returned cell. Handles pentagon distortion internally. Row order is not guaranteed.
+
+
+### h3_grid_ring(origin `h3index`, [k `integer` = 1]) ⇒ SETOF `h3index`
+*Since vunreleased*
+
+
+Preferred ring API. Returns the cells exactly "k" grid steps from origin. Continues to work near pentagons, but row order is not guaranteed and the result may contain fewer than 6*k cells when pentagonal distortion removes positions from the ring.
 
 
 ### h3_grid_ring_unsafe(origin `h3index`, [k `integer` = 1]) ⇒ SETOF `h3index`
 *Since v4.0.0*
 
 
-Returns the hollow hexagonal ring centered at origin with distance "k".
+Fast-path ring traversal. When it succeeds it walks the ring in traversal order, but it throws if origin or the traversed ring hits pentagonal distortion. Prefer h3_grid_ring() unless you specifically want fail-fast semantics or ring-walk ordering.
 
 
 ### h3_grid_path_cells(origin `h3index`, destination `h3index`) ⇒ SETOF `h3index`
@@ -125,7 +153,7 @@ Returns the hollow hexagonal ring centered at origin with distance "k".
 See also: <a href="#h3_grid_path_cells_recursive.origin.h3index.destination.h3index.SETOF.h3index">h3_grid_path_cells_recursive(`h3index`, `h3index`)</a>
 
 
-Given two H3 indexes, return the line of indexes between them (inclusive).
+Returns one shortest grid path from origin to destination, including both endpoints.
 
 This function may fail to find the line between two indexes, for
 example if they are very far apart. It may also fail when finding
@@ -136,21 +164,21 @@ distances for indexes on opposite sides of a pentagon.
 *Since v4.0.0*
 
 
-Returns the distance in grid cells between the two indices.
+Returns the shortest grid distance between two cells. Raises an error when the cells are not comparable, too far apart, or the path crosses pentagonal distortion.
 
 
 ### h3_cell_to_local_ij(origin `h3index`, index `h3index`) ⇒ `point`
 *Since v0.2.0*
 
 
-Produces local IJ coordinates for an H3 index anchored by an origin.
+Converts a cell to local IJ coordinates in the coordinate system anchored at origin.
 
 
 ### h3_local_ij_to_cell(origin `h3index`, coord `point`) ⇒ `h3index`
 *Since v0.2.0*
 
 
-Produces an H3 index from local IJ coordinates anchored by an origin.
+Converts local IJ coordinates in the coordinate system anchored at origin back to a cell.
 
 
 # Hierarchical grid functions
@@ -168,7 +196,7 @@ Returns the parent of the given index.
 *Since v4.0.0*
 
 
-Returns the set of children of the given index.
+Returns the ordered set of children of the given index at the target resolution.
 
 
 ### h3_cell_to_center_child(cell `h3index`, resolution `integer`) ⇒ `h3index`
@@ -217,7 +245,7 @@ Returns the parent of the given index.
 *Since v4.0.0*
 
 
-Returns the set of children of the given index.
+Returns the ordered set of children of the given index at the next resolution.
 
 
 ### h3_cell_to_center_child(cell `h3index`) ⇒ `h3index`
@@ -238,13 +266,13 @@ Uncompacts the given array at the resolution one higher than the highest resolut
 *Since v4.0.0*
 
 
-Slower version of H3ToChildren but allocates less memory.
+Compatibility wrapper that recursively expands one resolution step at a time.
 
 
 ### h3_cell_to_children_slow(index `h3index`) ⇒ SETOF `h3index`
 
 
-Slower version of H3ToChildren but allocates less memory.
+Compatibility wrapper that recursively expands one resolution step at a time.
 
 
 # Region functions
@@ -625,9 +653,10 @@ See PostGIS docs: <https://postgis.net/docs/ST_MakeValid.html>
 
 # PostGIS Indexing Functions
 PostgreSQL 17+ executes CREATE INDEX (and other maintenance operations)
-with a restricted search_path. Use @extschema:*@ placeholders so wrapper
-functions can always resolve cross-extension symbols safely.
-Keep wrappers as plain SQL without STRICT to preserve SQL-function inlining.
+with a restricted search_path. `h3_postgis` wrapper functions are defined
+to stay safe in that environment, so expression indexes and materialized
+views continue to work even when `h3`, `h3_postgis`, and PostGIS are not
+installed in `public`.
 
 ### h3_latlng_to_cell(`geometry`, resolution `integer`) ⇒ `h3index`
 *Since v4.2.3*

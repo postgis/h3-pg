@@ -26,25 +26,45 @@ avoid adding features or APIs which do not map onto the
     Click to see more.
   </summary>
 
-- Fix SP-GiST picksplit crash when tree depth exceeds cell resolution (see [#187], thanks [@yocontra])
-- Fix SP-GiST picksplit using wrong prefix when batch has mixed parents, silently dropping containment query results (see [#189], thanks [@yocontra])
-- Fix `<@` operator and SP-GiST returning false for self-containment (see [#191], thanks [@yocontra])
-- ⚠️ Fix btree comparator returning wrong sign, causing reversed `ORDER BY` and incorrect range scans; upgrade auto-reindexes affected indexes (see [#190], thanks [@yocontra])
-- Add experimental GiST operator class (see [#188], initial work in [#42], thanks [@zachasme], [@yocontra], [@Komzpa], [@AbelVM], and [@mattiZed])
-- Fix PostgreSQL 17+ maintenance-operation failures for `h3_postgis` SQL wrappers by schema-qualifying extension object references (see [#165], [#168])
-- Add `h3_postgis` regression coverage for `CREATE INDEX` expression functions and materialized view maintenance under restricted `search_path`
-- Add regression coverage for pg_dump/restore-style `search_path=''` expression-index replay on `h3_lat_lng_to_cell` (see [#168])
-- Add developer note in migration SQL: avoid function-level `SET search_path` in these wrappers to preserve SQL-function inlining
-- Add documentation warning for invalid polygon inputs to `h3_polygon_to_cells*` and guidance for `ST_IsValid` / `ST_MakeValid` workflows (see [#157])
+* Project *
+
+- `h3-pg` now lives under the PostGIS umbrella. Use https://github.com/postgis/h3-pg/ for releases, issues, and pull requests.
+
+* New Features *
+
+- [#188], Add experimental GiST operator class for `h3index`; initial work in [#42] ([Zacharias Knudsen], [Eric Schoffstall], [Darafei Praliaskouski], [Abel Vázquez Montoro], [@mattiZed])
+- Bump bundled H3 core library to `v4.4.1` and add bindings for new upstream APIs including `h3_grid_ring`, `h3_get_index_digit`, `h3_construct_cell`, and `h3_is_valid_index` ([Darafei Praliaskouski])
+
+* Breaking Changes *
+
+- [#190], ⚠️ Fix btree comparator returning wrong sign, causing reversed `ORDER BY` and incorrect range scans; upgrade auto-reindexes affected indexes. If you prefer to handle that manually, drop the affected indexes before upgrade and recreate them afterwards ([Eric Schoffstall])
+
+* Bug Fixes *
+
+- Fix distance-result upgrade refresh to follow transitive dependencies through user wrapper functions ([Darafei Praliaskouski])
+- [#165], [#168], Fix PostgreSQL 17+ maintenance-operation failures for `h3_postgis` SQL wrappers by schema-qualifying extension object references ([Darafei Praliaskouski])
+- [#168], Fix pg_dump/restore-style `search_path=''` expression-index replay on `h3_lat_lng_to_cell` ([Darafei Praliaskouski])
+- Fix extension upgrade validation drift for placeholder-qualified SQL, including the PostgreSQL 14 raster class summary helper ([Darafei Praliaskouski])
+- Fix GiST union summaries to ignore the unused entry-vector slot, keeping internal bounds stable on deeper trees ([Darafei Praliaskouski])
+- [#189], Fix SP-GiST picksplit using wrong prefix when batch has mixed parents, silently dropping containment query results ([Eric Schoffstall])
+- [#187], Fix SP-GiST picksplit crash when tree depth exceeds cell resolution ([Eric Schoffstall])
+- [#191], Fix `<@` operator and SP-GiST returning false for self-containment ([Eric Schoffstall])
+
+* Documentation *
+
+- [#157], Document invalid polygon inputs to `h3_polygon_to_cells*` and add guidance for `ST_IsValid()` / `ST_MakeValid()` workflows ([Darafei Praliaskouski])
+- [#165], [#168], Add a maintainer note in migration SQL: avoid function-level `SET search_path` in these wrappers to preserve SQL-function inlining ([Darafei Praliaskouski])
 
 </details>
 
 ## [4.2.3] - 2025-06-24
+
 - Add `h3_get_resolution_from_tile_zoom` (see [#176], thanks [@sleeping-h])
 - Alter function names containing `lat_lng` to `latlng` in order to align with other SQL bindings (see [#177])
 - Add support for PostgreSQL 18 (see [#179], thanks [@devrimgunduz])
 
 ## [4.2.2] - 2025-02-10
+
 - More upstream copy/paste in support of Debian package (see [#169], thanks [@df7cb])
 
 ## [4.2.1] - 2025-02-04
@@ -229,7 +249,7 @@ avoid adding features or APIs which do not map onto the
 
 - Add `extend` flag to `h3_h3_to_geo_boundary` such that polygons are not wrapped at antimeridian
 
-## 0.3.0 - 2018-12-11
+## [0.3.0] - 2018-12-11
 
 - Initial public release
 
@@ -311,7 +331,15 @@ avoid adding features or APIs which do not map onto the
 [#176]: https://github.com/postgis/h3-pg/pull/176
 [#177]: https://github.com/postgis/h3-pg/pull/177
 [#179]: https://github.com/postgis/h3-pg/issues/179
+[#187]: https://github.com/postgis/h3-pg/pull/187
 [#188]: https://github.com/postgis/h3-pg/pull/188
+[#189]: https://github.com/postgis/h3-pg/pull/189
+[#190]: https://github.com/postgis/h3-pg/pull/190
+[#191]: https://github.com/postgis/h3-pg/pull/191
+[Abel Vázquez Montoro]: https://github.com/AbelVM
+[Darafei Praliaskouski]: https://github.com/Komzpa
+[Eric Schoffstall]: https://github.com/yocontra
+[Zacharias Knudsen]: https://github.com/zachasme
 [@AbelVM]: https://github.com/AbelVM
 [@bayandin]: https://github.com/bayandin
 [@BielStela]: https://github.com/BielStela
@@ -331,3 +359,4 @@ avoid adding features or APIs which do not map onto the
 [@wolfgangwalther]: https://github.com/wolfgangwalther
 [@yocontra]: https://github.com/yocontra
 [@zachasme]: https://github.com/zachasme
+[0.3.0]: https://github.com/postgis/h3-pg/releases/tag/v0.3.0

@@ -139,28 +139,40 @@ DROP TABLE idx_multi, seq_multi;
 -- When tuples span different base cells, the FCA falls back to
 -- base-cell routing (NUM_BASE_CELLS nodes, no prefix).
 --
+CREATE TEMP TABLE spgist_cross_base_cells AS
+SELECT
+  bc,
+  h3_get_base_cell_number(bc) AS base_cell
+FROM h3_get_res_0_cells() AS bc
+WHERE h3_get_base_cell_number(bc) BETWEEN 10 AND 12
+ORDER BY base_cell;
+
 TRUNCATE TABLE h3_test_spgist;
 INSERT INTO h3_test_spgist (hex)
   SELECT h3_cell_to_children(bc, 4)
-  FROM (
-    VALUES ('8001fffffffffff'::h3index),
-           ('8003fffffffffff'::h3index),
-           ('8005fffffffffff'::h3index)
-  ) v(bc);
+  FROM spgist_cross_base_cells;
 
 REINDEX INDEX SPGIST_IDX;
 
+-- Later inserts must keep using base-cell routing under the fallback tuple.
+INSERT INTO h3_test_spgist (hex)
+  SELECT h3_cell_to_center_child(bc, 5)
+  FROM spgist_cross_base_cells;
+
 SET enable_seqscan = off;
--- Each base cell individually should find 2401 (7^4)
-SELECT COUNT(*) = 2401 FROM h3_test_spgist
-  WHERE hex <@ '8001fffffffffff'::h3index;
-SELECT COUNT(*) = 2401 FROM h3_test_spgist
-  WHERE hex <@ '8003fffffffffff'::h3index;
-SELECT COUNT(*) = 2401 FROM h3_test_spgist
-  WHERE hex <@ '8005fffffffffff'::h3index;
--- No cross-contamination
-SELECT COUNT(*) = 0 FROM h3_test_spgist
-  WHERE hex <@ '8007fffffffffff'::h3index;
+-- Each base cell should still find its own 7^4 children plus one new insert.
+SELECT bool_and(child_count = 2402)
+FROM (
+  SELECT q.base_cell, COUNT(*) AS child_count
+  FROM spgist_cross_base_cells q
+  JOIN h3_test_spgist t ON t.hex <@ q.bc
+  GROUP BY q.base_cell
+) counts;
+-- No rows should become unreachable after the post-build inserts.
+SELECT COUNT(*) = (SELECT COUNT(*) FROM h3_test_spgist)
+FROM h3_test_spgist t
+JOIN spgist_cross_base_cells q ON t.hex <@ q.bc;
 RESET enable_seqscan;
 
+DROP TABLE spgist_cross_base_cells;
 DROP TABLE h3_test_spgist;

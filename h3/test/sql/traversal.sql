@@ -22,6 +22,29 @@ SELECT array_agg(r) is null FROM (
     )
 ) q;
 
+-- gridRing matches gridRingUnsafe away from pentagons
+SELECT array_agg(r) is null FROM (
+    SELECT h3_grid_ring(:hexagon, 2) r
+    EXCEPT
+    SELECT h3_grid_ring_unsafe(:hexagon, 2) r
+) q;
+
+-- gridRing handles pentagon distortion without throwing
+SELECT COUNT(*) = 5 AND bool_and(h3_grid_distance(:pentagon, r) = 1)
+FROM h3_grid_ring(:pentagon, 1) AS r;
+
+-- gridRingUnsafe fails on pentagon distortion
+CREATE FUNCTION h3_test_grid_ring_unsafe_pentagon() RETURNS boolean LANGUAGE PLPGSQL
+    AS $$
+        BEGIN
+            PERFORM h3_grid_ring_unsafe('831c00fffffffff'::h3index, 1);
+            RETURN false;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN true;
+        END;
+    $$;
+SELECT h3_test_grid_ring_unsafe_pentagon();
+
 --
 -- TEST h3_grid_disk_distances
 --

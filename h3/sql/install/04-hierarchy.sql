@@ -31,7 +31,7 @@ CREATE OR REPLACE FUNCTION
     h3_cell_to_children(cell h3index, resolution integer) RETURNS SETOF h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_cell_to_children(cell h3index, resolution integer)
-IS 'Returns the set of children of the given index.';
+IS 'Returns the ordered set of children of the given index at the target resolution.';
 
 --@ availability: 4.0.0
 CREATE OR REPLACE FUNCTION
@@ -83,7 +83,7 @@ CREATE OR REPLACE FUNCTION
     h3_cell_to_children(cell h3index) RETURNS SETOF h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_cell_to_children(cell h3index)
-IS 'Returns the set of children of the given index.';
+IS 'Returns the ordered set of children of the given index at the next resolution.';
 
 --@ availability: 4.0.0
 CREATE OR REPLACE FUNCTION
@@ -129,9 +129,9 @@ CREATE OR REPLACE FUNCTION __h3_cell_to_children_aux(index h3index, resolution i
 CREATE OR REPLACE FUNCTION h3_cell_to_children_slow(index h3index, resolution integer) RETURNS SETOF h3index
     AS $$ SELECT __h3_cell_to_children_aux($1, $2, -1) $$ LANGUAGE SQL;
     COMMENT ON FUNCTION h3_cell_to_children_slow(index h3index, resolution integer) IS
-'Slower version of H3ToChildren but allocates less memory.';
+'Compatibility wrapper that recursively expands one resolution step at a time.';
 
 CREATE OR REPLACE FUNCTION h3_cell_to_children_slow(index h3index) RETURNS SETOF h3index
     AS $$ SELECT __h3_cell_to_children_aux($1, -1, -1) $$ LANGUAGE SQL;
     COMMENT ON FUNCTION h3_cell_to_children_slow(index h3index) IS
-'Slower version of H3ToChildren but allocates less memory.';
+'Compatibility wrapper that recursively expands one resolution step at a time.';

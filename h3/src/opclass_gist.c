@@ -324,9 +324,11 @@ h3index_gist_union(PG_FUNCTION_ARGS)
 {
 	GistEntryVector *entryvec = (GistEntryVector *) PG_GETARG_POINTER(0);
 	GISTENTRY  *entries = entryvec->vector;
-	H3Index		out = DatumGetH3Index(entries[0].key);
+	H3Index		out = DatumGetH3Index(entries[FirstOffsetNumber].key);
 
-	for (int i = 1; i < entryvec->n; i++)
+	for (OffsetNumber i = OffsetNumberNext(FirstOffsetNumber);
+		 i < entryvec->n;
+		 i = OffsetNumberNext(i))
 		out = finest_common_ancestor(out, DatumGetH3Index(entries[i].key));
 
 	PG_RETURN_H3INDEX(out);

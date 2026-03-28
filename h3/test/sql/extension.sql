@@ -79,6 +79,41 @@ SELECT
     h3index_distance(hex, '831c02fffffffff'::h3index) AS dist
 FROM h3_distance_expr_fail_fn;
 
+CREATE OR REPLACE FUNCTION h3_distance_user_wrapper(hex h3index)
+RETURNS bigint
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+    SELECT public.h3index_distance(hex, '831c02fffffffff'::public.h3index);
+$$;
+
+CREATE TABLE h3_distance_expr_fail_userfn (hex h3index);
+INSERT INTO h3_distance_expr_fail_userfn
+SELECT h3_grid_disk('831c02fffffffff'::h3index, 3);
+CREATE INDEX h3_distance_expr_fail_userfn_idx
+    ON h3_distance_expr_fail_userfn ((h3_distance_user_wrapper(hex)));
+
+CREATE TABLE h3_distance_generated_fail_userfn (
+    hex h3index,
+    dist bigint GENERATED ALWAYS AS (h3_distance_user_wrapper(hex)) STORED
+);
+INSERT INTO h3_distance_generated_fail_userfn
+SELECT h3_grid_disk('831c02fffffffff'::h3index, 3);
+
+CREATE TABLE h3_distance_generated_fail_userfn_identity (
+    id bigint GENERATED ALWAYS AS IDENTITY,
+    hex h3index,
+    dist bigint GENERATED ALWAYS AS (h3_distance_user_wrapper(hex)) STORED
+);
+INSERT INTO h3_distance_generated_fail_userfn_identity (hex)
+SELECT h3_grid_disk('831c02fffffffff'::h3index, 3);
+
+CREATE MATERIALIZED VIEW h3_distance_matview_fail_userfn AS
+SELECT
+    hex,
+    h3_distance_user_wrapper(hex) AS dist
+FROM h3_distance_expr_fail_userfn;
+
 ALTER EXTENSION h3 UPDATE TO 'unreleased';
 
 SELECT (current_setting('server_version_num')::int >= 140000) = EXISTS (
@@ -93,6 +128,19 @@ SELECT (current_setting('server_version_num')::int >= 140000) = EXISTS (
       AND p.proname = 'h3index_gist_sortsupport'
       AND oidvectortypes(p.proargtypes) = 'internal'
 );
+
+SELECT '831c02fffffffff'::h3index = h3_construct_cell(
+    h3_get_resolution('831c02fffffffff'::h3index),
+    h3_get_base_cell_number('831c02fffffffff'::h3index),
+    ARRAY(
+        SELECT h3_get_index_digit('831c02fffffffff'::h3index, r)
+        FROM generate_series(1, h3_get_resolution('831c02fffffffff'::h3index)) AS r
+        ORDER BY r
+    )
+);
+
+SELECT bool_and(h3_is_valid_index(r)) AND COUNT(*) = 6
+FROM h3_grid_ring('831c02fffffffff'::h3index, 1) AS r;
 
 SELECT op_dist = 1 AND fn_dist = 1 FROM h3_distance_view;
 
@@ -166,9 +214,45 @@ WHERE dist = h3index_distance(hex, '831c02fffffffff'::h3index);
 DROP TABLE h3_distance_generated_fail_fn;
 
 SELECT COUNT(*) > 0
+FROM h3_distance_expr_fail_userfn
+WHERE h3_distance_user_wrapper(hex) = 9223372036854775807;
+
+SET enable_seqscan = off;
+SELECT COUNT(*) > 0
+FROM h3_distance_expr_fail_userfn
+WHERE h3_distance_user_wrapper(hex) = 9223372036854775807;
+RESET enable_seqscan;
+
+SELECT COUNT(*) > 0
+FROM h3_distance_generated_fail_userfn
+WHERE dist = 9223372036854775807;
+
+SELECT COUNT(*) = (
+    SELECT COUNT(*) FROM h3_distance_generated_fail_userfn
+)
+FROM h3_distance_generated_fail_userfn
+WHERE dist = h3_distance_user_wrapper(hex);
+
+DROP TABLE h3_distance_generated_fail_userfn;
+
+SELECT COUNT(*) = (
+    SELECT COUNT(*) FROM h3_distance_generated_fail_userfn_identity
+)
+FROM h3_distance_generated_fail_userfn_identity
+WHERE dist = h3_distance_user_wrapper(hex);
+
+DROP TABLE h3_distance_generated_fail_userfn_identity;
+
+SELECT COUNT(*) > 0
 FROM h3_distance_matview_fail_fn
 WHERE dist = 9223372036854775807;
 
 DROP MATERIALIZED VIEW h3_distance_matview_fail_fn;
+SELECT COUNT(*) > 0
+FROM h3_distance_matview_fail_userfn
+WHERE dist = 9223372036854775807;
 
+DROP MATERIALIZED VIEW h3_distance_matview_fail_userfn;
 DROP TABLE h3_distance_expr_fail_fn;
+DROP TABLE h3_distance_expr_fail_userfn;
+DROP FUNCTION h3_distance_user_wrapper(h3index);

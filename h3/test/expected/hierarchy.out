@@ -73,6 +73,13 @@ SELECT COUNT(*) = 7 FROM (
 ) q;
  t
 
+SELECT bool_and(expected_pos = actual_pos) FROM (
+	SELECT row_number() OVER () - 1 AS expected_pos,
+		h3_cell_to_child_pos(child, :resolution) AS actual_pos
+	FROM h3_cell_to_children(:hexagon, :resolution + 1) child
+) q;
+ t
+
 --
 -- TEST h3_compact_cells and h3_uncompact_cells
 --

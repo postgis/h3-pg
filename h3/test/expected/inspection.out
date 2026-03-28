@@ -21,9 +21,78 @@ SELECT h3_get_base_cell_number(:pentagon) = h3_get_base_cell_number(h3_cell_to_p
  t
 
 --
+-- TEST h3_get_index_digit and h3_construct_cell
+--
+SELECT :hexagon = h3_construct_cell(
+    h3_get_resolution(:hexagon),
+    h3_get_base_cell_number(:hexagon),
+    ARRAY(
+        SELECT h3_get_index_digit(:hexagon, r)
+        FROM generate_series(1, h3_get_resolution(:hexagon)) AS r
+        ORDER BY r
+    )
+);
+ t
+
+SELECT h3_cell_to_parent(:hexagon, 0) = h3_construct_cell(
+    0,
+    h3_get_base_cell_number(h3_cell_to_parent(:hexagon, 0)),
+    ARRAY[]::integer[]
+);
+ t
+
+CREATE FUNCTION h3_test_get_index_digit_invalid_resolution() RETURNS boolean LANGUAGE plpgsql
+    AS $$
+        BEGIN
+            PERFORM h3_get_index_digit('831c02fffffffff'::h3index, 0);
+            RETURN false;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN true;
+        END;
+    $$;
+SELECT h3_test_get_index_digit_invalid_resolution();
+ t
+
+DROP FUNCTION h3_test_get_index_digit_invalid_resolution();
+CREATE FUNCTION h3_test_construct_cell_invalid_base_cell() RETURNS boolean LANGUAGE plpgsql
+    AS $$
+        BEGIN
+            PERFORM h3_construct_cell(1, 122, ARRAY[0]);
+            RETURN false;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN true;
+        END;
+    $$;
+SELECT h3_test_construct_cell_invalid_base_cell();
+ t
+
+DROP FUNCTION h3_test_construct_cell_invalid_base_cell();
+CREATE FUNCTION h3_test_construct_cell_deleted_pentagon_digit() RETURNS boolean LANGUAGE plpgsql
+    AS $$
+        BEGIN
+            PERFORM h3_construct_cell(1, 4, ARRAY[1]);
+            RETURN false;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN true;
+        END;
+    $$;
+SELECT h3_test_construct_cell_deleted_pentagon_digit();
+ t
+
+DROP FUNCTION h3_test_construct_cell_deleted_pentagon_digit();
+--
 -- TEST h3_is_valid_cell
 --
 SELECT h3_is_valid_cell(:hexagon) AND h3_is_valid_cell(:pentagon) AND NOT h3_is_valid_cell(:invalid);
+ t
+
+--
+-- TEST h3_is_valid_index
+--
+SELECT h3_is_valid_index(:hexagon)
+    AND h3_is_valid_index((SELECT h3_origin_to_directed_edges(:hexagon) LIMIT 1))
+    AND h3_is_valid_index(h3_cell_to_vertex(:hexagon, 0))
+    AND NOT h3_is_valid_index(:invalid);
  t
 
 --

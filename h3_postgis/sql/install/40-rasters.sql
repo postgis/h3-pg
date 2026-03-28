@@ -27,8 +27,8 @@ CREATE OR REPLACE FUNCTION __h3_raster_band_nodata(
 RETURNS double precision
 AS $$
     SELECT coalesce(
-        ST_BandNoDataValue(rast, nband),
-        ST_MinPossibleValue(ST_BandPixelType(rast, nband)));
+        @extschema:postgis_raster@.ST_BandNoDataValue(rast, nband),
+        @extschema:postgis_raster@.ST_MinPossibleValue(@extschema:postgis_raster@.ST_BandPixelType(rast, nband)));
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_to_polygon(
@@ -36,7 +36,7 @@ CREATE OR REPLACE FUNCTION __h3_raster_to_polygon(
     nband integer)
 RETURNS geometry
 AS $$
-    SELECT ST_MinConvexHull(rast, nband);
+    SELECT @extschema:postgis_raster@.ST_MinConvexHull(rast, nband);
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 -- Area of a pixel close to the center of raster polygon, in meters
@@ -45,14 +45,24 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_pixel_area(
     poly geometry)
 RETURNS double precision
 AS $$
-    SELECT ST_Area(
-        ST_Transform(
-            ST_PixelAsPolygon(
+    SELECT @extschema:postgis@.ST_Area(
+        @extschema:postgis@.ST_Transform(
+            @extschema:postgis_raster@.ST_PixelAsPolygon(
                 rast,
-                ST_WorldToRasterCoordX(rast, c),
-                ST_WorldToRasterCoordY(rast, c)),
-            4326)::geography)
-    FROM ST_Centroid(poly) AS c
+                @extschema:postgis_raster@.ST_WorldToRasterCoordX(
+                    rast,
+                    @extschema:postgis@.ST_X(c),
+                    @extschema:postgis@.ST_Y(c)
+                ),
+                @extschema:postgis_raster@.ST_WorldToRasterCoordY(
+                    rast,
+                    @extschema:postgis@.ST_X(c),
+                    @extschema:postgis@.ST_Y(c)
+                )),
+            4326)::@extschema:postgis@.geography)
+    FROM (
+        SELECT @extschema:postgis@.ST_Centroid(poly) AS c
+    ) AS centroid
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell(
@@ -60,15 +70,24 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell(
     resolution integer)
 RETURNS h3index
 AS $$
-DECLARE
-    cell h3index := h3_latlng_to_cell(ST_Transform(ST_Centroid(poly), 4326), resolution);
-BEGIN
-    IF h3_is_pentagon(cell) THEN
-        SELECT h3 INTO cell FROM h3_grid_disk(cell) AS h3 WHERE h3 != cell LIMIT 1;
-    END IF;
-    RETURN cell;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
+    WITH centroid_cell AS (
+        SELECT @extschema:h3@.h3_latlng_to_cell(
+            (@extschema:postgis@.ST_Transform(@extschema:postgis@.ST_Centroid(poly), 4326))::point,
+            resolution
+        ) AS cell
+    )
+    SELECT CASE
+        WHEN @extschema:h3@.h3_is_pentagon(cell) THEN (
+            SELECT neighbor
+            FROM @extschema:h3@.h3_grid_disk(cell) AS neighbor
+            WHERE neighbor OPERATOR(@extschema:h3@.<>) cell
+            LIMIT 1
+        )
+        ELSE
+            cell
+    END
+    FROM centroid_cell;
+$$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 -- Area of a cell close to the center of raster polygon, in meters
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell_area(
@@ -76,10 +95,28 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_centroid_cell_area(
     resolution integer)
 RETURNS double precision
 AS $$
-    SELECT ST_Area(
-        h3_cell_to_boundary_geography(
-            __h3_raster_polygon_centroid_cell(poly, resolution)));
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+    area double precision;
+BEGIN
+    EXECUTE pg_catalog.format(
+        'SELECT @extschema:postgis@.ST_Area(
+            %1$I.h3_cell_to_boundary_geography(
+                %1$I.__h3_raster_polygon_centroid_cell($1, $2)
+            )
+        )',
+        self_schema
+    )
+    INTO area
+    USING poly, resolution;
+
+    RETURN area;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 
 -- Get list of cells inside of the raster polygon,
 -- buffered by `buffer` value (in meters).
@@ -91,31 +128,64 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cells(
     buffer double precision)
 RETURNS SETOF h3index
 AS $$
-DECLARE
-    buffered geometry := poly;
-BEGIN
-    IF ST_SRID(rast) != 4326 THEN
-        buffered := ST_Transform(
-            ST_Buffer(
-                poly,
-                greatest(ST_PixelWidth(rast), ST_PixelHeight(rast)),
-                'join=mitre'),
-            4326);
-    END IF;
-    IF buffer > 0.0 THEN
-        RETURN QUERY
-        SELECT h3_polygon_to_cells(
-            ST_Buffer(
-                buffered::geography,
-                buffer,
-                'join=mitre'),
-            resolution);
-    ELSE
-        RETURN QUERY
-        SELECT h3_polygon_to_cells(buffered, resolution);
-    END IF;
-END
-$$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
+    WITH buffered AS (
+        SELECT CASE
+            WHEN @extschema:postgis_raster@.ST_SRID(rast) != 4326 THEN
+                @extschema:postgis@.ST_Transform(
+                    @extschema:postgis@.ST_Buffer(
+                        poly,
+                        greatest(
+                            @extschema:postgis_raster@.ST_PixelWidth(rast),
+                            @extschema:postgis_raster@.ST_PixelHeight(rast)
+                        ),
+                        'join=mitre'
+                    ),
+                    4326
+                )
+            ELSE
+                poly
+        END AS geom
+    ),
+    searched AS (
+        SELECT CASE
+            WHEN buffer > 0.0 THEN
+                @extschema:postgis@.ST_Buffer(
+                    buffered.geom::@extschema:postgis@.geography,
+                    buffer,
+                    'join=mitre'
+                )::@extschema:postgis@.geometry
+            ELSE
+                buffered.geom
+        END AS geom
+        FROM buffered
+    )
+    SELECT @extschema:h3@.h3_polygon_to_cells(exterior, holes, resolution)
+    FROM (
+        SELECT
+            @extschema:postgis@.ST_MakePolygon(
+                @extschema:postgis@.ST_ExteriorRing(poly_geom)
+            )::polygon AS exterior,
+            (
+                SELECT pg_catalog.array_agg(hole)
+                FROM (
+                    SELECT @extschema:postgis@.ST_MakePolygon(
+                        @extschema:postgis@.ST_InteriorRingN(
+                            poly_geom,
+                            pg_catalog.generate_series(
+                                1,
+                                @extschema:postgis@.ST_NumInteriorRings(poly_geom)
+                            )
+                        )
+                    )::polygon AS hole
+                ) AS q_hole
+            ) AS holes
+        FROM (
+            SELECT (@extschema:postgis@.ST_Dump(searched.geom)).geom AS poly_geom
+            FROM searched
+        ) AS q_poly
+        GROUP BY poly_geom
+    ) AS h3_polygon_to_cells;
+$$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 -- Get geometries of H3 cells interesecting raster polygon.
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cell_boundaries_intersects(
@@ -124,17 +194,32 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cell_boundaries_intersects(
     resolution integer)
 RETURNS TABLE (h3 h3index, geom geometry)
 AS $$
-    SELECT h3, geom
-    FROM
-        __h3_raster_polygon_to_cells(
-            rast,
-            poly,
-            resolution,
-            h3_get_hexagon_edge_length_avg(resolution, 'm') * 1.3
-        ) AS h3,
-        ST_Transform(h3_cell_to_boundary_geometry(h3), ST_SRID(rast)) AS geom
-    WHERE ST_Intersects(geom, poly);
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+BEGIN
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT h3, geom
+         FROM
+             %1$I.__h3_raster_polygon_to_cells(
+                 $1,
+                 $2,
+                 $3,
+                 @extschema:h3@.h3_get_hexagon_edge_length_avg($3, ''m'') * 1.3
+             ) AS h3,
+             @extschema:postgis@.ST_Transform(
+                 %1$I.h3_cell_to_boundary_geometry(h3),
+                 @extschema:postgis_raster@.ST_SRID($1)
+             ) AS geom
+         WHERE @extschema:postgis@.ST_Intersects(geom, $2)',
+        self_schema
+    )
+    USING rast, poly, resolution;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 
 -- Get raster coordinates of H3 cells with centroids inside the raster polygon
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cell_coords_centroid(
@@ -143,29 +228,56 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cell_coords_centroid(
     resolution integer)
 RETURNS TABLE (h3 h3index, x integer, y integer)
 AS $$
-    WITH
-        geoms AS (
-            SELECT
-                h3,
-                ST_Transform(
-                    h3_cell_to_geometry(h3),
-                    ST_SRID(poly)
-                ) AS geom
-            FROM (
-                SELECT __h3_raster_polygon_to_cells(rast, poly, resolution, 0.0) AS h3
-            ) t),
-        coords AS (
-            SELECT
-                h3,
-                ST_WorldToRasterCoordX(rast, geom) AS x,
-                ST_WorldToRasterCoordY(rast, geom) AS y
-            FROM geoms)
-    SELECT h3, x, y
-    FROM coords
-    WHERE
-        x BETWEEN 1 AND ST_Width(rast)
-        AND y BETWEEN 1 AND ST_Height(rast);
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+BEGIN
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'WITH
+            geoms AS (
+                SELECT
+                    h3,
+                    @extschema:postgis@.ST_Transform(
+                        %1$I.h3_cell_to_geometry(h3),
+                        @extschema:postgis@.ST_SRID($2)
+                    ) AS geom
+                FROM (
+                    SELECT %1$I.__h3_raster_polygon_to_cells(
+                        $1,
+                        $2,
+                        $3,
+                        0.0
+                    ) AS h3
+                ) AS t
+            ),
+            coords AS (
+                SELECT
+                    h3,
+                    @extschema:postgis_raster@.ST_WorldToRasterCoordX(
+                        $1,
+                        @extschema:postgis@.ST_X(geom),
+                        @extschema:postgis@.ST_Y(geom)
+                    ) AS x,
+                    @extschema:postgis_raster@.ST_WorldToRasterCoordY(
+                        $1,
+                        @extschema:postgis@.ST_X(geom),
+                        @extschema:postgis@.ST_Y(geom)
+                    ) AS y
+                FROM geoms
+            )
+         SELECT h3, x, y
+         FROM coords
+         WHERE
+             x BETWEEN 1 AND @extschema:postgis_raster@.ST_Width($1)
+             AND y BETWEEN 1 AND @extschema:postgis_raster@.ST_Height($1)',
+        self_schema
+    )
+    USING rast, poly, resolution;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cell_parts(
     rast raster,
@@ -175,14 +287,35 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_to_cell_parts(
 RETURNS TABLE (h3 h3index, part raster)
 AS $$
 DECLARE
-    nodata CONSTANT double precision := __h3_raster_band_nodata(rast, nband);
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
 BEGIN
-    RETURN QUERY
-    SELECT c.h3, p AS part
-    FROM
-        __h3_raster_polygon_to_cell_boundaries_intersects(rast, poly, resolution) AS c,
-        ST_Clip(rast, nband, c.geom, nodata, TRUE) AS p
-    WHERE NOT ST_BandIsNoData(p, nband);
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'WITH nodata AS (
+             SELECT %1$I.__h3_raster_band_nodata($1, $4) AS value
+         )
+         SELECT c.h3, p AS part
+         FROM
+             nodata,
+             %1$I.__h3_raster_polygon_to_cell_boundaries_intersects(
+                 $1,
+                 $2,
+                 $3
+             ) AS c,
+             LATERAL @extschema:postgis_raster@.ST_Clip(
+                 $1,
+                 $4,
+                 c.geom,
+                 nodata.value,
+                 TRUE
+             ) AS p
+         WHERE NOT @extschema:postgis_raster@.ST_BandIsNoData(p, $4)',
+        self_schema
+    )
+    USING rast, poly, resolution, nband;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
@@ -195,11 +328,23 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_subpixel_cell_values(
     nband integer)
 RETURNS TABLE (h3 h3index, val double precision)
 AS $$
-    SELECT
-        h3,
-        ST_Value(rast, nband, x, y) AS val
-    FROM __h3_raster_polygon_to_cell_coords_centroid(rast, poly, resolution);
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+BEGIN
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT
+             h3,
+             @extschema:postgis_raster@.ST_Value($1, $4, x, y) AS val
+         FROM %1$I.__h3_raster_polygon_to_cell_coords_centroid($1, $2, $3)',
+        self_schema
+    )
+    USING rast, poly, resolution, nband;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 
 --| ## Continuous raster data
 --|
@@ -238,17 +383,16 @@ CREATE TYPE h3_raster_summary_stats AS (
 );
 
 -- ST_SummaryStats result type to h3_raster_summary_stats
-CREATE OR REPLACE FUNCTION __h3_raster_to_summary_stats(stats summarystats)
+CREATE OR REPLACE FUNCTION __h3_raster_to_summary_stats(stats @extschema:postgis_raster@.summarystats)
 RETURNS h3_raster_summary_stats
 AS $$
-    SELECT ROW(
+    SELECT
         (stats).count,
         (stats).sum,
         (stats).mean,
         (stats).stddev,
         (stats).min,
-        (stats).max
-    )::h3_raster_summary_stats
+        (stats).max;
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_summary_stats_agg_transfn(
@@ -260,11 +404,11 @@ AS $$
         SELECT
             (s1).count + (s2).count AS count,
             (s1).sum + (s2).sum AS sum)
-    SELECT ROW(
+    SELECT
         t.count,
         t.sum,
         t.sum / t.count,
-        sqrt(
+        pg_catalog.sqrt(
             (
                 -- sum of squared values: (variance + mean squared) * count
                 (((s1).stddev * (s1).stddev + (s1).mean * (s1).mean)) * (s1).count
@@ -275,8 +419,7 @@ AS $$
         ),
         least((s1).min, (s2).min),
         greatest((s1).max, (s2).max)
-    )::h3_raster_summary_stats
-    FROM total AS t
+    FROM total AS t;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 --@ availability: 4.1.1
@@ -293,11 +436,25 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_summary_clip(
     nband integer)
 RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
-    SELECT
-        h3,
-        __h3_raster_to_summary_stats(ST_SummaryStats(part, nband, TRUE)) AS stats
-    FROM __h3_raster_polygon_to_cell_parts(rast, poly, resolution, nband);
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+BEGIN
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT
+             h3,
+             %1$I.__h3_raster_to_summary_stats(
+                 @extschema:postgis_raster@.ST_SummaryStats(part, $4, TRUE)
+             ) AS stats
+         FROM %1$I.__h3_raster_polygon_to_cell_parts($1, $2, $3, $4)',
+        self_schema
+    )
+    USING rast, poly, resolution, nband;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 
 --@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_summary_clip(
@@ -306,12 +463,26 @@ CREATE OR REPLACE FUNCTION h3_raster_summary_clip(
     nband integer DEFAULT 1)
 RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
-    SELECT __h3_raster_polygon_summary_clip(
-        rast,
-        __h3_raster_to_polygon(rast, nband),
-        resolution,
-        nband);
-$$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+BEGIN
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT summary.h3, summary.stats
+         FROM %1$I.__h3_raster_polygon_summary_clip(
+             $1,
+             %1$I.__h3_raster_to_polygon($1, $3),
+             $2,
+             $3
+         ) AS summary',
+        self_schema
+    )
+    USING rast, resolution, nband;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
     h3_raster_summary_clip(raster, integer, integer)
 IS 'Returns `h3_raster_summary_stats` for each H3 cell in raster for a given band. Clips the raster by H3 cell geometries and processes each part separately.';
@@ -324,16 +495,19 @@ CREATE OR REPLACE FUNCTION h3_raster_summary_centroids(
 RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
     SELECT
-        h3_latlng_to_cell(ST_Transform(geom, 4326), resolution) AS h3,
+        @extschema:h3@.h3_latlng_to_cell(
+            (@extschema:postgis@.ST_Transform(geom, 4326))::point,
+            resolution
+        ) AS h3,
         ROW(
-            count(val),
-            sum(val),
-            avg(val),
-            stddev_pop(val),
-            min(val),
-            max(val)
-        )::h3_raster_summary_stats AS stats
-    FROM ST_PixelAsCentroids(rast, nband)
+            pg_catalog.count(val),
+            pg_catalog.sum(val),
+            pg_catalog.avg(val),
+            pg_catalog.stddev_pop(val),
+            pg_catalog.min(val),
+            pg_catalog.max(val)
+        ) AS stats
+    FROM @extschema:postgis_raster@.ST_PixelAsCentroids(rast, nband)
     GROUP BY 1;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
@@ -348,18 +522,30 @@ CREATE OR REPLACE FUNCTION __h3_raster_polygon_summary_subpixel(
     pixels_per_cell double precision)
 RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
-    SELECT
-        h3,
-        ROW(
-            pixels_per_cell, -- count
-            val, -- sum
-            val, -- mean
-            0.0, -- stddev
-            val, -- min
-            val  -- max
-        )::h3_raster_summary_stats AS stats
-    FROM __h3_raster_polygon_subpixel_cell_values(rast, poly, resolution, nband) t;
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+BEGIN
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT
+             h3,
+             ROW(
+                 $5,
+                 val,
+                 val,
+                 0.0,
+                 val,
+                 val
+             )::%1$I.h3_raster_summary_stats AS stats
+         FROM %1$I.__h3_raster_polygon_subpixel_cell_values($1, $2, $3, $4)',
+        self_schema
+    )
+    USING rast, poly, resolution, nband, pixels_per_cell;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 
 --@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_summary_subpixel(
@@ -369,16 +555,47 @@ CREATE OR REPLACE FUNCTION h3_raster_summary_subpixel(
 RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
 DECLARE
-    poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
-    pixel_area CONSTANT double precision := __h3_raster_polygon_pixel_area(rast, poly);
-    cell_area CONSTANT double precision := __h3_raster_polygon_centroid_cell_area(poly, resolution);
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+    poly @extschema:postgis@.geometry;
+    pixel_area double precision;
+    cell_area double precision;
 BEGIN
-    RETURN QUERY SELECT (__h3_raster_polygon_summary_subpixel(
-        rast,
-        poly,
-        resolution,
-        nband,
-        cell_area / pixel_area)).*;
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_to_polygon($1, $2)',
+        self_schema
+    )
+    INTO poly
+    USING rast, nband;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_pixel_area($1, $2)',
+        self_schema
+    )
+    INTO pixel_area
+    USING rast, poly;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_centroid_cell_area($1, $2)',
+        self_schema
+    )
+    INTO cell_area
+    USING poly, resolution;
+
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT (%1$I.__h3_raster_polygon_summary_subpixel(
+            $1,
+            $2,
+            $3,
+            $4,
+            $5
+        )).*',
+        self_schema
+    )
+    USING rast, poly, resolution, nband, cell_area / pixel_area;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
@@ -393,34 +610,78 @@ CREATE OR REPLACE FUNCTION h3_raster_summary(
 RETURNS TABLE (h3 h3index, stats h3_raster_summary_stats)
 AS $$
 DECLARE
-    poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
-    cell_area CONSTANT double precision := __h3_raster_polygon_centroid_cell_area(poly, resolution);
-    pixel_area CONSTANT double precision := __h3_raster_polygon_pixel_area(rast, poly);
-    pixels_per_cell CONSTANT double precision := cell_area / pixel_area;
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+    poly @extschema:postgis@.geometry;
+    cell_area double precision;
+    pixel_area double precision;
+    pixels_per_cell double precision;
 BEGIN
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_to_polygon($1, $2)',
+        self_schema
+    )
+    INTO poly
+    USING rast, nband;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_centroid_cell_area($1, $2)',
+        self_schema
+    )
+    INTO cell_area
+    USING poly, resolution;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_pixel_area($1, $2)',
+        self_schema
+    )
+    INTO pixel_area
+    USING rast, poly;
+
+    pixels_per_cell := cell_area / pixel_area;
+
     IF pixels_per_cell > 70
-        AND (ST_Area(ST_Transform(poly, 4326)::geography) / cell_area) > 10000 / (pixels_per_cell - 70)
+        AND (
+            @extschema:postgis@.ST_Area(
+                @extschema:postgis@.ST_Transform(poly, 4326)::@extschema:postgis@.geography
+            ) / cell_area
+        ) > 10000 / (pixels_per_cell - 70)
     THEN
-        RETURN QUERY SELECT (__h3_raster_polygon_summary_clip(
-            rast,
-            poly,
-            resolution,
-            nband
-        )).*;
+        RETURN QUERY EXECUTE pg_catalog.format(
+            'SELECT (%1$I.__h3_raster_polygon_summary_clip(
+                $1,
+                $2,
+                $3,
+                $4
+            )).*',
+            self_schema
+        )
+        USING rast, poly, resolution, nband;
     ELSIF pixels_per_cell > 1 THEN
-        RETURN QUERY SELECT (h3_raster_summary_centroids(
-            rast,
-            resolution,
-            nband
-        )).*;
+        RETURN QUERY EXECUTE pg_catalog.format(
+            'SELECT (%1$I.h3_raster_summary_centroids(
+                $1,
+                $2,
+                $3
+            )).*',
+            self_schema
+        )
+        USING rast, resolution, nband;
     ELSE
-        RETURN QUERY SELECT (__h3_raster_polygon_summary_subpixel(
-            rast,
-            poly,
-            resolution,
-            nband,
-            pixels_per_cell
-       )).*;
+        RETURN QUERY EXECUTE pg_catalog.format(
+            'SELECT (%1$I.__h3_raster_polygon_summary_subpixel(
+                $1,
+                $2,
+                $3,
+                $4,
+                $5
+            )).*',
+            self_schema
+        )
+        USING rast, poly, resolution, nband, pixels_per_cell;
     END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
@@ -506,7 +767,7 @@ CREATE OR REPLACE FUNCTION h3_raster_class_summary_item_to_jsonb(
     item h3_raster_class_summary_item)
 RETURNS jsonb
 AS $$
-    SELECT jsonb_build_object(
+    SELECT pg_catalog.jsonb_build_object(
         'value', (item).val,
         'count', (item).count,
         'area', (item).area
@@ -522,9 +783,9 @@ CREATE OR REPLACE FUNCTION __h3_raster_class_summary_item_agg_transfn(
 RETURNS h3_raster_class_summary_item
 AS $$
     SELECT
-        s1.val,
-        s1.count + s2.count,
-        s1.area + s2.area;
+        (s1).val,
+        (s1).count + (s2).count,
+        (s1).area + (s2).area;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 --@ availability: 4.1.1
@@ -540,12 +801,11 @@ CREATE OR REPLACE FUNCTION __h3_raster_class_summary_part(
     pixel_area double precision)
 RETURNS SETOF h3_raster_class_summary_item
 AS $$
-    SELECT ROW(
+    SELECT
         value::integer,
         count::double precision,
         count * pixel_area
-    )::h3_raster_class_summary_item
-    FROM ST_ValueCount(rast, nband, TRUE) t;
+    FROM @extschema:postgis_raster@.ST_ValueCount(rast, nband, TRUE) t;
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION __h3_raster_class_polygon_summary_clip(
@@ -556,15 +816,27 @@ CREATE OR REPLACE FUNCTION __h3_raster_class_polygon_summary_clip(
     pixel_area double precision)
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
-    WITH
-        summary AS (
-            SELECT
-                h3,
-                __h3_raster_class_summary_part(part, nband, pixel_area) AS summary
-            FROM __h3_raster_polygon_to_cell_parts(rast, poly, resolution, nband) t)
-    SELECT h3, (summary).val, summary
-    FROM summary;
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+BEGIN
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'WITH summary AS (
+             SELECT
+                 h3,
+                 %1$I.__h3_raster_class_summary_part(part, $5, $6) AS summary
+             FROM %1$I.__h3_raster_polygon_to_cell_parts($1, $2, $3, $4)
+         )
+         SELECT h3, (summary).val, summary
+         FROM summary',
+        self_schema
+    )
+    USING rast, poly, resolution, nband, nband, pixel_area;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 
 --@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_clip(
@@ -574,15 +846,39 @@ CREATE OR REPLACE FUNCTION h3_raster_class_summary_clip(
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
 DECLARE
-    poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+    poly @extschema:postgis@.geometry;
+    pixel_area double precision;
 BEGIN
-    RETURN QUERY SELECT (__h3_raster_class_polygon_summary_clip(
-        rast,
-        poly,
-        resolution,
-        nband,
-        __h3_raster_polygon_pixel_area(rast, poly)
-    )).*;
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_to_polygon($1, $2)',
+        self_schema
+    )
+    INTO poly
+    USING rast, nband;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_pixel_area($1, $2)',
+        self_schema
+    )
+    INTO pixel_area
+    USING rast, poly;
+
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT (%1$I.__h3_raster_class_polygon_summary_clip(
+            $1,
+            $2,
+            $3,
+            $4,
+            $5
+        )).*',
+        self_schema
+    )
+    USING rast, poly, resolution, nband, pixel_area;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
@@ -597,14 +893,17 @@ CREATE OR REPLACE FUNCTION __h3_raster_class_summary_centroids(
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
     SELECT
-        h3_latlng_to_cell(ST_Transform(geom, 4326), resolution) AS h3,
+        @extschema:h3@.h3_latlng_to_cell(
+            (@extschema:postgis@.ST_Transform(geom, 4326))::point,
+            resolution
+        ) AS h3,
         val::integer AS val,
         ROW(
             val::integer,
-            count(*)::double precision,
-            count(*) * pixel_area
-        )::h3_raster_class_summary_item AS summary
-    FROM ST_PixelAsCentroids(rast, nband)
+            pg_catalog.count(*)::double precision,
+            pg_catalog.count(*) * pixel_area
+        ) AS summary
+    FROM @extschema:postgis_raster@.ST_PixelAsCentroids(rast, nband)
     GROUP BY 1, 2;
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
@@ -615,13 +914,41 @@ CREATE OR REPLACE FUNCTION h3_raster_class_summary_centroids(
     nband integer DEFAULT 1)
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
-    SELECT __h3_raster_class_summary_centroids(
-        rast,
-        resolution,
-        nband,
-        __h3_raster_polygon_pixel_area(rast, __h3_raster_to_polygon(rast, nband))
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
     );
-$$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
+    poly @extschema:postgis@.geometry;
+    pixel_area double precision;
+BEGIN
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_to_polygon($1, $2)',
+        self_schema
+    )
+    INTO poly
+    USING rast, nband;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_pixel_area($1, $2)',
+        self_schema
+    )
+    INTO pixel_area
+    USING rast, poly;
+
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT (%1$I.__h3_raster_class_summary_centroids(
+            $1,
+            $2,
+            $3,
+            $4
+        )).*',
+        self_schema
+    )
+    USING rast, resolution, nband, pixel_area;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
     h3_raster_class_summary_centroids(raster, integer, integer)
 IS 'Returns `h3_raster_class_summary_item` for each H3 cell and value for a given band. Finds corresponding H3 cell for each pixel, then groups by H3 and value.';
@@ -635,16 +962,28 @@ CREATE OR REPLACE FUNCTION __h3_raster_class_polygon_summary_subpixel(
     pixel_area double precision)
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
-    SELECT
-        h3,
-        val::integer AS val,
-        ROW(
-            val::integer,
-            cell_area / pixel_area,
-            cell_area
-        )::h3_raster_class_summary_item AS summary
-    FROM __h3_raster_polygon_subpixel_cell_values(rast, poly, resolution, nband);
-$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+DECLARE
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+BEGIN
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT
+             h3,
+             val::integer AS val,
+             ROW(
+                 val::integer,
+                 $5 / $6,
+                 $5
+             )::%1$I.h3_raster_class_summary_item AS summary
+         FROM %1$I.__h3_raster_polygon_subpixel_cell_values($1, $2, $3, $4)',
+        self_schema
+    )
+    USING rast, poly, resolution, nband, cell_area, pixel_area;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 
 --@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_subpixel(
@@ -654,16 +993,48 @@ CREATE OR REPLACE FUNCTION h3_raster_class_summary_subpixel(
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
 DECLARE
-    poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+    poly @extschema:postgis@.geometry;
+    cell_area double precision;
+    pixel_area double precision;
 BEGIN
-    RETURN QUERY SELECT (__h3_raster_class_polygon_summary_subpixel(
-        rast,
-        poly,
-        resolution,
-        nband,
-        __h3_raster_polygon_centroid_cell_area(poly, resolution),
-        __h3_raster_polygon_pixel_area(rast, poly)
-    )).*;
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_to_polygon($1, $2)',
+        self_schema
+    )
+    INTO poly
+    USING rast, nband;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_centroid_cell_area($1, $2)',
+        self_schema
+    )
+    INTO cell_area
+    USING poly, resolution;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_pixel_area($1, $2)',
+        self_schema
+    )
+    INTO pixel_area
+    USING rast, poly;
+
+    RETURN QUERY EXECUTE pg_catalog.format(
+        'SELECT (%1$I.__h3_raster_class_polygon_summary_subpixel(
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6
+        )).*',
+        self_schema
+    )
+    USING rast, poly, resolution, nband, cell_area, pixel_area;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION
@@ -678,37 +1049,81 @@ CREATE OR REPLACE FUNCTION h3_raster_class_summary(
 RETURNS TABLE (h3 h3index, val integer, summary h3_raster_class_summary_item)
 AS $$
 DECLARE
-    poly CONSTANT geometry := __h3_raster_to_polygon(rast, nband);
-    cell_area CONSTANT double precision := __h3_raster_polygon_centroid_cell_area(poly, resolution);
-    pixel_area CONSTANT double precision := __h3_raster_polygon_pixel_area(rast, poly);
-    pixels_per_cell CONSTANT double precision := cell_area / pixel_area;
+    self_schema CONSTANT text := (
+        SELECT extnamespace::regnamespace::text
+        FROM pg_catalog.pg_extension
+        WHERE extname = 'h3_postgis'
+    );
+    poly @extschema:postgis@.geometry;
+    cell_area double precision;
+    pixel_area double precision;
+    pixels_per_cell double precision;
 BEGIN
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_to_polygon($1, $2)',
+        self_schema
+    )
+    INTO poly
+    USING rast, nband;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_centroid_cell_area($1, $2)',
+        self_schema
+    )
+    INTO cell_area
+    USING poly, resolution;
+
+    EXECUTE pg_catalog.format(
+        'SELECT %1$I.__h3_raster_polygon_pixel_area($1, $2)',
+        self_schema
+    )
+    INTO pixel_area
+    USING rast, poly;
+
+    pixels_per_cell := cell_area / pixel_area;
+
     IF pixels_per_cell > 70
-        AND (ST_Area(ST_Transform(poly, 4326)::geography) / cell_area) > 10000 / (pixels_per_cell - 70)
+        AND (
+            @extschema:postgis@.ST_Area(
+                @extschema:postgis@.ST_Transform(poly, 4326)::@extschema:postgis@.geography
+            ) / cell_area
+        ) > 10000 / (pixels_per_cell - 70)
     THEN
-        RETURN QUERY SELECT (__h3_raster_class_polygon_summary_clip(
-            rast,
-            poly,
-            resolution,
-            nband,
-            pixel_area
-        )).*;
+        RETURN QUERY EXECUTE pg_catalog.format(
+            'SELECT (%1$I.__h3_raster_class_polygon_summary_clip(
+                $1,
+                $2,
+                $3,
+                $4,
+                $5
+            )).*',
+            self_schema
+        )
+        USING rast, poly, resolution, nband, pixel_area;
     ELSIF pixels_per_cell > 1 THEN
-        RETURN QUERY SELECT (__h3_raster_class_summary_centroids(
-            rast,
-            resolution,
-            nband,
-            pixel_area
-        )).*;
+        RETURN QUERY EXECUTE pg_catalog.format(
+            'SELECT (%1$I.__h3_raster_class_summary_centroids(
+                $1,
+                $2,
+                $3,
+                $4
+            )).*',
+            self_schema
+        )
+        USING rast, resolution, nband, pixel_area;
     ELSE
-        RETURN QUERY SELECT (__h3_raster_class_polygon_summary_subpixel(
-            rast,
-            poly,
-            resolution,
-            nband,
-            cell_area,
-            pixel_area
-        )).*;
+        RETURN QUERY EXECUTE pg_catalog.format(
+            'SELECT (%1$I.__h3_raster_class_polygon_summary_subpixel(
+                $1,
+                $2,
+                $3,
+                $4,
+                $5,
+                $6
+            )).*',
+            self_schema
+        )
+        USING rast, poly, resolution, nband, cell_area, pixel_area;
     END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
