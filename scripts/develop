@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+if ! command -v pg_validate_extupgrade >/dev/null 2>&1; then
+    cat <<'EOF'
+warning: pg_validate_extupgrade not found in PATH
+local ctest runs will skip extension-upgrade validation, so coverage will be
+weaker than CI. Install it with:
+
+  cargo install --git https://github.com/rjuju/pg_validate_extupgrade pg_validate_extupgrade
+EOF
+fi
+
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 sudo cmake --install build --component h3-pg
