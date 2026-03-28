@@ -49,8 +49,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE OR REPLACE FUNCTION h3_latlng_to_cell(@extschema:postgis@.geometry, resolution integer) RETURNS h3index
+    AS $$ SELECT @extschema:h3@.h3_latlng_to_cell($1::point, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+
 CREATE OR REPLACE FUNCTION h3_latlng_to_cell(@extschema:postgis@.geography, resolution integer) RETURNS h3index
     AS $$ SELECT @extschema:h3@.h3_latlng_to_cell(($1::@extschema:postgis@.geometry)::point, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION h3_cell_to_geometry(h3index) RETURNS @extschema:postgis@.geometry
+  AS $$ SELECT @extschema:postgis@.ST_SetSRID(@extschema:h3@.h3_cell_to_latlng($1)::@extschema:postgis@.geometry, 4326) $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 
 CREATE OR REPLACE FUNCTION h3_cell_to_geography(h3index) RETURNS @extschema:postgis@.geography
   AS $$ SELECT @extschema:postgis@.ST_SetSRID(@extschema:h3@.h3_cell_to_latlng($1)::@extschema:postgis@.geometry, 4326)::@extschema:postgis@.geography $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
@@ -96,6 +102,15 @@ BEGIN
     RETURN wkb::@extschema:postgis@.geography;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geometry(h3index, extend_antimeridian boolean) RETURNS @extschema:postgis@.geometry
+  AS $$ SELECT @extschema:postgis@.ST_SetSRID(@extschema:h3@.h3_cell_to_boundary($1, extend_antimeridian)::@extschema:postgis@.geometry, 4326) $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION h3_cell_to_boundary_geography(h3index, extend_antimeridian boolean) RETURNS @extschema:postgis@.geography
+  AS $$ SELECT @extschema:postgis@.ST_SetSRID(@extschema:h3@.h3_cell_to_boundary($1, extend_antimeridian)::@extschema:postgis@.geometry, 4326) $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
+
+CREATE OR REPLACE FUNCTION h3_lat_lng_to_cell(@extschema:postgis@.geometry, resolution integer) RETURNS h3index
+    AS $$ SELECT @extschema:h3@.h3_lat_lng_to_cell($1::point, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
 
 CREATE OR REPLACE FUNCTION h3_lat_lng_to_cell(@extschema:postgis@.geography, resolution integer) RETURNS h3index
     AS $$ SELECT @extschema:h3@.h3_lat_lng_to_cell(($1::@extschema:postgis@.geometry)::point, $2); $$ IMMUTABLE PARALLEL SAFE LANGUAGE SQL;
@@ -164,7 +179,9 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells(multi @extschema:postgis@.geometry, resolution integer) RETURNS SETOF h3index
     AS $$ SELECT @extschema:h3@.h3_polygon_to_cells(exterior, holes, resolution) FROM (
         SELECT
+            -- extract exterior ring of each polygon
             @extschema:postgis@.ST_MakePolygon(@extschema:postgis@.ST_ExteriorRing(poly))::polygon exterior,
+            -- extract holes of each polygon
             (SELECT pg_catalog.array_agg(hole)
                 FROM (
                     SELECT @extschema:postgis@.ST_MakePolygon(@extschema:postgis@.ST_InteriorRingN(
@@ -173,10 +190,11 @@ CREATE OR REPLACE FUNCTION h3_polygon_to_cells(multi @extschema:postgis@.geometr
                     ))::polygon AS hole
                 ) q_hole
             ) holes
+        -- extract single polygons from multipolygon
         FROM (
             SELECT (@extschema:postgis@.ST_Dump(multi)).geom AS poly
         ) q_poly GROUP BY poly
-    ) h3_polygon_to_cells; $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE CALLED ON NULL INPUT;
+    ) h3_polygon_to_cells; $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE CALLED ON NULL INPUT; -- NOT STRICT
 
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells(multi @extschema:postgis@.geography, resolution integer) RETURNS SETOF h3index
     AS $$ SELECT @extschema:h3@.h3_polygon_to_cells(exterior, holes, resolution) FROM (
@@ -242,7 +260,9 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells_experimental(multi @extschema:postgis@.geometry, resolution integer, containment_mode text DEFAULT 'center') RETURNS SETOF h3index
     AS $$ SELECT @extschema:h3@.h3_polygon_to_cells_experimental(exterior, holes, resolution, containment_mode) FROM (
         SELECT
+            -- extract exterior ring of each polygon
             @extschema:postgis@.ST_MakePolygon(@extschema:postgis@.ST_ExteriorRing(poly))::polygon exterior,
+            -- extract holes of each polygon
             (SELECT pg_catalog.array_agg(hole)
                 FROM (
                     SELECT @extschema:postgis@.ST_MakePolygon(@extschema:postgis@.ST_InteriorRingN(
@@ -251,10 +271,11 @@ CREATE OR REPLACE FUNCTION h3_polygon_to_cells_experimental(multi @extschema:pos
                     ))::polygon AS hole
                 ) q_hole
             ) holes
+        -- extract single polygons from multipolygon
         FROM (
             SELECT (@extschema:postgis@.ST_Dump(multi)).geom AS poly
         ) q_poly GROUP BY poly
-    ) h3_polygon_to_cells; $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE CALLED ON NULL INPUT;
+    ) h3_polygon_to_cells; $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE CALLED ON NULL INPUT; -- NOT STRICT
 
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells_experimental(multi @extschema:postgis@.geography, resolution integer, containment_mode text DEFAULT 'center') RETURNS SETOF h3index
     AS $$ SELECT @extschema:h3@.h3_polygon_to_cells_experimental(exterior, holes, resolution, containment_mode) FROM (
@@ -656,15 +677,9 @@ $$ LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE;
 --| ```
 
 -- NOTE: `count` can be < 1 when cell area is less than pixel area
---@ availability: 4.1.1
-CREATE TYPE h3_raster_summary_stats AS (
-    count double precision,
-    sum double precision,
-    mean double precision,
-    stddev double precision,
-    min double precision,
-    max double precision
-);
+-- Raster summary types and aggregates were introduced in 4.1.1.
+-- Keep only the function bodies here so extension upgrades do not try to
+-- recreate existing objects.
 
 -- ST_SummaryStats result type to h3_raster_summary_stats
 CREATE OR REPLACE FUNCTION __h3_raster_to_summary_stats(stats @extschema:postgis_raster@.summarystats)
@@ -705,13 +720,6 @@ AS $$
         greatest((s1).max, (s2).max)
     FROM total AS t;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
-
---@ availability: 4.1.1
-CREATE AGGREGATE h3_raster_summary_stats_agg(h3_raster_summary_stats) (
-    sfunc = __h3_raster_summary_stats_agg_transfn,
-    stype = h3_raster_summary_stats,
-    parallel = safe
-);
 
 CREATE OR REPLACE FUNCTION __h3_raster_polygon_summary_clip(
     rast raster,
@@ -1039,12 +1047,9 @@ IS 'Returns `h3_raster_summary_stats` for each H3 cell in raster for a given ban
 --| ```
 
 -- NOTE: `count` can be < 1 when cell area is less than pixel area
---@ availability: 4.1.1
-CREATE TYPE h3_raster_class_summary_item AS (
-    val integer,
-    count double precision,
-    area double precision
-);
+-- Raster summary types and aggregates were introduced in 4.1.1.
+-- Keep only the function bodies here so extension upgrades do not try to
+-- recreate existing objects.
 
 --@ availability: 4.1.1
 CREATE OR REPLACE FUNCTION h3_raster_class_summary_item_to_jsonb(
@@ -1071,13 +1076,6 @@ AS $$
         (s1).count + (s2).count,
         (s1).area + (s2).area;
 $$ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
-
---@ availability: 4.1.1
-CREATE AGGREGATE h3_raster_class_summary_item_agg(h3_raster_class_summary_item) (
-    stype = h3_raster_class_summary_item,
-    sfunc = __h3_raster_class_summary_item_agg_transfn,
-    parallel = safe
-);
 
 CREATE OR REPLACE FUNCTION __h3_raster_class_summary_part(
     rast raster,
