@@ -178,7 +178,7 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells(multi @extschema:postgis@.geometry, resolution integer) RETURNS SETOF h3index
     AS $$ SELECT @extschema:h3@.h3_polygon_to_cells(exterior, holes, resolution) FROM (
-        SELECT
+        SELECT 
             -- extract exterior ring of each polygon
             @extschema:postgis@.ST_MakePolygon(@extschema:postgis@.ST_ExteriorRing(poly))::polygon exterior,
             -- extract holes of each polygon
@@ -259,7 +259,7 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells_experimental(multi @extschema:postgis@.geometry, resolution integer, containment_mode text DEFAULT 'center') RETURNS SETOF h3index
     AS $$ SELECT @extschema:h3@.h3_polygon_to_cells_experimental(exterior, holes, resolution, containment_mode) FROM (
-        SELECT
+        SELECT 
             -- extract exterior ring of each polygon
             @extschema:postgis@.ST_MakePolygon(@extschema:postgis@.ST_ExteriorRing(poly))::polygon exterior,
             -- extract holes of each polygon
