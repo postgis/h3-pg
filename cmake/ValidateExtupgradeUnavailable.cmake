@@ -17,6 +17,23 @@ if(NOT GIT_EXECUTABLE)
 endif()
 
 execute_process(
+  COMMAND "${GIT_EXECUTABLE}" -C "${SOURCE_DIR}" rev-parse --is-inside-work-tree
+  RESULT_VARIABLE GIT_REPO_RESULT
+  OUTPUT_VARIABLE GIT_REPO_OUTPUT
+  ERROR_VARIABLE GIT_REPO_ERROR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_STRIP_TRAILING_WHITESPACE
+)
+
+if(NOT GIT_REPO_RESULT EQUAL 0 OR NOT GIT_REPO_OUTPUT STREQUAL "true")
+  message(STATUS
+    "pg_validate_extupgrade is unavailable, so ${TEST_NAME} did not run. "
+    "Source directory is not a git worktree, so upgrade-sensitive changes could not be inspected."
+  )
+  return()
+endif()
+
+execute_process(
   COMMAND "${GIT_EXECUTABLE}" -C "${SOURCE_DIR}" status --short --untracked-files=all -- ${WATCH_PATHS}
   RESULT_VARIABLE GIT_STATUS_RESULT
   OUTPUT_VARIABLE GIT_STATUS_OUTPUT
