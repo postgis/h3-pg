@@ -315,3 +315,38 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
     endif()
   endif()
 endfunction()
+
+# Register a pg_validate_extupgrade-backed test when available, or an explicit
+# placeholder test that makes skipped upgrade validation visible in ctest.
+function(PostgreSQL_add_extupgrade_test)
+  set(options "")
+  set(oneValueArgs NAME EXTNAME FROM_VERSION TO_VERSION)
+  set(multiValueArgs WATCH_PATHS)
+  cmake_parse_arguments(EXTUPGRADE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  if(NOT EXTUPGRADE_NAME OR NOT EXTUPGRADE_EXTNAME OR NOT EXTUPGRADE_FROM_VERSION OR NOT EXTUPGRADE_TO_VERSION)
+    message(FATAL_ERROR "PostgreSQL_add_extupgrade_test requires NAME, EXTNAME, FROM_VERSION, and TO_VERSION")
+  endif()
+
+  if(PostgreSQL_VALIDATE_EXTUPGRADE)
+    add_test(
+      NAME ${EXTUPGRADE_NAME}
+      COMMAND pg_validate_extupgrade
+        --extname ${EXTUPGRADE_EXTNAME}
+        --from ${EXTUPGRADE_FROM_VERSION}
+        --to ${EXTUPGRADE_TO_VERSION}
+    )
+    return()
+  endif()
+
+  string(JOIN "|" EXTUPGRADE_WATCH_PATHS_SERIALIZED ${EXTUPGRADE_WATCH_PATHS})
+  add_test(
+    NAME ${EXTUPGRADE_NAME}_unavailable
+    COMMAND ${CMAKE_COMMAND}
+      -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+      -DTEST_NAME=${EXTUPGRADE_NAME}
+      -DEXTENSION_NAME=${EXTUPGRADE_EXTNAME}
+      -DWATCH_PATHS_SERIALIZED=${EXTUPGRADE_WATCH_PATHS_SERIALIZED}
+      -P ${CMAKE_SOURCE_DIR}/cmake/ValidateExtupgradeUnavailable.cmake
+  )
+endfunction()

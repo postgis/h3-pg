@@ -3,7 +3,10 @@
 In order to build and test your changes, simply run `./scripts/develop`.
 
 For local upgrade-validation coverage, install `pg_validate_extupgrade` so
-`ctest` can run the same extension-upgrade checks as CI:
+`ctest` can run the same extension-upgrade checks as CI. Without it, CTest
+registers explicit `*_validate_extupgrade_unavailable` placeholder tests and
+those placeholders fail when your worktree touches upgrade-sensitive SQL or
+CMake files:
 
 ```bash
 cargo install --git https://github.com/rjuju/pg_validate_extupgrade pg_validate_extupgrade

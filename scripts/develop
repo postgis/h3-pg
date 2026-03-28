@@ -3,8 +3,9 @@
 if ! command -v pg_validate_extupgrade >/dev/null 2>&1; then
     cat <<'EOF'
 warning: pg_validate_extupgrade not found in PATH
-local ctest runs will skip extension-upgrade validation, so coverage will be
-weaker than CI. Install it with:
+ctest will register *_validate_extupgrade_unavailable placeholder tests
+instead of real extension-upgrade validation. Those placeholders will fail if
+your worktree touches upgrade-sensitive SQL/CMake files. Install it with:
 
   cargo install --git https://github.com/rjuju/pg_validate_extupgrade pg_validate_extupgrade
 EOF

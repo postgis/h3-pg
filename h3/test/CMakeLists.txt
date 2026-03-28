@@ -62,15 +62,18 @@ if(PostgreSQL_REGRESS)
   )
 endif()
 
-if(PostgreSQL_VALIDATE_EXTUPGRADE)
-  add_test(
-    NAME h3_validate_extupgrade
-    COMMAND pg_validate_extupgrade
-      --extname h3
-      --from 0.1.0
-      --to ${INSTALL_VERSION}
-  )
-endif()
+PostgreSQL_add_extupgrade_test(
+  NAME h3_validate_extupgrade
+  EXTNAME h3
+  FROM_VERSION 0.1.0
+  TO_VERSION ${INSTALL_VERSION}
+  WATCH_PATHS
+    CMakeLists.txt
+    cmake/AddPostgreSQLExtension.cmake
+    h3/CMakeLists.txt
+    h3/sql/install
+    h3/sql/updates
+)
 
 # @TODO: Figure out how to inline on MacOS
 set(H3_INLINED_TEST_ENABLED FALSE)
