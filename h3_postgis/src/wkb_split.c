@@ -191,7 +191,7 @@ static int
 			split_intersect_ptr_cmp(const void *a, const void *b);
 
 static int
-			split_find_next_vertex(Split * split, int *start);
+			split_find_next_vertex(const Split * split, int *start);
 
 static LinkedGeoPolygon *
 			split_create_polygon_vertex(Split * split, int vertexIdx);
@@ -605,7 +605,7 @@ split_intersect_ptr_cmp(const void *a, const void *b)
 }
 
 int
-split_find_next_vertex(Split * split, int *start)
+split_find_next_vertex(const Split * split, int *start)
 {
 	for (int i = *start; i < split->vertexNum; ++i)
 	{
@@ -837,8 +837,6 @@ lat_lng_ring_pos(const LinkedGeoLoop * ring, short sign, const Bbox3 * bbox, con
 	vect3_from_lat_lng(&ring->first->vertex, &curVect);
 	FOREACH_LINKED_LAT_LNG_PAIR(ring, cur, next)
 	{
-		short		intersect;
-
 		/* Check if point matches ring vertex */
 		if (vect3_eq(&vect, &curVect))
 			return 0;
@@ -848,7 +846,8 @@ lat_lng_ring_pos(const LinkedGeoLoop * ring, short sign, const Bbox3 * bbox, con
 
 		if (!vect3_eq(&curVect, &nextVect))
 		{
-			intersect = segment_intersect(&curVect, &nextVect, &vect, &outVect);
+			short		intersect = segment_intersect(&curVect, &nextVect, &vect, &outVect);
+
 			if (intersect == 0)
 				return 0;		/* point on ring segment */
 

@@ -158,7 +158,15 @@ CREATE OR REPLACE FUNCTION h3_polygon_to_cells_experimental(multi geometry, reso
             ) holes
         -- extract single polygons from multipolygon
         FROM (
-            SELECT (@extschema:postgis@.ST_Dump(multi)).geom AS poly
+            SELECT (@extschema:postgis@.ST_Dump(
+                -- After ST_TileEnvelope(...) -> 4326, low-zoom world-edge tiles
+                -- can turn into long geodesic edges. Segmentize keeps the
+                -- intended tile cap for overlapping_bbox polyfill. This stays
+                -- on the geometry overload only: doing the same after casting
+                -- geography to geometry would rewrite geodesic edges in lon/lat
+                -- and change public-API semantics.
+                @extschema:postgis@.ST_Segmentize(multi, 90.0)
+            )).geom AS poly
         ) q_poly GROUP BY poly
     ) h3_polygon_to_cells; $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE CALLED ON NULL INPUT; -- NOT STRICT
 COMMENT ON FUNCTION

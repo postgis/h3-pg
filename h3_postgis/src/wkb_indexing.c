@@ -29,6 +29,11 @@
 
 #define SIGN(x) ((x < 0) ? -1 : (x > 0) ? 1 \
 										: 0)
+/*
+ * Stay just inside the pole when we synthesize an antimeridian bridge for a
+ * single-crossing polar cell. The planar WKB path needs an explicit segment
+ * there, but an exact +/-90 vertex would collapse the bridge.
+ */
 #define ABS_LAT_MAX (degsToRads(89.9999))
 
 #define SPLIT_ASSERT(condition, message)			\
@@ -39,28 +44,28 @@
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_boundary_wkb);
 
-/* Converts CellBoundary coordinates to degrees in place */
-static void
+/* Converts CellBoundary coordinates to degrees in place. */
+void
 			boundary_to_degs(CellBoundary * boundary);
 
-/* Checks if CellBoundary is crossed by antimeridian */
-static int
+/* Counts antimeridian crossings in one cell boundary. */
+int
 			boundary_crosses_180_num(const CellBoundary * boundary);
 
-/* Splits CellBoundary by antimeridian (and 0 meridian around poles) */
-static void
-			boundary_split_180(const CellBoundary * boundary, CellBoundary * left, CellBoundary * right);
+/* Splits one antimeridian-crossing boundary into west/east planar parts. */
+void
+			boundary_split_180(const CellBoundary * boundary, CellBoundary * part1, CellBoundary * part2);
 
-/*
-  Creates a boundary for polar cells with additional points on an antimeridian.
-  The functions adds 2 points (with lon. 180 and -180) for intersection with
-  antimeridian and 2 points on antimeridian close to the pole.
-  This allows to better display polar cells in e.g. Mercator projection.
- */
-static void
+/* Expands a single-crossing polar cell into one explicit planar boundary. */
+void
 			boundary_split_180_polar(const CellBoundary * boundary, CellBoundary * res);
 
-/* Finds the boundary of the index, converts to EWKB, splits the boundary by 180 meridian */
+/*
+ * Serialize one H3 cell boundary to WKB.
+ *
+ * Most cells can be emitted directly. Cells crossing the antimeridian need to
+ * be split first so the planar PostGIS geometry stays valid.
+ */
 Datum
 h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 {
@@ -81,7 +86,10 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 	}
 	else if (crossNum == 1)
 	{
-		/* Cell boundary is crossed by antimeridian once */
+		/*
+		 * A single crossing means the cell touches a pole and returns through the
+		 * prime meridian. That needs the dedicated polar splitter.
+		 */
 		CellBoundary split;
 
 		boundary_split_180_polar(&boundary, &split);
@@ -90,7 +98,7 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 	}
 	else
 	{
-		/* Crossed by antimeridian */
+		/* A normal antimeridian crossing splits into west/east polygons. */
 		CellBoundary parts[2];
 
 		boundary_split_180(&boundary, &parts[0], &parts[1]);

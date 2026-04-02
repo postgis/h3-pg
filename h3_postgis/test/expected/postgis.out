@@ -351,6 +351,114 @@ WITH split AS (
 SELECT COUNT(*) = 3 FROM dp;
  t
 
+-- exact world cover at res1 stays valid without special SQL repair
+WITH cells AS (
+    SELECT array_agg(h3 ORDER BY h3) AS arr
+    FROM (
+        SELECT h3_cell_to_children(h3, 1) AS h3
+        FROM h3_get_res_0_cells() h3
+    ) q
+)
+SELECT ST_IsValid(h3_cells_to_multi_polygon_geometry(arr))
+   AND GeometryType(h3_cells_to_multi_polygon_geometry(arr)) = 'POLYGON'
+FROM cells;
+ t
+
+-- ordinary polar caps must stay valid through the coarse geometry path
+WITH cells AS (
+    SELECT array_agg(h3 ORDER BY h3) AS arr
+    FROM (
+        SELECT h3_grid_disk(:polar, 1) AS h3
+    ) q
+)
+SELECT ST_IsValid(h3_cells_to_multi_polygon_geometry(arr))
+FROM cells;
+ t
+
+-- representative low-zoom tile cover remains both valid and covering
+WITH tile AS (
+    SELECT ST_Transform(ST_TileEnvelope(3, 0, 1), 4326) AS tile,
+           h3_get_resolution_from_tile_zoom(3) AS res
+),
+cells AS (
+    SELECT array_agg(h3 ORDER BY h3) AS arr
+    FROM tile
+    CROSS JOIN LATERAL h3_polygon_to_cells_experimental(
+        tile, res, 'overlapping_bbox'
+    ) AS cell(h3)
+)
+SELECT ST_IsValid(h3_cells_to_multi_polygon_geometry(arr))
+   AND ST_IsEmpty(ST_Difference((SELECT tile FROM tile), h3_cells_to_multi_polygon_geometry(arr)))
+FROM cells;
+ t
+
+-- south-polar low-zoom tile cover stays valid and covering
+WITH tile AS (
+    SELECT ST_Transform(ST_TileEnvelope(2, 1, 3), 4326) AS tile,
+           h3_get_resolution_from_tile_zoom(2) AS res
+),
+cells AS (
+    SELECT array_agg(h3 ORDER BY h3) AS arr
+    FROM tile
+    CROSS JOIN LATERAL h3_polygon_to_cells_experimental(
+        tile, res, 'overlapping_bbox'
+    ) AS cell(h3)
+)
+SELECT ST_IsValid(h3_cells_to_multi_polygon_geometry(arr))
+   AND ST_IsEmpty(ST_Difference((SELECT tile FROM tile), h3_cells_to_multi_polygon_geometry(arr)))
+FROM cells;
+ t
+
+-- north-polar low-zoom tile cover stays valid and covering
+WITH tile AS (
+    SELECT ST_Transform(ST_TileEnvelope(3, 4, 1), 4326) AS tile,
+           h3_get_resolution_from_tile_zoom(3) AS res
+),
+cells AS (
+    SELECT array_agg(h3 ORDER BY h3) AS arr
+    FROM tile
+    CROSS JOIN LATERAL h3_polygon_to_cells_experimental(
+        tile, res, 'overlapping_bbox'
+    ) AS cell(h3)
+)
+SELECT ST_IsValid(h3_cells_to_multi_polygon_geometry(arr))
+   AND ST_IsEmpty(ST_Difference((SELECT tile FROM tile), h3_cells_to_multi_polygon_geometry(arr)))
+FROM cells;
+ t
+
+-- buffered z1 world-edge tiles no longer error and stay valid as geometry
+WITH tile AS (
+    SELECT ST_Transform(ST_TileEnvelope(1, 0, 0, margin => 0.125), 4326) AS tile,
+           h3_get_resolution_from_tile_zoom(1) AS res
+),
+cells AS (
+    SELECT array_agg(h3 ORDER BY h3) AS arr
+    FROM tile
+    CROSS JOIN LATERAL h3_polygon_to_cells_experimental(
+        tile, res, 'overlapping_bbox'
+    ) AS cell(h3)
+)
+SELECT ST_IsValid(h3_cells_to_multi_polygon_geometry(arr))
+FROM cells;
+ t
+
+-- buffered north-polar low-zoom tile cover stays valid and covering
+WITH tile AS (
+    SELECT ST_Transform(ST_TileEnvelope(3, 2, 1, margin => 0.125), 4326) AS tile,
+           h3_get_resolution_from_tile_zoom(3) AS res
+),
+cells AS (
+    SELECT array_agg(h3 ORDER BY h3) AS arr
+    FROM tile
+    CROSS JOIN LATERAL h3_polygon_to_cells_experimental(
+        tile, res, 'overlapping_bbox'
+    ) AS cell(h3)
+)
+SELECT ST_IsValid(h3_cells_to_multi_polygon_geometry(arr))
+   AND ST_IsEmpty(ST_Difference((SELECT tile FROM tile), h3_cells_to_multi_polygon_geometry(arr)))
+FROM cells;
+ t
+
 -- h3_polygon_to_cells_experimental
 SELECT COUNT(*) = 48 FROM (
     SELECT h3_polygon_to_cells_experimental(:with2holes, 10, 'center')
@@ -360,6 +468,20 @@ SELECT COUNT(*) = 48 FROM (
 SELECT COUNT(*) = 76 FROM (
     SELECT h3_polygon_to_cells_experimental(:with2holes, 10, 'overlapping')
 ) q;
+ t
+
+-- geography experimental polyfill must preserve geodesic dateline edges
+WITH geog AS (
+    SELECT 'POLYGON((-170 10,170 10,170 -10,-170 -10,-170 10))'::geography AS g
+),
+cells AS (
+    SELECT h3
+    FROM geog,
+         LATERAL h3_polygon_to_cells_experimental(g, 1, 'center') AS cell(h3)
+)
+SELECT COUNT(*) > 0
+   AND BOOL_AND(ST_Covers((SELECT g FROM geog), h3_cell_to_geometry(h3)::geography))
+FROM cells;
  t
 
 --

@@ -2,6 +2,7 @@ set(TESTS
   deprecations
   postgis
   rasters
+  tile_coverage
 )
 
 # Cross-extension @extschema:<name>@ placeholders are supported on PG16+.
@@ -55,6 +56,13 @@ if(PostgreSQL_REGRESS)
       --load-extension h3_postgis
       ${TESTS}
   )
+
+  if(PostgreSQL_VERSION_MAJOR VERSION_GREATER_EQUAL "18")
+    set(H3_POSTGIS_EXTUPGRADE_EXTENSION_CONTROL_PATH
+      "${CMAKE_BINARY_DIR}/share${H3_POSTGIS_REGRESS_PATH_SEP}$system")
+  else()
+    set(H3_POSTGIS_EXTUPGRADE_EXTENSION_CONTROL_PATH "")
+  endif()
 endif()
 
 PostgreSQL_add_extupgrade_test(
@@ -62,6 +70,11 @@ PostgreSQL_add_extupgrade_test(
   EXTNAME h3_postgis
   FROM_VERSION 4.0.0
   TO_VERSION ${INSTALL_VERSION}
+  TEMP_ROOT ${CMAKE_CURRENT_BINARY_DIR}/extupgrade-h3_postgis
+  TEMP_PORT 65442
+  DYNAMIC_LIBRARY_PATH ${H3_POSTGIS_REGRESS_TEMP_CONFIG_DYNAMIC_LIBRARY_PATH}
+  EXTENSION_CONTROL_PATH ${H3_POSTGIS_EXTUPGRADE_EXTENSION_CONTROL_PATH}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   WATCH_PATHS
     CMakeLists.txt
     cmake/AddPostgreSQLExtension.cmake

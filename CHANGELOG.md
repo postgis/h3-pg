@@ -49,6 +49,7 @@ avoid adding features or APIs which do not map onto the
 - [#189], Fix SP-GiST picksplit using wrong prefix when batch has mixed parents, silently dropping containment query results ([Eric Schoffstall])
 - [#187], Fix SP-GiST picksplit crash when tree depth exceeds cell resolution ([Eric Schoffstall])
 - [#191], Fix `<@` operator and SP-GiST returning false for self-containment ([Eric Schoffstall])
+- Fix `h3_postgis` geometry output for low-zoom and buffered tile covers, polar seams, and exact whole-world covers, so tile polyfills cover the intended Web Mercator tiles and return valid geometries ([Darafei Praliaskouski])
 
 * Documentation *
 

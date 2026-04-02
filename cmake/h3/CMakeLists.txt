@@ -29,3 +29,7 @@ endif()
 # Export vendored H3 headers for downstream extension/tooling steps.
 # In particular, LLVM bitcode generation for `h3`/`h3_postgis` needs this path.
 set(H3_INCLUDE_DIR ${h3_BINARY_DIR}/src/h3lib/include CACHE INTERNAL "Vendored H3 include directory")
+
+# h3_postgis also relies on a small set of released H3 internals for seam
+# stitching. Recheck this path when bumping H3.
+set(H3_INTERNAL_INCLUDE_DIR ${h3_SOURCE_DIR}/src/h3lib/include CACHE INTERNAL "Vendored H3 internal include directory")

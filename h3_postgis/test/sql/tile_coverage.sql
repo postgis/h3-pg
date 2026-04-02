@@ -1,0 +1,347 @@
+\pset tuples_only on
+
+-- Exhaustive coverage/validity sweep for Web Mercator tiles.
+WITH plain_tiles AS (
+    SELECT z::int AS z, x::int AS x, y::int AS y,
+           ST_Transform(ST_TileEnvelope(z::int, x::int, y::int), 4326) AS tile,
+           h3_get_resolution_from_tile_zoom(z::int) AS res
+    FROM generate_series(0, 8) AS z
+    CROSS JOIN LATERAL generate_series(0, (1 << z) - 1) AS x
+    CROSS JOIN LATERAL generate_series(0, (1 << z) - 1) AS y
+),
+plain_cells AS (
+    SELECT z, x, y, tile, array_agg(h3 ORDER BY h3) AS arr
+    FROM plain_tiles,
+         h3_polygon_to_cells_experimental(tile, res, 'overlapping_bbox') AS h3
+    GROUP BY z, x, y, tile
+),
+plain_geoms AS (
+    SELECT z, x, y, tile, h3_cells_to_multi_polygon_geometry(arr) AS g
+    FROM plain_cells
+)
+SELECT count(*) FILTER (WHERE NOT ST_IsValid(g)) = 0
+   AND count(*) FILTER (
+        WHERE ST_IsValid(g)
+          AND NOT ST_IsEmpty(ST_Difference(tile, g))
+   ) = 0
+FROM plain_geoms;
+
+WITH buffered_tiles AS (
+    SELECT z::int AS z, x::int AS x, y::int AS y,
+           ST_Transform(
+               ST_TileEnvelope(z::int, x::int, y::int, margin => 0.125),
+               4326
+           ) AS tile,
+           h3_get_resolution_from_tile_zoom(z::int) AS res
+    FROM generate_series(0, 8) AS z
+    CROSS JOIN LATERAL generate_series(0, (1 << z) - 1) AS x
+    CROSS JOIN LATERAL generate_series(0, (1 << z) - 1) AS y
+),
+buffered_cells AS (
+    SELECT z, x, y, tile, array_agg(h3 ORDER BY h3) AS arr
+    FROM buffered_tiles,
+         h3_polygon_to_cells_experimental(tile, res, 'overlapping_bbox') AS h3
+    GROUP BY z, x, y, tile
+),
+buffered_geoms AS (
+    SELECT z, x, y, tile, h3_cells_to_multi_polygon_geometry(arr) AS g
+    FROM buffered_cells
+)
+SELECT count(*) FILTER (WHERE NOT ST_IsValid(g)) = 0
+   AND count(*) FILTER (
+        WHERE ST_IsValid(g)
+          AND NOT ST_IsEmpty(ST_Difference(tile, g))
+   ) = 0
+FROM buffered_geoms;
+
+-- Exhaustive coverage/validity sweep for linear EPSG:4326 tiles.
+WITH plain_4326_tiles AS (
+    SELECT z::int AS z,
+           x::int AS x,
+           y::int AS y,
+           ST_MakeEnvelope(
+               -180.0 + x * 360.0 / (1 << z),
+               -90.0 + y * 180.0 / (1 << z),
+               -180.0 + (x + 1) * 360.0 / (1 << z),
+               -90.0 + (y + 1) * 180.0 / (1 << z),
+               4326
+           ) AS tile,
+           h3_get_resolution_from_tile_zoom(z::int) AS res
+    FROM generate_series(0, 8) AS z
+    CROSS JOIN LATERAL generate_series(0, (1 << z) - 1) AS x
+    CROSS JOIN LATERAL generate_series(0, (1 << z) - 1) AS y
+),
+plain_4326_cells AS (
+    SELECT z, x, y, tile, array_agg(h3 ORDER BY h3) AS arr
+    FROM plain_4326_tiles,
+         h3_polygon_to_cells_experimental(tile, res, 'overlapping_bbox') AS h3
+    GROUP BY z, x, y, tile
+),
+plain_4326_geoms AS (
+    SELECT z, x, y, tile, h3_cells_to_multi_polygon_geometry(arr) AS g
+    FROM plain_4326_cells
+)
+SELECT count(*) FILTER (WHERE NOT ST_IsValid(g)) = 0
+   AND count(*) FILTER (
+        WHERE ST_IsValid(g)
+          AND NOT ST_IsEmpty(ST_Difference(tile, g))
+   ) = 0
+FROM plain_4326_geoms;
+
+WITH buffered_4326_tiles AS (
+    SELECT z::int AS z,
+           x::int AS x,
+           y::int AS y,
+           ST_MakeEnvelope(
+               GREATEST(-180.0, -180.0 + (x - 0.125) * 360.0 / (1 << z)),
+               GREATEST(-90.0, -90.0 + (y - 0.125) * 180.0 / (1 << z)),
+               LEAST(180.0, -180.0 + (x + 1.125) * 360.0 / (1 << z)),
+               LEAST(90.0, -90.0 + (y + 1.125) * 180.0 / (1 << z)),
+               4326
+           ) AS tile,
+           h3_get_resolution_from_tile_zoom(z::int) AS res
+    FROM generate_series(0, 8) AS z
+    CROSS JOIN LATERAL generate_series(0, (1 << z) - 1) AS x
+    CROSS JOIN LATERAL generate_series(0, (1 << z) - 1) AS y
+),
+buffered_4326_cells AS (
+    SELECT z, x, y, tile, array_agg(h3 ORDER BY h3) AS arr
+    FROM buffered_4326_tiles,
+         h3_polygon_to_cells_experimental(tile, res, 'overlapping_bbox') AS h3
+    GROUP BY z, x, y, tile
+),
+buffered_4326_geoms AS (
+    SELECT z, x, y, tile, h3_cells_to_multi_polygon_geometry(arr) AS g
+    FROM buffered_4326_cells
+)
+SELECT count(*) FILTER (WHERE NOT ST_IsValid(g)) = 0
+   AND count(*) FILTER (
+        WHERE ST_IsValid(g)
+          AND NOT ST_IsEmpty(ST_Difference(tile, g))
+   ) = 0
+FROM buffered_4326_geoms;
+
+-- Focused all-zoom sweep for branch-heavy tiles only.
+WITH mercator_focus_tiles AS (
+    SELECT z,
+           x,
+           y,
+           ST_Transform(ST_TileEnvelope(z, x, y), 4326) AS tile,
+           h3_get_resolution_from_tile_zoom(z) AS res
+    FROM generate_series(0, 22) AS z
+    CROSS JOIN LATERAL (SELECT 1 << z AS tiles) AS dim
+    CROSS JOIN LATERAL (
+        SELECT DISTINCT x::int
+        FROM (VALUES
+            (0),
+            (1),
+            (2),
+            (dim.tiles / 4),
+            (dim.tiles / 2),
+            (dim.tiles - 3),
+            (dim.tiles - 2),
+            (dim.tiles - 1)
+        ) AS xs(x)
+        WHERE x BETWEEN 0 AND dim.tiles - 1
+    ) AS xv
+    CROSS JOIN LATERAL (
+        SELECT DISTINCT y::int
+        FROM (VALUES
+            (0),
+            (1),
+            (2),
+            (dim.tiles / 2),
+            (dim.tiles - 3),
+            (dim.tiles - 2),
+            (dim.tiles - 1)
+        ) AS ys(y)
+        WHERE y BETWEEN 0 AND dim.tiles - 1
+    ) AS yv
+),
+mercator_focus_cells AS (
+    SELECT z, x, y, tile, array_agg(h3 ORDER BY h3) AS arr
+    FROM mercator_focus_tiles,
+         h3_polygon_to_cells_experimental(tile, res, 'overlapping_bbox') AS h3
+    GROUP BY z, x, y, tile
+),
+mercator_focus_geoms AS (
+    SELECT z, x, y, tile, h3_cells_to_multi_polygon_geometry(arr) AS g
+    FROM mercator_focus_cells
+)
+SELECT count(*) FILTER (WHERE NOT ST_IsValid(g)) = 0
+   AND count(*) FILTER (
+        WHERE ST_IsValid(g)
+          AND NOT ST_IsEmpty(ST_Difference(tile, g))
+   ) = 0
+FROM mercator_focus_geoms;
+
+WITH mercator_buffered_focus_tiles AS (
+    SELECT z,
+           x,
+           y,
+           ST_Transform(ST_TileEnvelope(z, x, y, margin => 0.125), 4326) AS tile,
+           h3_get_resolution_from_tile_zoom(z) AS res
+    FROM generate_series(0, 22) AS z
+    CROSS JOIN LATERAL (SELECT 1 << z AS tiles) AS dim
+    CROSS JOIN LATERAL (
+        SELECT DISTINCT x::int
+        FROM (VALUES
+            (0),
+            (1),
+            (2),
+            (dim.tiles / 4),
+            (dim.tiles / 2),
+            (dim.tiles - 3),
+            (dim.tiles - 2),
+            (dim.tiles - 1)
+        ) AS xs(x)
+        WHERE x BETWEEN 0 AND dim.tiles - 1
+    ) AS xv
+    CROSS JOIN LATERAL (
+        SELECT DISTINCT y::int
+        FROM (VALUES
+            (0),
+            (1),
+            (2),
+            (dim.tiles / 2),
+            (dim.tiles - 3),
+            (dim.tiles - 2),
+            (dim.tiles - 1)
+        ) AS ys(y)
+        WHERE y BETWEEN 0 AND dim.tiles - 1
+    ) AS yv
+),
+mercator_buffered_focus_cells AS (
+    SELECT z, x, y, tile, array_agg(h3 ORDER BY h3) AS arr
+    FROM mercator_buffered_focus_tiles,
+         h3_polygon_to_cells_experimental(tile, res, 'overlapping_bbox') AS h3
+    GROUP BY z, x, y, tile
+),
+mercator_buffered_focus_geoms AS (
+    SELECT z, x, y, tile, h3_cells_to_multi_polygon_geometry(arr) AS g
+    FROM mercator_buffered_focus_cells
+)
+SELECT count(*) FILTER (WHERE NOT ST_IsValid(g)) = 0
+   AND count(*) FILTER (
+        WHERE ST_IsValid(g)
+          AND NOT ST_IsEmpty(ST_Difference(tile, g))
+   ) = 0
+FROM mercator_buffered_focus_geoms;
+
+WITH linear_4326_focus_tiles AS (
+    SELECT z,
+           x,
+           y,
+           ST_MakeEnvelope(
+               -180.0 + x * 360.0 / (1 << z),
+               -90.0 + y * 180.0 / (1 << z),
+               -180.0 + (x + 1) * 360.0 / (1 << z),
+               -90.0 + (y + 1) * 180.0 / (1 << z),
+               4326
+           ) AS tile,
+           h3_get_resolution_from_tile_zoom(z) AS res
+    FROM generate_series(0, 22) AS z
+    CROSS JOIN LATERAL (SELECT 1 << z AS tiles) AS dim
+    CROSS JOIN LATERAL (
+        SELECT DISTINCT x::int
+        FROM (VALUES
+            (0),
+            (1),
+            (2),
+            (dim.tiles / 4),
+            (dim.tiles / 2),
+            (dim.tiles - 3),
+            (dim.tiles - 2),
+            (dim.tiles - 1)
+        ) AS xs(x)
+        WHERE x BETWEEN 0 AND dim.tiles - 1
+    ) AS xv
+    CROSS JOIN LATERAL (
+        SELECT DISTINCT y::int
+        FROM (VALUES
+            (0),
+            (1),
+            (2),
+            (dim.tiles / 2),
+            (dim.tiles - 3),
+            (dim.tiles - 2),
+            (dim.tiles - 1)
+        ) AS ys(y)
+        WHERE y BETWEEN 0 AND dim.tiles - 1
+    ) AS yv
+),
+linear_4326_focus_cells AS (
+    SELECT z, x, y, tile, array_agg(h3 ORDER BY h3) AS arr
+    FROM linear_4326_focus_tiles,
+         h3_polygon_to_cells_experimental(tile, res, 'overlapping_bbox') AS h3
+    GROUP BY z, x, y, tile
+),
+linear_4326_focus_geoms AS (
+    SELECT z, x, y, tile, h3_cells_to_multi_polygon_geometry(arr) AS g
+    FROM linear_4326_focus_cells
+)
+SELECT count(*) FILTER (WHERE NOT ST_IsValid(g)) = 0
+   AND count(*) FILTER (
+        WHERE ST_IsValid(g)
+          AND NOT ST_IsEmpty(ST_Difference(tile, g))
+   ) = 0
+FROM linear_4326_focus_geoms;
+
+WITH linear_4326_buffered_focus_tiles AS (
+    SELECT z,
+           x,
+           y,
+           ST_MakeEnvelope(
+               GREATEST(-180.0, -180.0 + (x - 0.125) * 360.0 / (1 << z)),
+               GREATEST(-90.0, -90.0 + (y - 0.125) * 180.0 / (1 << z)),
+               LEAST(180.0, -180.0 + (x + 1.125) * 360.0 / (1 << z)),
+               LEAST(90.0, -90.0 + (y + 1.125) * 180.0 / (1 << z)),
+               4326
+           ) AS tile,
+           h3_get_resolution_from_tile_zoom(z) AS res
+    FROM generate_series(0, 22) AS z
+    CROSS JOIN LATERAL (SELECT 1 << z AS tiles) AS dim
+    CROSS JOIN LATERAL (
+        SELECT DISTINCT x::int
+        FROM (VALUES
+            (0),
+            (1),
+            (2),
+            (dim.tiles / 4),
+            (dim.tiles / 2),
+            (dim.tiles - 3),
+            (dim.tiles - 2),
+            (dim.tiles - 1)
+        ) AS xs(x)
+        WHERE x BETWEEN 0 AND dim.tiles - 1
+    ) AS xv
+    CROSS JOIN LATERAL (
+        SELECT DISTINCT y::int
+        FROM (VALUES
+            (0),
+            (1),
+            (2),
+            (dim.tiles / 2),
+            (dim.tiles - 3),
+            (dim.tiles - 2),
+            (dim.tiles - 1)
+        ) AS ys(y)
+        WHERE y BETWEEN 0 AND dim.tiles - 1
+    ) AS yv
+),
+linear_4326_buffered_focus_cells AS (
+    SELECT z, x, y, tile, array_agg(h3 ORDER BY h3) AS arr
+    FROM linear_4326_buffered_focus_tiles,
+         h3_polygon_to_cells_experimental(tile, res, 'overlapping_bbox') AS h3
+    GROUP BY z, x, y, tile
+),
+linear_4326_buffered_focus_geoms AS (
+    SELECT z, x, y, tile, h3_cells_to_multi_polygon_geometry(arr) AS g
+    FROM linear_4326_buffered_focus_cells
+)
+SELECT count(*) FILTER (WHERE NOT ST_IsValid(g)) = 0
+   AND count(*) FILTER (
+        WHERE ST_IsValid(g)
+          AND NOT ST_IsEmpty(ST_Difference(tile, g))
+   ) = 0
+FROM linear_4326_buffered_focus_geoms;
