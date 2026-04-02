@@ -320,7 +320,17 @@ endfunction()
 # placeholder test that makes skipped upgrade validation visible in ctest.
 function(PostgreSQL_add_extupgrade_test)
   set(options "")
-  set(oneValueArgs NAME EXTNAME FROM_VERSION TO_VERSION)
+  set(oneValueArgs
+    NAME
+    EXTNAME
+    FROM_VERSION
+    TO_VERSION
+    TEMP_ROOT
+    TEMP_PORT
+    DYNAMIC_LIBRARY_PATH
+    EXTENSION_CONTROL_PATH
+    WORKING_DIRECTORY
+  )
   set(multiValueArgs WATCH_PATHS)
   cmake_parse_arguments(EXTUPGRADE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -329,12 +339,26 @@ function(PostgreSQL_add_extupgrade_test)
   endif()
 
   if(PostgreSQL_VALIDATE_EXTUPGRADE)
+    if(NOT EXTUPGRADE_TEMP_ROOT OR NOT EXTUPGRADE_TEMP_PORT OR NOT EXTUPGRADE_DYNAMIC_LIBRARY_PATH)
+      message(FATAL_ERROR
+        "PostgreSQL_add_extupgrade_test requires TEMP_ROOT, TEMP_PORT, and DYNAMIC_LIBRARY_PATH "
+        "when pg_validate_extupgrade is available")
+    endif()
+
     add_test(
       NAME ${EXTUPGRADE_NAME}
-      COMMAND pg_validate_extupgrade
-        --extname ${EXTUPGRADE_EXTNAME}
-        --from ${EXTUPGRADE_FROM_VERSION}
-        --to ${EXTUPGRADE_TO_VERSION}
+      COMMAND ${CMAKE_COMMAND}
+        -DPG_VALIDATE_EXTUPGRADE=${PostgreSQL_VALIDATE_EXTUPGRADE}
+        -DPOSTGRESQL_BINDIR=${PostgreSQL_BIN_DIR}
+        -DTEMP_ROOT=${EXTUPGRADE_TEMP_ROOT}
+        -DTEMP_PORT=${EXTUPGRADE_TEMP_PORT}
+        -DEXTNAME=${EXTUPGRADE_EXTNAME}
+        -DFROM_VERSION=${EXTUPGRADE_FROM_VERSION}
+        -DTO_VERSION=${EXTUPGRADE_TO_VERSION}
+        -DDYNAMIC_LIBRARY_PATH=${EXTUPGRADE_DYNAMIC_LIBRARY_PATH}
+        -DEXTENSION_CONTROL_PATH=${EXTUPGRADE_EXTENSION_CONTROL_PATH}
+        -DWORKING_DIRECTORY=${EXTUPGRADE_WORKING_DIRECTORY}
+        -P ${CMAKE_SOURCE_DIR}/cmake/RunValidateExtupgrade.cmake
     )
     return()
   endif()

@@ -12,6 +12,10 @@ CMake files:
 cargo install --git https://github.com/rjuju/pg_validate_extupgrade pg_validate_extupgrade
 ```
 
+When `pg_validate_extupgrade` is available, the test suite runs it against a
+temporary build-tree PostgreSQL cluster instead of the developer's default
+local server.
+
 Documentation is generated from the SQL files using `scripts/documentation` (requires poetry).
 This command also validates that all extension GUCs are documented in `h3/src/guc.c`.
 
