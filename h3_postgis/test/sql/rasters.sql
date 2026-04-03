@@ -140,46 +140,6 @@ WHERE c.count IS NULL
    OR s.stats IS NULL
    OR NOT h3_test_equal(c.count, (s.stats).count);
 
--- Stats aggregation check:
--- stats for a cell intersecting multiple rasters (with aggregation) should be
--- the same when calculated on a union of rasters (without aggregation).
-WITH
-    rast AS (
-        -- Union all test rasters
-        SELECT ST_Union(rast ORDER BY id) AS rast FROM h3_test_rasters),
-    middle AS (
-        -- Find an H3 cell in a bottom-right corner of a first raster
-        -- (intersecting 4 rasters)
-        SELECT
-            h3_latlng_to_cell(
-                ST_MakePoint(
-                    ST_RasterToWorldCoordX(rast, :raster_size),
-                    ST_RasterToWorldCoordY(rast, :raster_size)),
-                :resolution
-            ) AS h3
-        FROM rast),
-    summary1 AS (
-        -- Get summary from combined raster
-        SELECT t.stats
-        FROM (
-            -- h3, stats
-            SELECT (h3_raster_summary_clip(rast, :resolution)).*
-            FROM rast
-        ) t, middle m
-        WHERE t.h3 = m.h3),
-    summary2 AS (
-        -- Get aggregates summary from separate rasters
-        SELECT h3_raster_summary_stats_agg(t.stats ORDER BY t.id) AS stats
-        FROM (
-            -- id, h3, stats
-            SELECT r.id, (h3_raster_summary_clip(r.rast, :resolution)).*
-            FROM h3_test_rasters r
-        ) t, middle m
-        WHERE t.h3 = m.h3
-        GROUP BY t.h3)
-SELECT h3_test_raster_summary_stats_equal(s1.stats, s2.stats)
-FROM summary1 s1, summary2 s2;
-
 DROP FUNCTION h3_test_raster_class_summary_item_equal(
     h3_raster_class_summary_item,
     h3_raster_class_summary_item);

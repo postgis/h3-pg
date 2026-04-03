@@ -14,16 +14,19 @@
 
 # this file only exists to support pgxnclient
 
+PG_CONFIG ?= pg_config
+CMAKE_PG_CONFIG = -DPostgreSQL_CONFIG=$(PG_CONFIG)
+
 .PHONY: all install installcheck
 
 all:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release
+	cmake -B build -DCMAKE_BUILD_TYPE=Release $(CMAKE_PG_CONFIG)
 	cmake --build build
 
 install:
 	cmake --install build --component h3-pg
 
 installcheck:
-	cmake -B build -DCMAKE_BUILD_TYPE=Release
+	cmake -B build -DCMAKE_BUILD_TYPE=Release $(CMAKE_PG_CONFIG)
 	cmake --build build
 	ctest --test-dir build --output-on-failure --build-config Release

@@ -2,6 +2,7 @@ set(TESTS
   deprecations
   postgis
   rasters
+  rasters_aggregation
   tile_coverage
 )
 
