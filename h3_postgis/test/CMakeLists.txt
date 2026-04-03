@@ -1,8 +1,12 @@
-set(TESTS
+set(H3_POSTGIS_REGRESS_FAST_TESTS
   deprecations
   postgis
   rasters
   rasters_aggregation
+)
+
+set(H3_POSTGIS_REGRESS_FULL_TESTS
+  ${H3_POSTGIS_REGRESS_FAST_TESTS}
   tile_coverage
 )
 
@@ -10,7 +14,8 @@ set(TESTS
 # Keep the dedicated separate-schema regression there; older versions use
 # compatibility SQL generation without cross-extension placeholders.
 if(PostgreSQL_VERSION_MAJOR VERSION_GREATER_EQUAL "16")
-  list(APPEND TESTS schemas)
+  list(APPEND H3_POSTGIS_REGRESS_FAST_TESTS schemas)
+  list(APPEND H3_POSTGIS_REGRESS_FULL_TESTS schemas)
 endif()
 
 if(PostgreSQL_REGRESS)
@@ -44,6 +49,21 @@ if(PostgreSQL_REGRESS)
   endif()
 
   add_test(
+    NAME "h3_postgis_regress_fast"
+    COMMAND ${PostgreSQL_REGRESS}
+      --temp-instance=${CMAKE_BINARY_DIR}/tmp
+      --temp-config=${H3_POSTGIS_REGRESS_TEMP_CONFIG}
+      --bindir=${PostgreSQL_BIN_DIR}
+      --inputdir=${CMAKE_CURRENT_SOURCE_DIR}
+      --outputdir=${CMAKE_CURRENT_BINARY_DIR}
+      --load-extension h3
+      --load-extension postgis
+      --load-extension postgis_raster
+      --load-extension h3_postgis
+      ${H3_POSTGIS_REGRESS_FAST_TESTS}
+  )
+
+  add_test(
     NAME "h3_postgis_regress"
     COMMAND ${PostgreSQL_REGRESS}
       --temp-instance=${CMAKE_BINARY_DIR}/tmp
@@ -55,7 +75,7 @@ if(PostgreSQL_REGRESS)
       --load-extension postgis
       --load-extension postgis_raster
       --load-extension h3_postgis
-      ${TESTS}
+      ${H3_POSTGIS_REGRESS_FULL_TESTS}
   )
 
   if(PostgreSQL_VERSION_MAJOR VERSION_GREATER_EQUAL "18")

@@ -29,4 +29,4 @@ install:
 installcheck:
 	cmake -B build -DCMAKE_BUILD_TYPE=Release $(CMAKE_PG_CONFIG)
 	cmake --build build
-	ctest --test-dir build --output-on-failure --build-config Release
+	ctest --test-dir build --output-on-failure --build-config Release --exclude-regex '^h3_postgis_regress$$'
