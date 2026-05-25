@@ -34,6 +34,17 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_grid_path_cells);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_local_ij);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_local_ij_to_cell);
 
+static int
+ensure_nonnegative_k(int k)
+{
+	if (k < 0)
+	{
+		h3_assert(E_DOMAIN);
+		return 0;
+	}
+	return k;
+}
+
 /*
  * k-rings produces indices within k distance of the origin index.
  *
@@ -58,7 +69,7 @@ h3_grid_disk(PG_FUNCTION_ARGS)
 
 		/* get function arguments */
 		H3Index		origin = PG_GETARG_H3INDEX(0);
-		int			k = PG_GETARG_INT32(1);
+		int			k = ensure_nonnegative_k(PG_GETARG_INT32(1));
 
 		h3_assert(maxGridDiskSize(k, &max));
 
@@ -96,7 +107,7 @@ h3_grid_disk_distances(PG_FUNCTION_ARGS)
 
 		/* get function arguments */
 		H3Index		origin = PG_GETARG_H3INDEX(0);
-		int			k = PG_GETARG_INT32(1);
+		int			k = ensure_nonnegative_k(PG_GETARG_INT32(1));
 
 		/*
 		 * Allocate memory for the indices, the distances and the tuple used
@@ -145,7 +156,7 @@ h3_grid_ring(PG_FUNCTION_ARGS)
 
 		H3Index    *indices;
 		H3Index		origin = PG_GETARG_H3INDEX(0);
-		int			k = PG_GETARG_INT32(1);
+		int			k = ensure_nonnegative_k(PG_GETARG_INT32(1));
 		int64_t		maxSize;
 
 		h3_assert(maxGridRingSize(k, &maxSize));
@@ -180,7 +191,7 @@ h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 		/* get function arguments */
 		H3Index    *indices;
 		H3Index		origin = PG_GETARG_H3INDEX(0);
-		int			k = PG_GETARG_INT32(1);
+		int			k = ensure_nonnegative_k(PG_GETARG_INT32(1));
 
 		int64_t		maxSize;
 
