@@ -39,7 +39,9 @@ ensure_nonnegative_k(int k)
 {
 	if (k < 0)
 	{
-		h3_assert(E_DOMAIN);
+		ereport(ERROR, (
+						errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+						errmsg("grid traversal distance k must be non-negative")));
 		return 0;
 	}
 	return k;

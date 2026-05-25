@@ -49,26 +49,38 @@ SELECT h3_test_grid_ring_unsafe_pentagon();
 -- negative k is rejected before calling into H3 traversal buffers
 CREATE FUNCTION h3_test_grid_traversal_negative_k() RETURNS boolean LANGUAGE PLPGSQL
     AS $$
+        DECLARE
+            ok boolean := true;
         BEGIN
-            PERFORM h3_grid_ring('880326b88dfffff'::h3index, -1);
-            RETURN false;
-        EXCEPTION WHEN OTHERS THEN
+            BEGIN
+                PERFORM h3_grid_disk('880326b88dfffff'::h3index, -1);
+                ok := false;
+            EXCEPTION WHEN OTHERS THEN
+                ok := ok AND SQLERRM = 'grid traversal distance k must be non-negative';
+            END;
+
+            BEGIN
+                PERFORM h3_grid_disk_distances('880326b88dfffff'::h3index, -1);
+                ok := false;
+            EXCEPTION WHEN OTHERS THEN
+                ok := ok AND SQLERRM = 'grid traversal distance k must be non-negative';
+            END;
+
+            BEGIN
+                PERFORM h3_grid_ring('880326b88dfffff'::h3index, -1);
+                ok := false;
+            EXCEPTION WHEN OTHERS THEN
+                ok := ok AND SQLERRM = 'grid traversal distance k must be non-negative';
+            END;
+
             BEGIN
                 PERFORM h3_grid_ring_unsafe('880326b88dfffff'::h3index, -1);
-                RETURN false;
+                ok := false;
             EXCEPTION WHEN OTHERS THEN
-                BEGIN
-                    PERFORM h3_grid_disk('880326b88dfffff'::h3index, -1);
-                    RETURN false;
-                EXCEPTION WHEN OTHERS THEN
-                    BEGIN
-                        PERFORM h3_grid_disk_distances('880326b88dfffff'::h3index, -1);
-                        RETURN false;
-                    EXCEPTION WHEN OTHERS THEN
-                        RETURN true;
-                    END;
-                END;
+                ok := ok AND SQLERRM = 'grid traversal distance k must be non-negative';
             END;
+
+            RETURN ok;
         END;
     $$;
 SELECT h3_test_grid_traversal_negative_k();
