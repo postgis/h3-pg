@@ -156,7 +156,7 @@ boundary_is_closed(const CellBoundary * boundary)
 	verts = boundary->verts;
 	numVerts = boundary->numVerts;
 	return verts[0].lng == verts[numVerts - 1].lng
-		&& verts[1].lat == verts[numVerts - 1].lat;
+		&& verts[0].lat == verts[numVerts - 1].lat;
 }
 
 size_t

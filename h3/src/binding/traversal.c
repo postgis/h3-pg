@@ -62,7 +62,7 @@ h3_grid_disk(PG_FUNCTION_ARGS)
 
 		h3_assert(maxGridDiskSize(k, &max));
 
-		indices = palloc(max * sizeof(H3Index));
+		indices = palloc0(max * sizeof(H3Index));
 
 		h3_assert(gridDisk(origin, k, indices));
 
@@ -110,8 +110,8 @@ h3_grid_disk_distances(PG_FUNCTION_ARGS)
 
 		user_fctx = palloc(sizeof(hexDistanceTuple));
 
-		user_fctx->indices = palloc(maxSize * sizeof(H3Index));
-		user_fctx->distances = palloc(maxSize * sizeof(int));
+		user_fctx->indices = palloc0(maxSize * sizeof(H3Index));
+		user_fctx->distances = palloc0(maxSize * sizeof(int));
 
 		h3_assert(gridDiskDistances(origin, k, user_fctx->indices, user_fctx->distances));
 

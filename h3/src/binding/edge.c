@@ -23,6 +23,7 @@
 #include <utils/geo_decls.h>	 // PG_RETURN_POLYGON_P
 
 #include "error.h"
+#include "polygon.h"
 #include "type.h"
 #include "srf.h"
 
@@ -170,5 +171,6 @@ h3_directed_edge_to_boundary(PG_FUNCTION_ARGS)
 		polygon->p[v].x = radsToDegs(boundary.verts[v].lat);
 		polygon->p[v].y = radsToDegs(boundary.verts[v].lng);
 	}
+	h3_polygon_init_boundbox(polygon);
 	PG_RETURN_POLYGON_P(polygon);
 }

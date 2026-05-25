@@ -94,6 +94,12 @@ poly AS (
 SELECT COUNT(*) = 7
 FROM poly, LATERAL h3_polygon_to_cells(g, 7) AS cell(h3);
 
+-- WKB multipolygon conversion skips NULL indexes instead of reading NULL Datum
+SELECT ST_Equals(
+    h3_cells_to_multi_polygon_geometry(ARRAY[:hexagon::h3index, NULL::h3index]),
+    h3_cells_to_multi_polygon_geometry(ARRAY[:hexagon::h3index])
+);
+
 -- invalid polygon can produce a very large number of cells (upstream H3 behavior)
 SET client_min_messages TO warning;
 \set invalid_res 5

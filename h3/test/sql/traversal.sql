@@ -65,6 +65,10 @@ FROM (
     SELECT index, distance FROM h3_grid_disk_distances(:pentagon, 2)
 ) q;
 
+-- pentagon traversal skips zero H3 holes without reading past the buffer
+SELECT COUNT(*) = 16
+FROM h3_grid_disk_distances(:pentagon, 2);
+
 --
 -- TEST h3_grid_path_cells
 --

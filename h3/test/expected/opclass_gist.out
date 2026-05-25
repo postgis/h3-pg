@@ -226,6 +226,45 @@ SELECT COUNT(*) > 0 FROM (
 RESET enable_seqscan;
 DROP TABLE h3_test_multibase;
 --
+-- TEST GiST union vector indexing
+-- Bug: the union support function treated GistEntryVector as 1-based and
+-- skipped vector[0], so internal keys could omit the first child entry.
+-- Compare forced index scans against forced seqscans on a broad tree.
+--
+CREATE TABLE h3_test_union_vector (hex h3index);
+INSERT INTO h3_test_union_vector SELECT h3_cell_to_children(:hexagon, 5);
+INSERT INTO h3_test_union_vector SELECT h3_cell_to_children(:other_hexagon, 5);
+INSERT INTO h3_test_union_vector SELECT h3_cell_to_children('831c06fffffffff'::h3index, 5);
+INSERT INTO h3_test_union_vector SELECT h3_cell_to_children('831c08fffffffff'::h3index, 5);
+CREATE INDEX h3_test_union_vector_idx ON h3_test_union_vector USING gist(hex h3index_gist_ops_experimental);
+CREATE TEMP TABLE h3_test_union_queries AS
+SELECT DISTINCT h3_cell_to_parent(hex, 4) AS query
+FROM h3_test_union_vector
+ORDER BY query
+LIMIT 12;
+SET enable_indexscan = off;
+SET enable_bitmapscan = off;
+CREATE TEMP TABLE h3_test_union_seq AS
+SELECT q.query, COUNT(t.hex) AS n
+FROM h3_test_union_queries q
+LEFT JOIN h3_test_union_vector t ON t.hex <@ q.query
+GROUP BY q.query;
+RESET enable_indexscan;
+RESET enable_bitmapscan;
+SET enable_seqscan = off;
+CREATE TEMP TABLE h3_test_union_idx AS
+SELECT q.query, COUNT(t.hex) AS n
+FROM h3_test_union_queries q
+LEFT JOIN h3_test_union_vector t ON t.hex <@ q.query
+GROUP BY q.query;
+RESET enable_seqscan;
+SELECT bool_and(seq.n = idx.n)
+FROM h3_test_union_seq seq
+JOIN h3_test_union_idx idx USING (query);
+ t
+
+DROP TABLE h3_test_union_vector;
+--
 -- TEST picksplit with H3_NULL entries in seed selection
 -- Bug: when an internal page contained H3_NULL keys (from prior splits
 -- spanning multiple base cells), the seed-waste loop called containment(),

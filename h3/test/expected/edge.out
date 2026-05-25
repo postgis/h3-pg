@@ -59,5 +59,11 @@ SELECT array_length(array_agg(edge), 1) = 5 expected FROM (
 --
 SELECT h3_directed_edge_to_boundary(:edge)
 	~= polygon '((89.5830164946548,64.7146398954916),(89.5790678021742,64.2872231517217))'
+;
+ t
+
+SELECT box(h3_directed_edge_to_boundary(:edge))
+	~= box '(89.58301649465479,64.7146398954916),(89.57906780217422,64.28722315172165)'
+;
  t
 

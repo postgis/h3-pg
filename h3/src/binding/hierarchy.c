@@ -163,10 +163,13 @@ h3_compact_cells(PG_FUNCTION_ARGS)
 		/* Extract data from array into h3set, and wipe compactedSet memory */
 		while (array_iterate(iterator, &value, &isnull))
 		{
-			h3set[i++] = DatumGetH3Index(value);
+			if (!isnull)
+				h3set[i++] = DatumGetH3Index(value);
 		}
+		max = i;
 
-		h3_assert(compactCells(h3set, compactedSet, max));
+		if (max > 0)
+			h3_assert(compactCells(h3set, compactedSet, max));
 
 		funcctx->user_fctx = compactedSet;
 		funcctx->max_calls = max;
@@ -204,8 +207,10 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 		 */
 		while (array_iterate(iterator, &value, &isnull))
 		{
-			compactedSet[i++] = DatumGetH3Index(value);
+			if (!isnull)
+				compactedSet[i++] = DatumGetH3Index(value);
 		}
+		numCompacted = i;
 
 		if (PG_NARGS() == 2)
 		{
@@ -233,11 +238,15 @@ h3_uncompact_cells(PG_FUNCTION_ARGS)
 			resolution = (highRes == 15 ? highRes : highRes + 1);
 		}
 
-		h3_assert(uncompactCellsSize(compactedSet, numCompacted, resolution, &max));
+		if (numCompacted == 0)
+			max = 0;
+		else
+			h3_assert(uncompactCellsSize(compactedSet, numCompacted, resolution, &max));
 
 		uncompactedSet = palloc0(max * sizeof(H3Index));
 
-		h3_assert(uncompactCells(compactedSet, numCompacted, uncompactedSet, max, resolution));
+		if (numCompacted > 0)
+			h3_assert(uncompactCells(compactedSet, numCompacted, uncompactedSet, max, resolution));
 
 		funcctx->user_fctx = uncompactedSet;
 		funcctx->max_calls = max;

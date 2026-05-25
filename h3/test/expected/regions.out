@@ -9,6 +9,8 @@
 \set hollow 'array_remove(:solid, :center)'
 -- pentagon
 \set pentagon '\'831c00fffffffff\'::h3index'
+-- known hexagon
+\set hexagon '\'831c02fffffffff\'::h3index'
 --
 -- TEST h3_polygon_to_cells and h3_cells_to_multi_polygon
 --
@@ -19,6 +21,21 @@ SELECT array_agg(result) is null FROM (
     ) qq
     EXCEPT SELECT unnest(:solid) result
 ) q;
+ t
+
+-- cells_to_multi_polygon initializes the native PostgreSQL polygon bounding box
+SELECT box(exterior)
+	~= box '(-143.77201562176984,50.21316388126197),(-145.20900978883313,49.268689394068176)'
+FROM h3_cells_to_multi_polygon(ARRAY[:hexagon]);
+ t
+
+-- h3_cells_to_multi_polygon skips NULL indexes instead of reading NULL Datum
+SELECT COUNT(*) = 1
+FROM h3_cells_to_multi_polygon(ARRAY[:hexagon, NULL::h3index]);
+ t
+
+SELECT COUNT(*) = 0
+FROM h3_cells_to_multi_polygon(ARRAY[NULL::h3index]);
  t
 
 -- h3_polygon_to_cells is inverse of h3_cells_to_multi_polygon for set with a hole

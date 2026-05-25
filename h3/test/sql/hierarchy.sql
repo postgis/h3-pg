@@ -86,6 +86,15 @@ SELECT array_agg(result) is null FROM (
 -- compact is inverse of uncompact
 SELECT h3_compact_cells(ARRAY(SELECT h3_uncompact_cells(ARRAY[:hexagon], :resolution))) = :hexagon;
 
+-- compact/uncompact skip NULL indexes instead of reading NULL Datum
+SELECT h3_compact_cells(ARRAY(SELECT h3_uncompact_cells(ARRAY[:hexagon], :resolution) UNION ALL SELECT NULL::h3index)) = :hexagon;
+
+SELECT COUNT(*) = 0 FROM h3_compact_cells(ARRAY[NULL::h3index]);
+
+SELECT h3_uncompact_cells(ARRAY[:hexagon, NULL::h3index], :resolution) = :hexagon;
+
+SELECT COUNT(*) = 0 FROM h3_uncompact_cells(ARRAY[NULL::h3index], :resolution);
+
 -- uncompacts all to same resolution, gives same result as getting children
 SELECT array_agg(result) is null FROM (
 	SELECT h3_uncompact_cells(ARRAY(

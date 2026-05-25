@@ -28,6 +28,7 @@
 
 #include "constants.h"
 #include "error.h"
+#include "polygon.h"
 #include "type.h"
 #include "guc.h"
 
@@ -142,6 +143,7 @@ h3_cell_to_boundary(PG_FUNCTION_ARGS)
 		polygon->p[v].x = radsToDegs(lon);
 		polygon->p[v].y = radsToDegs(lat);
 	}
+	h3_polygon_init_boundbox(polygon);
 
 	PG_RETURN_POLYGON_P(polygon);
 }

@@ -70,7 +70,7 @@ srf_return_h3_index_distances_from_user_fctx(PG_FUNCTION_ARGS)
 	int		   *distances = user_fctx->distances;
 
 	/* skip missing indices (all zeros) */
-	while (!indices[call_cntr])
+	while (call_cntr < max_calls && !indices[call_cntr])
 	{
 		funcctx->call_cntr = ++call_cntr;
 	};

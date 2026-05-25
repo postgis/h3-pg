@@ -41,6 +41,11 @@ SELECT h3_latlng_to_cell(g, r) = :pentagon FROM (
 SELECT h3_polygon_to_cells(h3_cell_to_boundary(:hexagon), null, :resolution) = :hexagon;
  t
 
+-- boundary initializes the native PostgreSQL polygon bounding box
+SELECT box(h3_cell_to_boundary(:hexagon))
+    ~= box '(-143.77201562176984,50.21316388126197),(-145.20900978883313,49.268689394068176)';
+ t
+
 -- same for pentagon
 SELECT h3_polygon_to_cells(h3_cell_to_boundary(:pentagon), null, :resolution) = :pentagon;
  t

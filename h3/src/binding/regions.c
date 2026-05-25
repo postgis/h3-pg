@@ -27,6 +27,7 @@
 #include <utils/builtins.h>		 // text_to_cstring
 
 #include "error.h"
+#include "polygon.h"
 #include "type.h"
 #include "srf.h"
 
@@ -94,7 +95,7 @@ h3_polygon_to_cells(PG_FUNCTION_ARGS)
 		ArrayType  *holes;
 		int			nelems = 0;
 		int			resolution;
-		GeoPolygon	polygon;
+		GeoPolygon	polygon = {0};
 		Datum		value;
 		bool		isnull;
 		POLYGON    *exterior;
@@ -176,7 +177,7 @@ h3_polygon_to_cells_experimental(PG_FUNCTION_ARGS)
 		int			nelems = 0;
 		uint32_t	flags = 0;
 		int			resolution;
-		GeoPolygon	polygon;
+		GeoPolygon	polygon = {0};
 		Datum		value;
 		bool		isnull;
 		POLYGON    *exterior;
@@ -283,11 +284,13 @@ h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 		/* Extract data from array into h3set, and wipe compactedSet memory */
 		while (array_iterate(iterator, &value, &isnull))
 		{
-			h3set[i++] = DatumGetH3Index(value);
+			if (!isnull)
+				h3set[i++] = DatumGetH3Index(value);
 		}
+		numHexes = i;
 
 		/* produce hexagons into allocated memory */
-		linkedPolygon = palloc(sizeof(LinkedGeoPolygon));
+		linkedPolygon = palloc0(sizeof(LinkedGeoPolygon));
 		h3_assert(cellsToLinkedMultiPolygon(h3set, numHexes, linkedPolygon));
 
 		ENSURE_TYPEFUNC_COMPOSITE(get_call_result_type(fcinfo, NULL, &tuple_desc));
@@ -300,7 +303,7 @@ h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 	funcctx = SRF_PERCALL_SETUP();
 	linkedPolygon = (LinkedGeoPolygon *) funcctx->user_fctx;
 
-	if (linkedPolygon)
+	if (linkedPolygon && linkedPolygon->first)
 	{
 		HeapTuple	tuple;
 		Datum		result;
@@ -326,6 +329,7 @@ h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 		SET_VARSIZE(polygon, size);
 		polygon->npts = count;
 		linkedGeoLoopToNativePolygon(linkedLoop, polygon);
+		h3_polygon_init_boundbox(polygon);
 
 		values[0] = PolygonPGetDatum(polygon);
 		nulls[0] = false;
@@ -352,6 +356,7 @@ h3_cells_to_multi_polygon(PG_FUNCTION_ARGS)
 				SET_VARSIZE(polygon, size);
 				polygon->npts = subcount;
 				linkedGeoLoopToNativePolygon(linkedLoop, polygon);
+				h3_polygon_init_boundbox(polygon);
 				elems[i] = PolygonPGetDatum(polygon);
 				linkedLoop = linkedLoop->next;
 			}

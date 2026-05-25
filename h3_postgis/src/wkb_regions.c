@@ -306,7 +306,10 @@ h3_cells_to_multi_polygon_wkb(PG_FUNCTION_ARGS)
 	iterator = array_create_iterator(array, 0, NULL);
 	numHexes = 0;
 	while (array_iterate(iterator, &value, &isnull))
-		h3set[numHexes++] = DatumGetH3Index(value);
+	{
+		if (!isnull)
+			h3set[numHexes++] = DatumGetH3Index(value);
+	}
 
 	if (numHexes > 0 && h3set[0])
 		resolution = H3_EXPORT(getResolution)(h3set[0]);
@@ -1671,6 +1674,14 @@ segment_add_split_t(NodedSegment * segment, double t)
 			return;
 	}
 
+	if (segment->splitCount >= segment->splitCap)
+	{
+		segment->splitCap = segment->splitCap > 0
+			? segment->splitCap * 2
+			: 4;
+		segment->splitTs = repalloc(segment->splitTs, segment->splitCap * sizeof(*segment->splitTs));
+	}
+
 	segment->splitTs[segment->splitCount++] = t;
 }
 
@@ -2223,6 +2234,10 @@ h3_set_boundary_extents(const H3Index * h3set, int numHexes, BoundaryExtents * e
 {
 	bool		init = false;
 
+	extents->minLat = 0.0;
+	extents->maxLat = 0.0;
+	extents->minLng = 0.0;
+	extents->maxLng = 0.0;
 	extents->hasWest = false;
 	extents->hasEast = false;
 	for (int i = 0; i < numHexes; i++)

@@ -166,7 +166,9 @@ BEGIN
         USING origin, middle;
 
         RETURN QUERY EXECUTE pg_catalog.format(
-            'SELECT * FROM %I.h3_grid_path_cells_recursive($1, $2)',
+            'SELECT path.cell
+             FROM %I.h3_grid_path_cells_recursive($1, $2) AS path(cell)
+             WHERE path.cell OPERATOR(@extschema:h3@.<>) $1',
             self_schema
         )
         USING middle, destination;
