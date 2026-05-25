@@ -117,7 +117,7 @@ h3_cell_to_boundary(PG_FUNCTION_ARGS)
 	h3_assert(cellToBoundary(cell, &boundary));
 
 	size = offsetof(POLYGON, p) +sizeof(polygon->p[0]) * boundary.numVerts;
-	polygon = (POLYGON *) palloc(size);
+	polygon = (POLYGON *) palloc0(size);
 	SET_VARSIZE(polygon, size);
 	polygon->npts = boundary.numVerts;
 
