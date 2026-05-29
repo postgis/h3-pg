@@ -62,6 +62,10 @@ typedef struct
 {
 	LatLng		from;
 	LatLng		to;
+	double		minLat;
+	double		maxLat;
+	double		minLng;
+	double		maxLng;
 	int			splitCount;
 	int			splitCap;
 	double	   *splitTs;
@@ -235,6 +239,9 @@ static bool
 
 static bool
 			segment_collinear_overlap_ts(const NodedSegment * a, const NodedSegment * b, double *aStart, double *aEnd, double *bStart, double *bEnd);
+
+static bool
+			segments_bounds_overlap(const NodedSegment * a, const NodedSegment * b);
 
 static double
 			segment_project_t(const NodedSegment * segment, const LatLng * latlng);
@@ -1647,6 +1654,10 @@ collect_linked_polygon_segments(const LinkedGeoPolygon * multiPolygon, NodedSegm
 
 				segment->from = cur->vertex;
 				segment->to = next->vertex;
+				segment->minLat = fmin(segment->from.lat, segment->to.lat);
+				segment->maxLat = fmax(segment->from.lat, segment->to.lat);
+				segment->minLng = fmin(segment->from.lng, segment->to.lng);
+				segment->maxLng = fmax(segment->from.lng, segment->to.lng);
 				segment->splitCap = segmentCount + 2;
 				segment->splitCount = 0;
 				segment->splitTs = palloc(segment->splitCap * sizeof(*segment->splitTs));
@@ -1778,6 +1789,16 @@ segment_collinear_overlap_ts(const NodedSegment * a, const NodedSegment * b, dou
 	return true;
 }
 
+bool
+segments_bounds_overlap(const NodedSegment * a, const NodedSegment * b)
+{
+	/* Keep this reject conservative: missed overlaps would drop graph nodes. */
+	return a->minLat <= b->maxLat + DBL_EPSILON
+		&& b->minLat <= a->maxLat + DBL_EPSILON
+		&& a->minLng <= b->maxLng + DBL_EPSILON
+		&& b->minLng <= a->maxLng + DBL_EPSILON;
+}
+
 double
 segment_project_t(const NodedSegment * segment, const LatLng * latlng)
 {
@@ -1831,6 +1852,9 @@ graph_add_noded_linked_polygon_edges(VertexGraph * graph, const LinkedGeoPolygon
 			double		overlapEndI;
 			double		overlapStartJ;
 			double		overlapEndJ;
+
+			if (!segments_bounds_overlap(&segments[i], &segments[j]))
+				continue;
 
 			if (segment_intersection_t(&segments[i], &segments[j], &ti, &tj))
 			{
