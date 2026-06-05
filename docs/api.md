@@ -363,6 +363,13 @@ Returns all unidirectional edges with the given index as origin.
 Provides the coordinates defining the unidirectional edge.
 
 
+### h3_reverse_directed_edge(edge `h3index`) ⇒ `h3index`
+*Since vunreleased*
+
+
+Returns the directed edge with origin and destination cells reversed.
+
+
 # H3 Vertex functions
 Functions for working with cell vertexes.
 

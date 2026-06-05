@@ -39,6 +39,7 @@ PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_get_directed_edge_destination);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_directed_edge_to_cells);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_origin_to_directed_edges);
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_directed_edge_to_boundary);
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_reverse_directed_edge);
 
 /* Returns whether or not the provided H3 cell indexes are neighbors. */
 Datum
@@ -173,4 +174,16 @@ h3_directed_edge_to_boundary(PG_FUNCTION_ARGS)
 	}
 	h3_polygon_init_boundbox(polygon);
 	PG_RETURN_POLYGON_P(polygon);
+}
+
+/* Returns the directed edge with origin and destination cells reversed. */
+Datum
+h3_reverse_directed_edge(PG_FUNCTION_ARGS)
+{
+	H3Index		reversed;
+	H3Index		edge = PG_GETARG_H3INDEX(0);
+
+	h3_assert(reverseDirectedEdge(edge, &reversed));
+
+	PG_RETURN_H3INDEX(reversed);
 }

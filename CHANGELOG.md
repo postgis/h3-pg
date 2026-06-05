@@ -34,6 +34,7 @@ avoid adding features or APIs which do not map onto the
 
 - [#188], Add experimental GiST operator class for `h3index`; initial work in [#42] ([Zacharias Knudsen], [Eric Schoffstall], [Darafei Praliaskouski], [Abel Vázquez Montoro], [@mattiZed])
 - Bump bundled H3 core library to `v4.4.1` and add bindings for new upstream APIs including `h3_grid_ring`, `h3_get_index_digit`, `h3_construct_cell`, and `h3_is_valid_index` ([Darafei Praliaskouski])
+- Bump bundled H3 core library to `v4.5.0`, expose `h3_reverse_directed_edge`, and inherit upstream bidirectional `h3_grid_path_cells` plus stricter cell-to-multipolygon validation ([Darafei Praliaskouski])
 
 * Breaking Changes *
 

@@ -60,3 +60,22 @@ SELECT h3_directed_edge_to_boundary(:edge)
 SELECT box(h3_directed_edge_to_boundary(:edge))
 	~= box '(89.58301649465479,64.7146398954916),(89.57906780217422,64.28722315172165)'
 ;
+
+--
+-- TEST h3_reverse_directed_edge
+--
+
+SELECT h3_directed_edge_to_cells(h3_reverse_directed_edge(:edge)) = (:neighbor, :hexagon);
+SELECT h3_reverse_directed_edge(h3_reverse_directed_edge(:edge)) = :edge;
+
+CREATE FUNCTION h3_test_reverse_directed_edge_invalid() RETURNS boolean LANGUAGE PLPGSQL
+    AS $$
+        BEGIN
+            PERFORM h3_reverse_directed_edge('880326b885fffff'::h3index);
+            RETURN false;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN true;
+        END;
+    $$;
+SELECT h3_test_reverse_directed_edge_invalid();
+DROP FUNCTION h3_test_reverse_directed_edge_invalid;

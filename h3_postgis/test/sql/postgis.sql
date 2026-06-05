@@ -100,6 +100,20 @@ SELECT ST_Equals(
     h3_cells_to_multi_polygon_geometry(ARRAY[:hexagon::h3index])
 );
 
+-- H3 v4.5.0 rejects ambiguous duplicate-cell outlines instead of producing
+-- undefined multipolygon output.
+CREATE FUNCTION h3_test_cells_to_multi_polygon_geometry_duplicate() RETURNS boolean LANGUAGE PLPGSQL
+    AS $$
+        BEGIN
+            PERFORM h3_cells_to_multi_polygon_geometry(ARRAY['880326b885fffff'::h3index, '880326b885fffff'::h3index]);
+            RETURN false;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN true;
+        END;
+    $$;
+SELECT h3_test_cells_to_multi_polygon_geometry_duplicate();
+DROP FUNCTION h3_test_cells_to_multi_polygon_geometry_duplicate;
+
 -- invalid polygon can produce a very large number of cells (upstream H3 behavior)
 SET client_min_messages TO warning;
 \set invalid_res 5
