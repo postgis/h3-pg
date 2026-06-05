@@ -21,30 +21,42 @@
 
 #include "wkb_vertex_graph.h"
 
-static uint32_t hash_vertex(const LatLng *vertex, int res, int numBuckets);
-static VertexNode *first_vertex_node(const VertexGraph *graph);
+static uint32_t hash_vertex(const VertexGraph *graph, const LatLng *vertex);
 
 void
 initVertexGraph(VertexGraph *graph, int numBuckets, int res)
 {
-	graph->buckets = numBuckets > 0
-		? palloc0(numBuckets * sizeof(VertexNode *))
-		: NULL;
+	if (numBuckets <= 0)
+		numBuckets = 1;
+
+	graph->buckets = palloc0(numBuckets * sizeof(VertexNode *));
 	graph->numBuckets = numBuckets;
 	graph->size = 0;
 	graph->res = res;
+	graph->resMultiplier = pow(10.0, 15 - res);
 }
 
 void
 destroyVertexGraph(VertexGraph *graph)
 {
-	VertexNode *node;
+	for (int i = 0; i < graph->numBuckets; i++)
+	{
+		VertexNode *node = graph->buckets[i];
 
-	while ((node = first_vertex_node(graph)) != NULL)
-		removeVertexNode(graph, node);
+		while (node != NULL)
+		{
+			VertexNode *next = node->next;
+
+			pfree(node);
+			node = next;
+		}
+	}
 
 	if (graph->buckets)
 		pfree(graph->buckets);
+	graph->buckets = NULL;
+	graph->size = 0;
+	graph->numBuckets = 0;
 }
 
 VertexNode *
@@ -52,7 +64,7 @@ addVertexNode(VertexGraph *graph, const LatLng *fromVtx, const LatLng *toVtx)
 {
 	VertexNode *node;
 	VertexNode *currentNode;
-	uint32_t	index = hash_vertex(fromVtx, graph->res, graph->numBuckets);
+	uint32_t	index = hash_vertex(graph, fromVtx);
 
 	node = palloc(sizeof(*node));
 	node->from = *fromVtx;
@@ -88,7 +100,7 @@ addVertexNode(VertexGraph *graph, const LatLng *fromVtx, const LatLng *toVtx)
 int
 removeVertexNode(VertexGraph *graph, VertexNode *node)
 {
-	uint32_t	index = hash_vertex(&node->from, graph->res, graph->numBuckets);
+	uint32_t	index = hash_vertex(graph, &node->from);
 	VertexNode *currentNode = graph->buckets[index];
 	bool		found = false;
 
@@ -105,6 +117,7 @@ removeVertexNode(VertexGraph *graph, VertexNode *node)
 			{
 				currentNode->next = node->next;
 				found = true;
+				break;
 			}
 			currentNode = currentNode->next;
 		}
@@ -122,7 +135,7 @@ VertexNode *
 findNodeForEdge(const VertexGraph *graph, const LatLng *fromVtx,
 				const LatLng *toVtx)
 {
-	uint32_t	index = hash_vertex(fromVtx, graph->res, graph->numBuckets);
+	uint32_t	index = hash_vertex(graph, fromVtx);
 	VertexNode *node = graph->buckets[index];
 
 	while (node != NULL)
@@ -137,21 +150,11 @@ findNodeForEdge(const VertexGraph *graph, const LatLng *fromVtx,
 }
 
 static uint32_t
-hash_vertex(const LatLng *vertex, int res, int numBuckets)
+hash_vertex(const VertexGraph *graph, const LatLng *vertex)
 {
-	if (numBuckets <= 0)
+	if (graph->numBuckets <= 0)
 		return 0;
 
-	return (uint32_t) fmod(fabs((vertex->lat + vertex->lng) * pow(10, 15 - res)),
-						   numBuckets);
-}
-
-static VertexNode *
-first_vertex_node(const VertexGraph *graph)
-{
-	for (int i = 0; i < graph->numBuckets; i++)
-		if (graph->buckets[i] != NULL)
-			return graph->buckets[i];
-
-	return NULL;
+	return (uint32_t) fmod(fabs((vertex->lat + vertex->lng) * graph->resMultiplier),
+						   graph->numBuckets);
 }

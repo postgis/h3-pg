@@ -35,6 +35,7 @@ typedef struct
 	int			numBuckets;
 	int			size;
 	int			res;
+	double		resMultiplier;
 } VertexGraph;
 
 void initVertexGraph(VertexGraph *graph, int numBuckets, int res);

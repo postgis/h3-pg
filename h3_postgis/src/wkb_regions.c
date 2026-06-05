@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <limits.h>
+
 #include <postgres.h>
 #include <h3api.h>
 
@@ -227,6 +229,9 @@ static void
 
 static int
 			count_linked_polygon_edges(const LinkedGeoPolygon * multiPolygon);
+
+static int
+			vertex_graph_bucket_count(int edgeCount);
 
 static void
 			collect_linked_polygon_segments(const LinkedGeoPolygon * multiPolygon, NodedSegment * segments, int segmentCount);
@@ -1621,6 +1626,8 @@ count_linked_polygon_edges(const LinkedGeoPolygon * multiPolygon)
 
 			do
 			{
+				if (count == INT_MAX)
+					elog(ERROR, "too many polygon edges");
 				count++;
 				cur = cur->next ? cur->next : first;
 			}
@@ -1629,6 +1636,18 @@ count_linked_polygon_edges(const LinkedGeoPolygon * multiPolygon)
 	}
 
 	return count;
+}
+
+static int
+vertex_graph_bucket_count(int edgeCount)
+{
+	if (edgeCount <= 0)
+		return 1;
+
+	if (edgeCount > INT_MAX / 2)
+		elog(ERROR, "too many polygon edges");
+
+	return edgeCount * 2;
 }
 
 /* Materialize all split-boundary edges into noded segments with split markers. */
@@ -1927,7 +1946,7 @@ polygonize_noded_linked_polygon(const LinkedGeoPolygon * multiPolygon, int resol
 
 	initVertexGraph(
 		&graph,
-		edgeCount * edgeCount,
+		vertex_graph_bucket_count(edgeCount),
 		resolution >= 0 ? resolution : 0);
 	graph_add_noded_linked_polygon_edges(&graph, multiPolygon);
 	result = polygonize_noded_graph(&graph);
