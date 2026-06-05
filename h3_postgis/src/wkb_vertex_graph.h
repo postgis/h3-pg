@@ -22,6 +22,11 @@
 
 typedef struct VertexNode VertexNode;
 
+/*
+ * Directed boundary segment used while polygonizing split H3 cell boundaries.
+ * A node is keyed by its start vertex; the end vertex is still part of identity
+ * so duplicate directed edges collapse to a single graph entry.
+ */
 struct VertexNode
 {
 	LatLng		from;
@@ -29,6 +34,14 @@ struct VertexNode
 	VertexNode *next;
 };
 
+/*
+ * Small hash table for directed boundary segments.
+ *
+ * H3 4.5 no longer ships the old internal vertexGraph helper that this WKB
+ * polygonizer used. This struct intentionally keeps only the operations needed
+ * by h3_postgis: add an edge, find an exact/reverse edge, and remove it when
+ * shared boundaries cancel during polygon union construction.
+ */
 typedef struct
 {
 	VertexNode **buckets;
