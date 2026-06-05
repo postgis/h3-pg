@@ -142,6 +142,9 @@ SELECT '831c02fffffffff'::h3index = h3_construct_cell(
 SELECT bool_and(h3_is_valid_index(r)) AND COUNT(*) = 6
 FROM h3_grid_ring('831c02fffffffff'::h3index, 1) AS r;
 
+SELECT h3_directed_edge_to_cells(h3_reverse_directed_edge('1180326b885fffff'::h3index))
+    = ('880326b887fffff'::h3index, '880326b885fffff'::h3index);
+
 SELECT op_dist = 1 AND fn_dist = 1 FROM h3_distance_view;
 
 DROP VIEW h3_distance_view;

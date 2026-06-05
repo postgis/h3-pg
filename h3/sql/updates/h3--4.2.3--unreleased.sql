@@ -298,6 +298,13 @@ COMMENT ON FUNCTION
     h3_grid_distance(h3index, h3index)
 IS 'Returns the shortest grid distance between two cells. Raises an error when the cells are not comparable, too far apart, or the path crosses pentagonal distortion.';
 
+CREATE OR REPLACE FUNCTION
+    h3_reverse_directed_edge(edge h3index) RETURNS h3index
+AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+COMMENT ON FUNCTION
+    h3_reverse_directed_edge(edge h3index)
+IS 'Returns the directed edge with origin and destination cells reversed.';
+
 COMMENT ON FUNCTION
     h3_cell_to_children(h3index, integer)
 IS 'Returns the ordered set of children of the given index at the target resolution.';

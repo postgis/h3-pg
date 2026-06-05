@@ -23,10 +23,10 @@
 #include <linkedGeo.h>
 #include <math.h>
 #include <utils/array.h> // using arrays
-#include <vertexGraph.h>
 
 #include "error.h"
 #include "type.h"
+#include "wkb_vertex_graph.h"
 #include "wkb_linked_geo.h"
 #include "wkb_split.h"
 #include "wkb.h"

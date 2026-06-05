@@ -115,6 +115,11 @@ FROM h3_grid_disk_distances(:pentagon, 2);
 SELECT ARRAY(SELECT h3_grid_path_cells('841c023ffffffff', '841c025ffffffff'))
     = ARRAY['841c023ffffffff','841c027ffffffff','841c025ffffffff']::h3index[];
 
+-- H3 v4.5.0 can find paths in both directions for cases that previously only
+-- worked from one side.
+SELECT ARRAY(SELECT h3_grid_path_cells('841c025ffffffff', '841c023ffffffff'))
+    = ARRAY['841c025ffffffff','841c027ffffffff','841c023ffffffff']::h3index[];
+
 --
 -- TEST h3_grid_distance
 --

@@ -10,6 +10,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     postgis_raster
   SOURCES
     src/init.c
+    src/wkb_vertex_graph.c
     src/wkb_bbox3.c
     src/wkb_indexing.c
     src/wkb_linked_geo.c

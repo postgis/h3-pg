@@ -23,6 +23,9 @@ These exist only in h3-pg, not other H3 language bindings.
 - `a <-> b` — grid distance in cells between two h3index values (`h3`)
 - `geom @ resolution` — index geometry/geography at resolution (`h3_postgis`)
 
+**Directed edge convenience** (`h3`):
+- `h3_reverse_directed_edge(edge)` — returns the same directed edge with origin and destination reversed
+
 **Operator classes** for `h3index`: BTREE, HASH, BRIN, SP-GIST (`h3`)
 
 **Boundary helpers** (`h3_postgis`):

@@ -36,6 +36,20 @@ FROM h3_cells_to_multi_polygon(ARRAY[:hexagon, NULL::h3index]);
 SELECT COUNT(*) = 0
 FROM h3_cells_to_multi_polygon(ARRAY[NULL::h3index]);
 
+-- H3 v4.5.0 rejects ambiguous duplicate-cell outlines instead of producing
+-- undefined polygon output.
+CREATE FUNCTION h3_test_cells_to_multi_polygon_duplicate() RETURNS boolean LANGUAGE PLPGSQL
+    AS $$
+        BEGIN
+            PERFORM h3_cells_to_multi_polygon(ARRAY['831c02fffffffff'::h3index, '831c02fffffffff'::h3index]);
+            RETURN false;
+        EXCEPTION WHEN OTHERS THEN
+            RETURN true;
+        END;
+    $$;
+SELECT h3_test_cells_to_multi_polygon_duplicate();
+DROP FUNCTION h3_test_cells_to_multi_polygon_duplicate;
+
 -- h3_polygon_to_cells is inverse of h3_cells_to_multi_polygon for set with a hole
 SELECT array_agg(result) is null FROM (
     SELECT h3_polygon_to_cells(exterior, holes, 1) result FROM (
