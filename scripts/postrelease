@@ -40,10 +40,24 @@ make_next_update() {
     sed "s/UPDATE TO '${version}'/UPDATE TO 'unreleased'/" > "$next_file"
 
   tmp="$(mktemp)"
-  awk -v needle="$release_name" -v addition="    sql/updates/${next_name}" '
-    { print }
-    index($0, needle) { print addition }
-  ' "$cmake_file" > "$tmp"
+  awk -v needle="    sql/updates/${release_name}" -v addition="    sql/updates/${next_name}" '
+    {
+      print
+      if ($0 == needle) {
+        print addition
+        hits++
+      }
+    }
+    END {
+      if (hits != 1) {
+        exit 42
+      }
+    }
+  ' "$cmake_file" > "$tmp" || {
+    rm -f "$tmp"
+    rm -f "$next_file"
+    die "${cmake_file} must contain exactly one sql/updates/${release_name} entry"
+  }
   mv "$tmp" "$cmake_file"
 }
 
@@ -76,8 +90,10 @@ main() {
   make_next_update h3_postgis h3_postgis/sql/updates h3_postgis/CMakeLists.txt "$version"
   sed -i "s/ALTER EXTENSION h3 UPDATE TO '${version}'/ALTER EXTENSION h3 UPDATE TO 'unreleased'/g" \
     h3/test/sql/extension.sql h3/test/expected/extension.out
-  grep -q "ALTER EXTENSION h3 UPDATE TO 'unreleased'" h3/test/sql/extension.sql ||
-    die "h3 extension regression test was not restored to unreleased"
+  for test_file in h3/test/sql/extension.sql h3/test/expected/extension.out; do
+    grep -q "ALTER EXTENSION h3 UPDATE TO 'unreleased'" "$test_file" ||
+      die "${test_file} extension regression target was not restored to unreleased"
+  done
 
   verify_update_references
   scripts/check-metadata
