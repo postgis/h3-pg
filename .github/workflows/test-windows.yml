@@ -34,4 +34,6 @@ jobs:
 
       - name: Print regression diffs
         if: ${{ failure() }}
-        run: cat build/*/test/regression.diffs || true
+        run: |
+          Get-ChildItem build -Recurse -Filter regression.diffs -ErrorAction SilentlyContinue |
+            ForEach-Object { Get-Content $_.FullName }

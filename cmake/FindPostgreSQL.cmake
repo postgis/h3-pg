@@ -41,6 +41,9 @@ execute_process(COMMAND ${PostgreSQL_CONFIG} --configure         OUTPUT_VARIABLE
 execute_process(COMMAND ${PostgreSQL_CONFIG} --cppflags          OUTPUT_VARIABLE PostgreSQL_CPPFLAGS_STRING    OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${PostgreSQL_CONFIG} --pgxs              OUTPUT_VARIABLE PostgreSQL_PGXS               OUTPUT_STRIP_TRAILING_WHITESPACE)
 
+if(PostgreSQL_CPPFLAGS_STRING STREQUAL "not recorded")
+  set(PostgreSQL_CPPFLAGS_STRING "")
+endif()
 separate_arguments(PostgreSQL_CPPFLAGS UNIX_COMMAND "${PostgreSQL_CPPFLAGS_STRING}")
 
 # PostgreSQL can optionally be built with LLVM support (`--with-llvm`).
