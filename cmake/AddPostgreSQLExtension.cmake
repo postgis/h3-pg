@@ -91,6 +91,9 @@ function(PostgreSQL_add_extension_bitcode LIBRARY_NAME EXTENSION_NAME EXTENSION_
     "-DPOSTGRESQL_VERSION_MAJOR=${PostgreSQL_VERSION_MAJOR}"
   )
   set(EXTENSION_BITCODE_COMPILE_ARGS "")
+  list(APPEND EXTENSION_BITCODE_COMPILE_ARGS ${PostgreSQL_BITCODE_COMPILER_FLAGS})
+  list(APPEND EXTENSION_BITCODE_COMPILE_ARGS ${PostgreSQL_BITCODE_CFLAGS})
+  list(APPEND EXTENSION_BITCODE_COMPILE_ARGS ${PostgreSQL_CPPFLAGS})
   if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
     list(APPEND EXTENSION_BITCODE_COMPILE_ARGS "-fno-semantic-interposition")
   endif()
@@ -109,7 +112,6 @@ function(PostgreSQL_add_extension_bitcode LIBRARY_NAME EXTENSION_NAME EXTENSION_
       COMMAND ${PostgreSQL_LLVM_CLANG_BIN}
         -emit-llvm
         -c
-        -O2
         -flto=thin
         -fPIC
         ${EXTENSION_BITCODE_COMPILE_ARGS}

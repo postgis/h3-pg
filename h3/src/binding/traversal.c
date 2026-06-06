@@ -20,6 +20,7 @@
 #include <fmgr.h>			 // PG_FUNCTION_ARGS
 #include <funcapi.h>		 // SRF_IS_FIRSTCALL
 #include <utils/geo_decls.h> // PG_GETARG_POINT_P
+#include <utils/memutils.h>
 
 #include "error.h"
 #include "type.h"
@@ -45,6 +46,16 @@ ensure_nonnegative_k(int k)
 		return 0;
 	}
 	return k;
+}
+
+static void *
+palloc_h3_array_checked(int64_t count, Size elementSize, bool zero)
+{
+	if (count < 0 || (uint64) count > MaxAllocSize / elementSize)
+		elog(ERROR, "too many grid traversal cells");
+	return zero
+		? palloc0((Size) count * elementSize)
+		: palloc((Size) count * elementSize);
 }
 
 /*
@@ -75,7 +86,7 @@ h3_grid_disk(PG_FUNCTION_ARGS)
 
 		h3_assert(maxGridDiskSize(k, &max));
 
-		indices = palloc0(max * sizeof(H3Index));
+		indices = palloc_h3_array_checked(max, sizeof(H3Index), true);
 
 		h3_assert(gridDisk(origin, k, indices));
 
@@ -123,8 +134,8 @@ h3_grid_disk_distances(PG_FUNCTION_ARGS)
 
 		user_fctx = palloc(sizeof(hexDistanceTuple));
 
-		user_fctx->indices = palloc0(maxSize * sizeof(H3Index));
-		user_fctx->distances = palloc0(maxSize * sizeof(int));
+		user_fctx->indices = palloc_h3_array_checked(maxSize, sizeof(H3Index), true);
+		user_fctx->distances = palloc_h3_array_checked(maxSize, sizeof(int), true);
 
 		h3_assert(gridDiskDistances(origin, k, user_fctx->indices, user_fctx->distances));
 
@@ -163,7 +174,7 @@ h3_grid_ring(PG_FUNCTION_ARGS)
 
 		h3_assert(maxGridRingSize(k, &maxSize));
 
-		indices = palloc0(maxSize * sizeof(H3Index));
+		indices = palloc_h3_array_checked(maxSize, sizeof(H3Index), true);
 
 		h3_assert(gridRing(origin, k, indices));
 
@@ -198,7 +209,7 @@ h3_grid_ring_unsafe(PG_FUNCTION_ARGS)
 		int64_t		maxSize;
 
 		h3_assert(maxGridRingSize(k, &maxSize));
-		indices = palloc(maxSize * sizeof(H3Index));
+		indices = palloc_h3_array_checked(maxSize, sizeof(H3Index), false);
 
 		h3_assert(gridRingUnsafe(origin, k, indices));
 
@@ -255,7 +266,7 @@ h3_grid_path_cells(PG_FUNCTION_ARGS)
 
 		h3_assert(gridPathCellsSize(start, end, &size));
 
-		indices = palloc(size * sizeof(H3Index));
+		indices = palloc_h3_array_checked(size, sizeof(H3Index), false);
 
 		h3_assert(gridPathCells(start, end, indices));
 

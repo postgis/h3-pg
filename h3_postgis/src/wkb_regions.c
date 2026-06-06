@@ -23,8 +23,10 @@
 #include <float.h>
 #include <fmgr.h>		 // PG_FUNCTION_ARGS
 #include <linkedGeo.h>
+#include <miscadmin.h>
 #include <math.h>
 #include <utils/array.h> // using arrays
+#include <utils/memutils.h>
 
 #include "error.h"
 #include "type.h"
@@ -233,6 +235,15 @@ static int
 static int
 			vertex_graph_bucket_count(int edgeCount);
 
+static void *
+			palloc_array_checked(Size count, Size elementSize);
+
+static void *
+			palloc0_array_checked(Size count, Size elementSize);
+
+static void *
+			repalloc_array_checked(void *pointer, Size count, Size elementSize);
+
 static void
 			collect_linked_polygon_segments(const LinkedGeoPolygon * multiPolygon, NodedSegment * segments, int segmentCount);
 
@@ -312,7 +323,7 @@ h3_cells_to_multi_polygon_wkb(PG_FUNCTION_ARGS)
 	bool		localLinkedPolygon = false;
 
 	numHexes = ArrayGetNItems(ARR_NDIM(array), ARR_DIMS(array));
-	h3set = palloc(numHexes * sizeof(*h3set));
+	h3set = palloc_array_checked(numHexes, sizeof(*h3set));
 
 	/* Extract data from array into h3set */
 	iterator = array_create_iterator(array, 0, NULL);
@@ -599,8 +610,8 @@ cell_set_is_full_globe(const H3Index * h3set, int numHexes)
 	}
 
 	h3_assert(H3_EXPORT(getNumCells)(0, &numRes0));
-	compacted = palloc0(numHexes * sizeof(*compacted));
-	res0 = palloc(numRes0 * sizeof(*res0));
+	compacted = palloc0_array_checked(numHexes, sizeof(*compacted));
+	res0 = palloc_array_checked(numRes0, sizeof(*res0));
 
 	/*
 	 * "Full globe" here means "compacts exactly to the canonical res0 globe",
@@ -851,13 +862,13 @@ normalize_split_linked_polygon(const LinkedGeoPolygon * multiPolygon)
 	flattened = (LinkedGeoPolygon) {0};
 	collect_unique_split_loops(&flattened, multiPolygon);
 	loopCount = count_linked_geo_loops(&flattened);
-	loops = palloc(loopCount * sizeof(*loops));
-	bounds = palloc(loopCount * sizeof(*bounds));
-	probes = palloc(loopCount * sizeof(*probes));
-	areas = palloc(loopCount * sizeof(*areas));
-	parents = palloc(loopCount * sizeof(*parents));
-	depths = palloc(loopCount * sizeof(*depths));
-	polygons = palloc0(loopCount * sizeof(*polygons));
+	loops = palloc_array_checked(loopCount, sizeof(*loops));
+	bounds = palloc_array_checked(loopCount, sizeof(*bounds));
+	probes = palloc_array_checked(loopCount, sizeof(*probes));
+	areas = palloc_array_checked(loopCount, sizeof(*areas));
+	parents = palloc_array_checked(loopCount, sizeof(*parents));
+	depths = palloc_array_checked(loopCount, sizeof(*depths));
+	polygons = palloc0_array_checked(loopCount, sizeof(*polygons));
 
 	{
 		int			loopIdx = 0;
@@ -1052,7 +1063,7 @@ copy_linked_geo_loop_vertices(const LinkedGeoLoop * loop, LatLng ** verts)
 	int	count = count_linked_lat_lng(loop);
 	int	idx = 0;
 
-	*verts = palloc(count * sizeof(**verts));
+	*verts = palloc_array_checked(count, sizeof(**verts));
 	FOREACH_LINKED_LAT_LNG(loop, latlng)
 		(*verts)[idx++] = latlng->vertex;
 
@@ -1301,8 +1312,8 @@ split_self_touching_polygons(const LinkedGeoPolygon * multiPolygon)
 			if (vertCount < 3)
 				continue;
 
-			verts = palloc(vertCount * sizeof(*verts));
-			stack = palloc(vertCount * sizeof(*stack));
+			verts = palloc_array_checked(vertCount, sizeof(*verts));
+			stack = palloc_array_checked(vertCount, sizeof(*stack));
 			FOREACH_LINKED_LAT_LNG(loop, latlng)
 				verts[idx++] = latlng->vertex;
 
@@ -1396,10 +1407,10 @@ loop_probe_point(const LinkedGeoLoop * loop, const LoopBounds * bounds)
 {
 	LatLng		probe = {0};
 	int			vertexCount = count_linked_lat_lng(loop);
-	double	   *lats = palloc(vertexCount * sizeof(*lats));
-	double	   *ringLats = palloc(vertexCount * sizeof(*ringLats));
-	double	   *lngs = palloc(vertexCount * sizeof(*lngs));
-	double	   *xs = palloc(vertexCount * sizeof(*xs));
+	double	   *lats = palloc_array_checked(vertexCount, sizeof(*lats));
+	double	   *ringLats = palloc_array_checked(vertexCount, sizeof(*ringLats));
+	double	   *lngs = palloc_array_checked(vertexCount, sizeof(*lngs));
+	double	   *xs = palloc_array_checked(vertexCount, sizeof(*xs));
 	int			latCount = 0;
 	double		bestWidth = -1.0;
 	double		minLng = 0.0;
@@ -1650,6 +1661,30 @@ vertex_graph_bucket_count(int edgeCount)
 	return edgeCount * 2;
 }
 
+static void *
+palloc_array_checked(Size count, Size elementSize)
+{
+	if (elementSize != 0 && count > MaxAllocSize / elementSize)
+		elog(ERROR, "too many polygon edges");
+	return palloc(count * elementSize);
+}
+
+static void *
+palloc0_array_checked(Size count, Size elementSize)
+{
+	if (elementSize != 0 && count > MaxAllocSize / elementSize)
+		elog(ERROR, "too many polygon edges");
+	return palloc0(count * elementSize);
+}
+
+static void *
+repalloc_array_checked(void *pointer, Size count, Size elementSize)
+{
+	if (elementSize != 0 && count > MaxAllocSize / elementSize)
+		elog(ERROR, "too many polygon edges");
+	return repalloc(pointer, count * elementSize);
+}
+
 /* Materialize all split-boundary edges into noded segments with split markers. */
 void
 collect_linked_polygon_segments(const LinkedGeoPolygon * multiPolygon, NodedSegment * segments, int segmentCount)
@@ -1669,7 +1704,11 @@ collect_linked_polygon_segments(const LinkedGeoPolygon * multiPolygon, NodedSegm
 			do
 			{
 				const LinkedLatLng *next = cur->next ? cur->next : first;
-				NodedSegment *segment = &segments[idx++];
+				NodedSegment *segment;
+
+				if (idx >= segmentCount)
+					elog(ERROR, "too many polygon edges");
+				segment = &segments[idx++];
 
 				segment->from = cur->vertex;
 				segment->to = next->vertex;
@@ -1677,9 +1716,11 @@ collect_linked_polygon_segments(const LinkedGeoPolygon * multiPolygon, NodedSegm
 				segment->maxLat = fmax(segment->from.lat, segment->to.lat);
 				segment->minLng = fmin(segment->from.lng, segment->to.lng);
 				segment->maxLng = fmax(segment->from.lng, segment->to.lng);
-				segment->splitCap = segmentCount + 2;
+				segment->splitCap = 4;
 				segment->splitCount = 0;
-				segment->splitTs = palloc(segment->splitCap * sizeof(*segment->splitTs));
+				segment->splitTs = palloc_array_checked(
+					segment->splitCap,
+					sizeof(*segment->splitTs));
 				segment_add_split_t(segment, 0.0);
 				segment_add_split_t(segment, 1.0);
 
@@ -1706,10 +1747,15 @@ segment_add_split_t(NodedSegment * segment, double t)
 
 	if (segment->splitCount >= segment->splitCap)
 	{
+		if (segment->splitCap > INT_MAX / 2)
+			elog(ERROR, "too many polygon edges");
 		segment->splitCap = segment->splitCap > 0
 			? segment->splitCap * 2
 			: 4;
-		segment->splitTs = repalloc(segment->splitTs, segment->splitCap * sizeof(*segment->splitTs));
+		segment->splitTs = repalloc_array_checked(
+			segment->splitTs,
+			segment->splitCap,
+			sizeof(*segment->splitTs));
 	}
 
 	segment->splitTs[segment->splitCount++] = t;
@@ -1858,11 +1904,12 @@ graph_add_noded_linked_polygon_edges(VertexGraph * graph, const LinkedGeoPolygon
 	if (segmentCount <= 0)
 		return;
 
-	segments = palloc(segmentCount * sizeof(*segments));
+	segments = palloc_array_checked(segmentCount, sizeof(*segments));
 	collect_linked_polygon_segments(multiPolygon, segments, segmentCount);
 
 	for (int i = 0; i < segmentCount; i++)
 	{
+		CHECK_FOR_INTERRUPTS();
 		for (int j = i + 1; j < segmentCount; j++)
 		{
 			double		ti;
@@ -1871,6 +1918,9 @@ graph_add_noded_linked_polygon_edges(VertexGraph * graph, const LinkedGeoPolygon
 			double		overlapEndI;
 			double		overlapStartJ;
 			double		overlapEndJ;
+
+			if ((j & 0x3ff) == 0)
+				CHECK_FOR_INTERRUPTS();
 
 			if (!segments_bounds_overlap(&segments[i], &segments[j]))
 				continue;
@@ -1899,6 +1949,7 @@ graph_add_noded_linked_polygon_edges(VertexGraph * graph, const LinkedGeoPolygon
 	{
 		NodedSegment *segment = &segments[i];
 
+		CHECK_FOR_INTERRUPTS();
 		qsort(segment->splitTs, segment->splitCount, sizeof(*segment->splitTs), double_cmp);
 		for (int j = 0; j + 1 < segment->splitCount; j++)
 		{
@@ -1928,7 +1979,10 @@ graph_add_edge(VertexGraph * graph, const LatLng * from, const LatLng * to)
 	VertexNode *reverse = findNodeForEdge(graph, to, from);
 
 	if (reverse)
-		removeVertexNode(graph, reverse);
+	{
+		if (removeVertexNode(graph, reverse) != 0)
+			elog(ERROR, "vertex graph edge disappeared during removal");
+	}
 	else
 		addVertexNode(graph, from, to);
 }
@@ -1965,7 +2019,7 @@ polygonize_noded_graph(const VertexGraph * graph)
 	int			vertexCount = 0;
 	int			vertexCap = 0;
 	int			edgeIdx = 0;
-	int			halfEdgeCount = graph->size * 2;
+	int			halfEdgeCount;
 	LinkedGeoPolygon *raw = NULL;
 	LinkedGeoPolygon *lastPolygon = NULL;
 	LinkedGeoPolygon *result;
@@ -1973,9 +2027,14 @@ polygonize_noded_graph(const VertexGraph * graph)
 	if (graph->size == 0)
 		return palloc0(sizeof(*result));
 
-	edges = palloc0(halfEdgeCount * sizeof(*edges));
+	if (graph->size > INT_MAX / 2)
+		elog(ERROR, "too many polygon edges");
+	halfEdgeCount = graph->size * 2;
+
+	edges = palloc0_array_checked(halfEdgeCount, sizeof(*edges));
 	for (int bucketIdx = 0; bucketIdx < graph->numBuckets; bucketIdx++)
 	{
+		CHECK_FOR_INTERRUPTS();
 		for (VertexNode *node = graph->buckets[bucketIdx]; node; node = node->next)
 		{
 			double		dLng = normalize_lng_around(node->to.lng, node->from.lng) - node->from.lng;
@@ -1983,6 +2042,9 @@ polygonize_noded_graph(const VertexGraph * graph)
 				&vertices, &vertexCount, &vertexCap, &node->from);
 			int			toVertex = polygonize_find_or_add_vertex(
 				&vertices, &vertexCount, &vertexCap, &node->to);
+
+			if (edgeIdx > halfEdgeCount - 2)
+				elog(ERROR, "too many polygon edges");
 
 			edges[edgeIdx].from = node->from;
 			edges[edgeIdx].to = node->to;
@@ -2004,13 +2066,17 @@ polygonize_noded_graph(const VertexGraph * graph)
 		}
 	}
 
-	edgeRefs = palloc(edgeIdx * sizeof(*edgeRefs));
-	edgeOffsets = palloc(vertexCount * sizeof(*edgeOffsets));
+	if (edgeIdx != halfEdgeCount)
+		elog(ERROR, "vertex graph edge count changed during polygonization");
+
+	edgeRefs = palloc_array_checked(edgeIdx, sizeof(*edgeRefs));
+	edgeOffsets = palloc_array_checked(vertexCount, sizeof(*edgeOffsets));
 	{
 		int			offset = 0;
 
 		for (int i = 0; i < vertexCount; i++)
 		{
+			CHECK_FOR_INTERRUPTS();
 			vertices[i].firstEdge = offset;
 			edgeOffsets[i] = offset;
 			offset += vertices[i].edgeCount;
@@ -2020,11 +2086,15 @@ polygonize_noded_graph(const VertexGraph * graph)
 	{
 		int			offset = edgeOffsets[edges[i].fromVertex]++;
 
+		if ((i & 0x3ff) == 0)
+			CHECK_FOR_INTERRUPTS();
+
 		edgeRefs[offset].edgeIdx = i;
 		edgeRefs[offset].angle = edges[i].angle;
 	}
 	for (int i = 0; i < vertexCount; i++)
 	{
+		CHECK_FOR_INTERRUPTS();
 		if (vertices[i].edgeCount > 1)
 		{
 			qsort(
@@ -2041,6 +2111,9 @@ polygonize_noded_graph(const VertexGraph * graph)
 		double		reverseAngle = edges[i].angle + M_PI;
 		double		bestDelta = DBL_MAX;
 		int			bestEdge = -1;
+
+		if ((i & 0x3ff) == 0)
+			CHECK_FOR_INTERRUPTS();
 
 		while (reverseAngle > M_PI)
 			reverseAngle -= 2.0 * M_PI;
@@ -2070,6 +2143,9 @@ polygonize_noded_graph(const VertexGraph * graph)
 		int			cur = i;
 		int			guard = 0;
 
+		if ((i & 0x3ff) == 0)
+			CHECK_FOR_INTERRUPTS();
+
 		if (edges[i].used || edges[i].nextEdge < 0)
 			continue;
 
@@ -2079,6 +2155,8 @@ polygonize_noded_graph(const VertexGraph * graph)
 
 		while (cur >= 0 && !edges[cur].used && guard++ <= edgeIdx)
 		{
+			if ((guard & 0x3ff) == 0)
+				CHECK_FOR_INTERRUPTS();
 			if (!loop->last || !geoAlmostEqual(&loop->last->vertex, &edges[cur].from))
 			{
 				LinkedLatLng *latlng = palloc0(sizeof(*latlng));
@@ -2138,10 +2216,12 @@ polygonize_find_or_add_vertex(PolygonizeVertex **vertices, int *vertexCount, int
 
 	if (*vertexCount >= *vertexCap)
 	{
+		if (*vertexCap > INT_MAX / 2)
+			elog(ERROR, "too many polygon edges");
 		*vertexCap = *vertexCap ? *vertexCap * 2 : 32;
 		*vertices = *vertices
-			? repalloc(*vertices, *vertexCap * sizeof(**vertices))
-			: palloc(*vertexCap * sizeof(**vertices));
+			? repalloc_array_checked(*vertices, *vertexCap, sizeof(**vertices))
+			: palloc_array_checked(*vertexCap, sizeof(**vertices));
 	}
 
 	(*vertices)[*vertexCount] = (PolygonizeVertex) {
@@ -2433,7 +2513,7 @@ prune_linked_geo_loop_spikes(LinkedGeoLoop * loop)
 		return;
 	}
 
-	stack = palloc(count * sizeof(*stack));
+	stack = palloc_array_checked(count, sizeof(*stack));
 
 	for (int i = 0; i < count; i++)
 	{

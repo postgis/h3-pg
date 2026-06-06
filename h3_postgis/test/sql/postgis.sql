@@ -372,6 +372,17 @@ WITH cells AS (
 SELECT ST_IsValid(h3_cells_to_multi_polygon_geometry(arr))
 FROM cells;
 
+-- antimeridian neighborhoods exercise split/noded reverse-edge cancellation
+WITH cells AS (
+    SELECT array_agg(h3 ORDER BY h3) AS arr
+    FROM (
+        SELECT h3_grid_disk(:edgecross, 1) AS h3
+    ) q
+)
+SELECT ST_IsValid(h3_cells_to_multi_polygon_geometry(arr))
+   AND NOT ST_IsEmpty(h3_cells_to_multi_polygon_geometry(arr))
+FROM cells;
+
 -- representative low-zoom tile cover remains both valid and covering
 WITH tile AS (
     SELECT ST_Transform(ST_TileEnvelope(3, 0, 1), 4326) AS tile,
