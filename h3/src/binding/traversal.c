@@ -51,7 +51,8 @@ ensure_nonnegative_k(int k)
 static void *
 palloc_h3_array_checked(int64_t count, Size elementSize, bool zero)
 {
-	if (count < 0 || (uint64) count > MaxAllocSize / elementSize)
+	if (elementSize == 0 || count < 0 ||
+		(uint64) count > MaxAllocSize / elementSize)
 		elog(ERROR, "too many grid traversal cells");
 	return zero
 		? palloc0((Size) count * elementSize)

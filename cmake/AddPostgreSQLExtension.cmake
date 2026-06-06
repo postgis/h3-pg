@@ -186,6 +186,9 @@ function(PostgreSQL_add_extension LIBRARY_NAME)
 
     # Link extension to PostgreSQL
     target_link_libraries(${LIBRARY_NAME} PRIVATE PostgreSQL::PostgreSQL)
+    if(PostgreSQL_CPPFLAGS)
+      target_compile_options(${LIBRARY_NAME} PRIVATE ${PostgreSQL_CPPFLAGS})
+    endif()
 
     if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
       # Allow cross-TU optimization of internal calls inside the extension DSO.
