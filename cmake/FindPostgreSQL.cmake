@@ -38,6 +38,10 @@ execute_process(COMMAND ${PostgreSQL_CONFIG} --includedir-server OUTPUT_VARIABLE
 execute_process(COMMAND ${PostgreSQL_CONFIG} --libdir            OUTPUT_VARIABLE PostgreSQL_LIBRARY_DIR        OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${PostgreSQL_CONFIG} --pkglibdir         OUTPUT_VARIABLE PostgreSQL_PKG_LIBRARY_DIR    OUTPUT_STRIP_TRAILING_WHITESPACE)
 execute_process(COMMAND ${PostgreSQL_CONFIG} --configure         OUTPUT_VARIABLE PostgreSQL_CONFIGURE          OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND ${PostgreSQL_CONFIG} --cppflags          OUTPUT_VARIABLE PostgreSQL_CPPFLAGS_STRING    OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND ${PostgreSQL_CONFIG} --pgxs              OUTPUT_VARIABLE PostgreSQL_PGXS               OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+separate_arguments(PostgreSQL_CPPFLAGS UNIX_COMMAND "${PostgreSQL_CPPFLAGS_STRING}")
 
 # PostgreSQL can optionally be built with LLVM support (`--with-llvm`).
 # We mirror that capability to optionally emit extension bitcode for JIT.
@@ -77,6 +81,53 @@ find_program(PostgreSQL_LLVM_LTO_BIN
   NAMES llvm-lto
   HINTS ${PostgreSQL_LLVM_HINTS}
 )
+
+# Mirror PostgreSQL's PGXS bitcode compiler flags when LLVM support is enabled.
+# The values live in Makefile.global rather than pg_config output.
+set(PostgreSQL_BITCODE_COMPILER_FLAGS "")
+set(PostgreSQL_BITCODE_CFLAGS "")
+if(PostgreSQL_WITH_LLVM AND PostgreSQL_PGXS)
+  get_filename_component(PostgreSQL_PGXS_MAKEFILES_DIR "${PostgreSQL_PGXS}" DIRECTORY)
+  get_filename_component(PostgreSQL_PGXS_SRC_DIR "${PostgreSQL_PGXS_MAKEFILES_DIR}" DIRECTORY)
+  set(PostgreSQL_MAKEFILE_GLOBAL "${PostgreSQL_PGXS_SRC_DIR}/Makefile.global")
+  if(EXISTS "${PostgreSQL_MAKEFILE_GLOBAL}")
+    file(STRINGS "${PostgreSQL_MAKEFILE_GLOBAL}" PostgreSQL_COMPILE_C_BC_LINE
+      REGEX "^COMPILE\\.c\\.bc[ \t]*="
+    )
+    if(PostgreSQL_COMPILE_C_BC_LINE)
+      list(GET PostgreSQL_COMPILE_C_BC_LINE 0 PostgreSQL_COMPILE_C_BC_STRING)
+      string(REGEX REPLACE "^COMPILE\\.c\\.bc[ \t]*=[ \t]*(.*)[ \t]*$" "\\1"
+        PostgreSQL_COMPILE_C_BC_STRING "${PostgreSQL_COMPILE_C_BC_STRING}"
+      )
+      string(REPLACE "$(CLANG)" "" PostgreSQL_COMPILE_C_BC_STRING "${PostgreSQL_COMPILE_C_BC_STRING}")
+      string(REGEX REPLACE "\\$\\(BITCODE_CFLAGS\\).*$" ""
+        PostgreSQL_COMPILE_C_BC_STRING "${PostgreSQL_COMPILE_C_BC_STRING}"
+      )
+      separate_arguments(PostgreSQL_BITCODE_COMPILER_FLAGS UNIX_COMMAND "${PostgreSQL_COMPILE_C_BC_STRING}")
+    endif()
+    unset(PostgreSQL_COMPILE_C_BC_LINE)
+    unset(PostgreSQL_COMPILE_C_BC_STRING)
+
+    file(STRINGS "${PostgreSQL_MAKEFILE_GLOBAL}" PostgreSQL_BITCODE_CFLAGS_LINE
+      REGEX "^BITCODE_CFLAGS[ \t]*="
+    )
+    if(PostgreSQL_BITCODE_CFLAGS_LINE)
+      list(GET PostgreSQL_BITCODE_CFLAGS_LINE 0 PostgreSQL_BITCODE_CFLAGS_STRING)
+      string(REGEX REPLACE "^BITCODE_CFLAGS[ \t]*=[ \t]*(.*)[ \t]*$" "\\1"
+        PostgreSQL_BITCODE_CFLAGS_STRING "${PostgreSQL_BITCODE_CFLAGS_STRING}"
+      )
+      separate_arguments(PostgreSQL_BITCODE_CFLAGS UNIX_COMMAND "${PostgreSQL_BITCODE_CFLAGS_STRING}")
+    endif()
+    unset(PostgreSQL_BITCODE_CFLAGS_LINE)
+    unset(PostgreSQL_BITCODE_CFLAGS_STRING)
+  endif()
+endif()
+if(PostgreSQL_WITH_LLVM AND NOT PostgreSQL_BITCODE_CFLAGS)
+  set(PostgreSQL_BITCODE_CFLAGS "-O2")
+endif()
+if(PostgreSQL_WITH_LLVM AND NOT PostgreSQL_BITCODE_COMPILER_FLAGS)
+  set(PostgreSQL_BITCODE_COMPILER_FLAGS "-Wno-ignored-attributes")
+endif()
 
 # @TODO: Figure out if we need _INCLUDE_DIR and/or _PKG_INCLUDE_DIR
 
