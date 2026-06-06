@@ -19,9 +19,8 @@ make_next_update() {
   local version="$4"
   local release_file next_file release_name next_name tmp
 
-  release_file="${update_dir}/${extname}--"*--"${version}.sql"
   shopt -s nullglob
-  local matches=($release_file)
+  local matches=("${update_dir}/${extname}--"*--"${version}.sql")
   shopt -u nullglob
 
   if [[ ${#matches[@]} -ne 1 ]]; then
@@ -84,7 +83,7 @@ main() {
   require_clean_tracked_tree
 
   sed -i '/set(INSTALL_VERSION "unreleased/s/^#//g' CMakeLists.txt
-  sed -i '/set(INSTALL_VERSION "${PROJECT_VERSION}")/s/^/#/g' CMakeLists.txt
+  sed -i "/set(INSTALL_VERSION \"\${PROJECT_VERSION}\")/s/^/#/g" CMakeLists.txt
 
   make_next_update h3 h3/sql/updates h3/CMakeLists.txt "$version"
   make_next_update h3_postgis h3_postgis/sql/updates h3_postgis/CMakeLists.txt "$version"

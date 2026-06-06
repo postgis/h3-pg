@@ -157,7 +157,7 @@ verify_release_state() {
   fi
 
   grep -q "VERSION ${version}" CMakeLists.txt || die "CMakeLists.txt project version was not updated"
-  grep -q 'set(INSTALL_VERSION "${PROJECT_VERSION}")' CMakeLists.txt ||
+  grep -q "set(INSTALL_VERSION \"\${PROJECT_VERSION}\")" CMakeLists.txt ||
     die "INSTALL_VERSION is not set to PROJECT_VERSION"
 
   scripts/check-metadata
@@ -186,7 +186,7 @@ main() {
   release_branch "$version"
 
   replace_required '  VERSION [0-9]+\.[0-9]+\.[0-9]+' "  VERSION ${version}" CMakeLists.txt
-  sed -i '/set(INSTALL_VERSION "${PROJECT_VERSION}")/s/^#//g' CMakeLists.txt
+  sed -i "/set(INSTALL_VERSION \"\${PROJECT_VERSION}\")/s/^#//g" CMakeLists.txt
   sed -i '/set(INSTALL_VERSION "unreleased")/s/^/#/g' CMakeLists.txt
 
   sed -i "s/availability: unreleased/availability: ${version}/g" h3/sql/install/*.sql
