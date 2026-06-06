@@ -21,14 +21,16 @@ This command also validates that all extension GUCs are documented in `h3/src/gu
 
 ## Release Process
 
-1. Update version number
-   - Don't follow semver, simply use major and minor from H3 core and increment patch.
-   - Version number should be changed in root `CMakeLists.txt`.
-   - Set `INSTALL_VERSION` to "${PROJECT_VERSION}".
-   - Update files (and cmake references) suffixed `--unreleased` should be renamed.
-   - Installer `.sql` files should have `@ availability` comments updated.
-   - Update changelog by moving from `Unreleased` to a new section
-   - Push and merge changes in `release-x.y.z` branch.
+1. Prepare a release branch
+   - Don't follow semver blindly: use major and minor from H3 core and increment
+     the h3-pg patch independently.
+   - Run `scripts/release X.Y.Z`. Set `RELEASE_DATE=YYYY-MM-DD` only when the
+     release date should differ from today.
+   - The script creates `release-X.Y.Z`, updates version metadata, renames
+     `--unreleased` update SQL files, updates availability/docs/changelog,
+     updates release-sensitive regression targets, and runs release metadata
+     checks.
+   - Review, commit, push, and merge the `release-X.Y.Z` branch.
 2. Create a release on GitHub
    - Draft new release "vX.Y.Z"
    - Copy CHANGELOG.md entry into release description
@@ -36,6 +38,6 @@ This command also validates that all extension GUCs are documented in `h3/src/gu
    - Run `scripts/bundle` to package the release
    - Upload the distribution on [PGXN Manager](https://manager.pgxn.org/)
 4. Prepare for development
-   - Set `INSTALL_VERSION` to `unreleased` in root `CMakeLists.txt`.
-   - Create new update files with `--unreleased` suffix.
-   - Add them to relevant `CMakeLists.txt` files.
+   - Run `scripts/postrelease` to restore `INSTALL_VERSION=unreleased`, create
+     the next empty update SQL files, and add them to the extension CMake files.
+   - Review, commit, push, and merge the post-release development branch.

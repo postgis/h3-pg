@@ -1,21 +1,89 @@
 #!/usr/bin/env bash
 
-set -u
+set -euo pipefail
 
-VERSION=$(sed -rnE 's/  VERSION ([0-9\.]+)/\1/p' CMakeLists.txt)
-echo $VERSION
+die() {
+  echo "postrelease: $*" >&2
+  exit 1
+}
 
-# Set `INSTALL_VERSION` to `unreleased` in root `CMakeLists.txt`.
-sed -i '/set(INSTALL_VERSION "unreleased/s/^#//g' CMakeLists.txt
-sed -i '/set(INSTALL_VERSION "${PROJECT_VERSION}")/s/^/#/g' CMakeLists.txt
+require_clean_tracked_tree() {
+  git diff --quiet || die "tracked worktree changes are present"
+  git diff --cached --quiet || die "staged changes are present"
+}
 
-# Create new update files with `--unreleased` suffix.
-cp h3/sql/updates/h3--4.2.1--4.2.2.sql h3/sql/updates/h3--$VERSION--unreleased.sql
-sed -i "s/4.2.2/unreleased/g" h3/sql/updates/h3--$VERSION--unreleased.sql
+make_next_update() {
+  local extname="$1"
+  local update_dir="$2"
+  local cmake_file="$3"
+  local version="$4"
+  local release_file next_file release_name next_name tmp
 
-cp h3_postgis/sql/updates/h3_postgis--4.2.1--4.2.2.sql h3_postgis/sql/updates/h3_postgis--$VERSION--unreleased.sql
-sed -i "s/4.2.2/unreleased/g" h3_postgis/sql/updates/h3_postgis--$VERSION--unreleased.sql
+  release_file="${update_dir}/${extname}--"*--"${version}.sql"
+  shopt -s nullglob
+  local matches=($release_file)
+  shopt -u nullglob
 
-# Add them to relevant `CMakeLists.txt` files.
-sed -i "/--$VERSION.sql/a\ \ \ \ sql/updates/h3--$VERSION--unreleased.sql" h3/CMakeLists.txt
-sed -i "/--$VERSION.sql/a\ \ \ \ sql/updates/h3_postgis--$VERSION--unreleased.sql" h3_postgis/CMakeLists.txt
+  if [[ ${#matches[@]} -ne 1 ]]; then
+    die "expected exactly one released ${update_dir}/${extname}--*--${version}.sql, found ${#matches[@]}"
+  fi
+
+  release_file="${matches[0]}"
+  next_file="${update_dir}/${extname}--${version}--unreleased.sql"
+  release_name="$(basename "$release_file")"
+  next_name="$(basename "$next_file")"
+
+  [[ ! -e "$next_file" ]] || die "${next_file} already exists"
+  grep -qF "$release_name" "$cmake_file" || die "${cmake_file} does not reference ${release_name}"
+
+  sed -n '1,/^\\echo /p' "$release_file" |
+    sed "s/UPDATE TO '${version}'/UPDATE TO 'unreleased'/" > "$next_file"
+
+  tmp="$(mktemp)"
+  awk -v needle="$release_name" -v addition="    sql/updates/${next_name}" '
+    { print }
+    index($0, needle) { print addition }
+  ' "$cmake_file" > "$tmp"
+  mv "$tmp" "$cmake_file"
+}
+
+verify_update_references() {
+  local cmake_file update_path
+
+  for cmake_file in h3/CMakeLists.txt h3_postgis/CMakeLists.txt; do
+    while IFS= read -r update_path; do
+      [[ -f "$(dirname "$cmake_file")/${update_path}" ]] ||
+        die "${cmake_file} references missing ${update_path}"
+    done < <(grep -oE 'sql/updates/[A-Za-z0-9_.-]+\.sql' "$cmake_file")
+  done
+}
+
+main() {
+  local repo_root version
+
+  repo_root="$(git rev-parse --show-toplevel)"
+  cd "$repo_root"
+
+  version="$(sed -rnE 's/^  VERSION ([0-9]+\.[0-9]+\.[0-9]+)/\1/p' CMakeLists.txt)"
+  [[ -n "$version" ]] || die "could not parse project version from CMakeLists.txt"
+
+  require_clean_tracked_tree
+
+  sed -i '/set(INSTALL_VERSION "unreleased/s/^#//g' CMakeLists.txt
+  sed -i '/set(INSTALL_VERSION "${PROJECT_VERSION}")/s/^/#/g' CMakeLists.txt
+
+  make_next_update h3 h3/sql/updates h3/CMakeLists.txt "$version"
+  make_next_update h3_postgis h3_postgis/sql/updates h3_postgis/CMakeLists.txt "$version"
+  sed -i "s/ALTER EXTENSION h3 UPDATE TO '${version}'/ALTER EXTENSION h3 UPDATE TO 'unreleased'/g" \
+    h3/test/sql/extension.sql h3/test/expected/extension.out
+  grep -q "ALTER EXTENSION h3 UPDATE TO 'unreleased'" h3/test/sql/extension.sql ||
+    die "h3 extension regression test was not restored to unreleased"
+
+  verify_update_references
+  scripts/check-metadata
+  git diff --check
+
+  echo "Post-release development files for ${version} -> unreleased are prepared."
+}
+
+main "$@"
