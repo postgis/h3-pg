@@ -1,33 +1,218 @@
 #!/usr/bin/env bash
 
-set -u
-VERSION="$1"
-: "$VERSION"
+set -euo pipefail
 
-# Version number should be changed in root `CMakeLists.txt`.
-sed -i -r "s/(  VERSION )[0-9\.]+/\1$VERSION/g" CMakeLists.txt
+usage() {
+  echo "Usage: scripts/release X.Y.Z" >&2
+  echo "Set RELEASE_DATE=YYYY-MM-DD to override the changelog/CITATION date." >&2
+}
 
-# Set `INSTALL_VERSION` to "${PROJECT_VERSION}".
-sed -i '/set(INSTALL_VERSION "${PROJECT_VERSION}")/s/^#//g' CMakeLists.txt
-sed -i '/set(INSTALL_VERSION "unreleased")/s/^/#/g' CMakeLists.txt
+die() {
+  echo "release: $*" >&2
+  exit 1
+}
 
-# Installer `.sql` files should have `@ availability` comments updated.
-sed -i "s/availability: unreleased/availability: $VERSION/g" h3/sql/install/*.sql
-sed -i "s/availability: unreleased/availability: $VERSION/g" h3_postgis/sql/install/*.sql
+require_clean_tracked_tree() {
+  git diff --quiet || die "tracked worktree changes are present"
+  git diff --cached --quiet || die "staged changes are present"
+}
 
-# Update files (and cmake references) suffixed `--unreleased` should be renamed.
-rename unreleased "$VERSION" h3/sql/updates/*--unreleased.sql
-sed -i "s/unreleased/$VERSION/g" h3/sql/updates/*--$VERSION.sql
-sed -i "s/unreleased/$VERSION/g" h3/CMakeLists.txt
+release_branch() {
+  local version="$1"
+  local branch="release-${version}"
+  local current_branch
 
-rename unreleased "$VERSION" h3_postgis/sql/updates/*--unreleased.sql
-sed -i "s/unreleased/$VERSION/g" h3_postgis/sql/updates/*--$VERSION.sql
-sed -i "s/unreleased/$VERSION/g" h3_postgis/CMakeLists.txt
+  current_branch="$(git branch --show-current || true)"
+  if [[ "$current_branch" == "$branch" ]]; then
+    return
+  fi
+  if git show-ref --verify --quiet "refs/heads/${branch}"; then
+    die "branch ${branch} already exists; switch to it or delete it first"
+  fi
+  git switch -c "$branch"
+}
 
-# Generate docs
-scripts/documentation
+require_match() {
+  local pattern="$1"
+  local path="$2"
 
-git checkout -b "release-$VERSION"
+  grep -qE "$pattern" "$path" || die "${path} does not match ${pattern}"
+}
 
-echo "Remember to":
-echo "   - Update changelog by moving from \`Unreleased\` to a new section"
+replace_required() {
+  local pattern="$1"
+  local replacement="$2"
+  local path="$3"
+
+  require_match "$pattern" "$path"
+  sed -i -E "s#${pattern}#${replacement}#" "$path"
+}
+
+release_update_file() {
+  local extname="$1"
+  local update_dir="$2"
+  local cmake_file="$3"
+  local version="$4"
+  local matches old_file new_file old_name new_name
+
+  shopt -s nullglob
+  matches=("${update_dir}/${extname}--"*--unreleased.sql)
+  shopt -u nullglob
+
+  if [[ ${#matches[@]} -ne 1 ]]; then
+    die "expected exactly one ${update_dir}/${extname}--*--unreleased.sql, found ${#matches[@]}"
+  fi
+
+  old_file="${matches[0]}"
+  new_file="${old_file/--unreleased.sql/--${version}.sql}"
+  old_name="$(basename "$old_file")"
+  new_name="$(basename "$new_file")"
+
+  [[ "$old_file" != "$new_file" ]] || die "refusing to rename ${old_file} to itself"
+  [[ ! -e "$new_file" ]] || die "${new_file} already exists"
+
+  git mv "$old_file" "$new_file"
+  sed -i "s/unreleased/${version}/g" "$new_file"
+  sed -i -E 's/[[:space:]]+$//' "$new_file"
+  grep -qF "$old_name" "$cmake_file" || die "${cmake_file} does not reference ${old_name}"
+  OLD_NAME="$old_name" NEW_NAME="$new_name" \
+    perl -0pi -e 's/\Q$ENV{OLD_NAME}\E/$ENV{NEW_NAME}/g' "$cmake_file"
+}
+
+update_changelog() {
+  local version="$1"
+  local release_date="$2"
+  local previous_version tmp
+
+  previous_version="$(sed -nE 's#^\[unreleased\]: .*/compare/v([0-9]+\.[0-9]+\.[0-9]+)\.\.\.HEAD$#\1#p' CHANGELOG.md)"
+  [[ -n "$previous_version" ]] || die "could not determine previous version from CHANGELOG.md [unreleased] link"
+  ! grep -q "^\[${version}\]:" CHANGELOG.md || die "CHANGELOG.md already has a [${version}] link"
+
+  tmp="$(mktemp)"
+  awk -v version="$version" -v release_date="$release_date" '
+    BEGIN { released = 0; in_release = 0; skip_summary = 0 }
+    !released && $0 == "## [Unreleased]" {
+      print "## [Unreleased]"
+      print ""
+      print "## [" version "] - " release_date
+      released = 1
+      in_release = 1
+      next
+    }
+    in_release && $0 ~ /^[[:space:]]*<details>[[:space:]]*$/ {
+      skip_summary = 1
+      next
+    }
+    skip_summary {
+      if ($0 ~ /^[[:space:]]*<\/summary>[[:space:]]*$/)
+        skip_summary = 0
+      next
+    }
+    in_release && $0 ~ /^[[:space:]]*<\/details>[[:space:]]*$/ {
+      next
+    }
+    in_release && $0 ~ /^## \[/ {
+      in_release = 0
+    }
+    { print }
+  ' CHANGELOG.md > "$tmp"
+  mv "$tmp" CHANGELOG.md
+
+  tmp="$(mktemp)"
+  awk -v version="$version" -v previous="v${previous_version}" '
+    /^\[unreleased\]: / {
+      print "[unreleased]: https://github.com/postgis/h3-pg/compare/v" version "...HEAD"
+      print "[" version "]: https://github.com/postgis/h3-pg/compare/" previous "...v" version
+      next
+    }
+    { print }
+  ' CHANGELOG.md > "$tmp"
+  mv "$tmp" CHANGELOG.md
+}
+
+verify_update_references() {
+  local cmake_file update_path
+
+  for cmake_file in h3/CMakeLists.txt h3_postgis/CMakeLists.txt; do
+    while IFS= read -r update_path; do
+      [[ -f "$(dirname "$cmake_file")/${update_path}" ]] ||
+        die "${cmake_file} references missing ${update_path}"
+    done < <(grep -oE 'sql/updates/[A-Za-z0-9_.-]+\.sql' "$cmake_file")
+  done
+}
+
+verify_release_state() {
+  local version="$1"
+
+  verify_update_references
+
+  if find h3/sql/updates h3_postgis/sql/updates -name '*--unreleased.sql' | grep -q .; then
+    find h3/sql/updates h3_postgis/sql/updates -name '*--unreleased.sql' >&2
+    die "unreleased update files remain after release"
+  fi
+
+  if grep -R -n -E 'availability: unreleased|Since vunreleased|UPDATE TO '\''unreleased'\''|--unreleased\.sql' \
+      h3 h3_postgis docs/api.md CMakeLists.txt; then
+    die "unreleased release markers remain"
+  fi
+
+  grep -q "VERSION ${version}" CMakeLists.txt || die "CMakeLists.txt project version was not updated"
+  grep -q 'set(INSTALL_VERSION "${PROJECT_VERSION}")' CMakeLists.txt ||
+    die "INSTALL_VERSION is not set to PROJECT_VERSION"
+
+  scripts/check-metadata
+  git diff --check
+}
+
+main() {
+  local version="${1:-}"
+  local release_date="${RELEASE_DATE:-$(date +%F)}"
+  local repo_root h3_core_version
+
+  [[ -n "$version" ]] || { usage; exit 2; }
+  [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "version must be X.Y.Z"
+  [[ "$release_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] ||
+    die "RELEASE_DATE must be YYYY-MM-DD"
+
+  repo_root="$(git rev-parse --show-toplevel)"
+  cd "$repo_root"
+
+  h3_core_version="$(sed -rnE 's/^set\(H3_CORE_VERSION ([0-9]+\.[0-9]+\.[0-9]+)\)/\1/p' CMakeLists.txt)"
+  [[ -n "$h3_core_version" ]] || die "could not parse H3_CORE_VERSION"
+  [[ "${version%.*}" == "${h3_core_version%.*}" ]] ||
+    die "h3-pg major.minor (${version%.*}) must match H3 core major.minor (${h3_core_version%.*})"
+
+  require_clean_tracked_tree
+  release_branch "$version"
+
+  replace_required '  VERSION [0-9]+\.[0-9]+\.[0-9]+' "  VERSION ${version}" CMakeLists.txt
+  sed -i '/set(INSTALL_VERSION "${PROJECT_VERSION}")/s/^#//g' CMakeLists.txt
+  sed -i '/set(INSTALL_VERSION "unreleased")/s/^/#/g' CMakeLists.txt
+
+  sed -i "s/availability: unreleased/availability: ${version}/g" h3/sql/install/*.sql
+  sed -i "s/availability: unreleased/availability: ${version}/g" h3_postgis/sql/install/*.sql
+
+  release_update_file h3 h3/sql/updates h3/CMakeLists.txt "$version"
+  release_update_file h3_postgis h3_postgis/sql/updates h3_postgis/CMakeLists.txt "$version"
+
+  sed -i "s/ALTER EXTENSION h3 UPDATE TO 'unreleased'/ALTER EXTENSION h3 UPDATE TO '${version}'/g" \
+    h3/test/sql/extension.sql h3/test/expected/extension.out
+
+  sed -i -E "s/^version: v[0-9]+\.[0-9]+\.[0-9]+/version: v${version}/" CITATION.cff
+  sed -i -E "s/^date-released: [0-9]{4}-[0-9]{2}-[0-9]{2}/date-released: ${release_date}/" CITATION.cff
+
+  update_changelog "$version" "$release_date"
+
+  scripts/documentation
+  verify_release_state "$version"
+
+  echo "Release branch release-${version} is prepared."
+  echo "Next:"
+  echo "  - review and commit the release-${version} changes"
+  echo "  - push and merge the release branch"
+  echo "  - draft GitHub release v${version} from CHANGELOG.md"
+  echo "  - run scripts/bundle and upload to PGXN"
+  echo "  - run scripts/postrelease after the release is merged"
+}
+
+main "$@"
