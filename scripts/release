@@ -79,14 +79,28 @@ release_update_file() {
     perl -0pi -e 's/\Q$ENV{OLD_NAME}\E/$ENV{NEW_NAME}/g' "$cmake_file"
 }
 
+changelog_previous_version() {
+  sed -nE 's#^\[unreleased\]: .*/compare/v([0-9]+\.[0-9]+\.[0-9]+)\.\.\.HEAD$#\1#p' CHANGELOG.md
+}
+
+require_changelog_release_ready() {
+  local version="$1"
+  local previous_version
+
+  previous_version="$(changelog_previous_version)"
+  [[ -n "$previous_version" ]] || die "could not determine previous version from CHANGELOG.md [unreleased] link"
+  if grep -qF "## [${version}]" CHANGELOG.md || grep -qF "[${version}]:" CHANGELOG.md; then
+    die "CHANGELOG.md already has a [${version}] release entry"
+  fi
+}
+
 update_changelog() {
   local version="$1"
   local release_date="$2"
   local previous_version tmp
 
-  previous_version="$(sed -nE 's#^\[unreleased\]: .*/compare/v([0-9]+\.[0-9]+\.[0-9]+)\.\.\.HEAD$#\1#p' CHANGELOG.md)"
-  [[ -n "$previous_version" ]] || die "could not determine previous version from CHANGELOG.md [unreleased] link"
-  ! grep -q "^\[${version}\]:" CHANGELOG.md || die "CHANGELOG.md already has a [${version}] link"
+  require_changelog_release_ready "$version"
+  previous_version="$(changelog_previous_version)"
 
   tmp="$(mktemp)"
   awk -v version="$version" -v release_date="$release_date" '
@@ -182,6 +196,7 @@ main() {
   [[ "${version%.*}" == "${h3_core_version%.*}" ]] ||
     die "h3-pg major.minor (${version%.*}) must match H3 core major.minor (${h3_core_version%.*})"
 
+  require_changelog_release_ready "$version"
   require_clean_tracked_tree
   release_branch "$version"
 
