@@ -43,9 +43,13 @@ This command also validates that all extension GUCs are documented in `h3/src/gu
 3. Commit and merge the release branch
    - Commit the reviewed release changes.
    - Push and merge `release-X.Y.Z`.
-4. Create a release on GitHub
-   - Draft new release "vX.Y.Z"
-   - Copy CHANGELOG.md entry into release description
+4. Publish the GitHub release
+   - This is a maintainer action, not part of `scripts/release`. The release
+     manager, or another maintainer with GitHub release permissions, publishes
+     the release after `release-X.Y.Z` is merged.
+   - Create or draft release `vX.Y.Z` from the merged release commit on `main`.
+     If GitHub creates the tag, verify that tag `vX.Y.Z` points at that commit.
+   - Copy the `CHANGELOG.md` entry into the release description.
 5. Distribute the extension on PGXN
    - Run `scripts/bundle` to package the release
    - Upload the distribution on [PGXN Manager](https://manager.pgxn.org/)

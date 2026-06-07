@@ -210,7 +210,7 @@ main() {
   echo "Next:"
   echo "  - review and commit the release-${version} changes"
   echo "  - push and merge the release branch"
-  echo "  - draft GitHub release v${version} from CHANGELOG.md"
+  echo "  - have the release manager publish GitHub release v${version} from CHANGELOG.md"
   echo "  - run scripts/bundle and upload to PGXN"
   echo "  - run scripts/postrelease after the release is merged"
 }
