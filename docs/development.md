@@ -21,23 +21,39 @@ This command also validates that all extension GUCs are documented in `h3/src/gu
 
 ## Release Process
 
-1. Prepare a release branch
-   - Don't follow semver blindly: use major and minor from H3 core and increment
-     the h3-pg patch independently.
+1. Prepare the release branch
+   - Pick `X.Y.Z`. The `X.Y` part must match the bundled H3 core version; bump
+     only the h3-pg patch when H3 core has not changed.
+   - Start from a clean tracked worktree on the branch you want to release from.
    - Run `scripts/release X.Y.Z`. Set `RELEASE_DATE=YYYY-MM-DD` only when the
-     release date should differ from today.
-   - The script creates `release-X.Y.Z`, updates version metadata, renames
-     `--unreleased` update SQL files, updates availability/docs/changelog,
-     updates release-sensitive regression targets, and runs release metadata
-     checks.
-   - Review, commit, push, and merge the `release-X.Y.Z` branch.
-2. Create a release on GitHub
+     changelog and citation date should differ from today.
+   - The script creates `release-X.Y.Z` and leaves the release changes
+     uncommitted for review.
+2. Review the release diff
+   - Root `CMakeLists.txt` has `VERSION X.Y.Z` and installs
+     `${PROJECT_VERSION}` instead of `unreleased`.
+   - The `h3` and `h3_postgis` update files that ended in `--unreleased.sql`
+     have been renamed to end in `--X.Y.Z.sql`, and their CMake references were
+     renamed with them.
+   - Installer SQL availability comments, generated API documentation,
+     `CITATION.cff`, `CHANGELOG.md`, and the extension upgrade regression target
+     all refer to `X.Y.Z`.
+   - `scripts/check-metadata` and `git diff --check` passed at the end of the
+     script run.
+3. Commit and merge the release branch
+   - Commit the reviewed release changes.
+   - Push and merge `release-X.Y.Z`.
+4. Create a release on GitHub
    - Draft new release "vX.Y.Z"
    - Copy CHANGELOG.md entry into release description
-3. Distribute the extension on PGXN
+5. Distribute the extension on PGXN
    - Run `scripts/bundle` to package the release
    - Upload the distribution on [PGXN Manager](https://manager.pgxn.org/)
-4. Prepare for development
-   - Run `scripts/postrelease` to restore `INSTALL_VERSION=unreleased`, create
-     the next empty update SQL files, and add them to the extension CMake files.
+6. Prepare the next development cycle
+   - After the release branch is merged, start from the updated main branch.
+   - Run `scripts/postrelease`. The script restores `INSTALL_VERSION` to
+     `unreleased`, creates the next empty `h3--X.Y.Z--unreleased.sql` and
+     `h3_postgis--X.Y.Z--unreleased.sql` files, adds them to the extension CMake
+     files, restores the upgrade regression target to `unreleased`, and runs the
+     release metadata checks.
    - Review, commit, push, and merge the post-release development branch.
