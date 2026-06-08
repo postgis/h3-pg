@@ -45,6 +45,15 @@ PostgreSQL_add_extension(postgresql_h3_postgis
     sql/updates/h3_postgis--4.5.0--unreleased.sql
 )
 
+# configure
+configure_file(src/config.h.in src/config.h)
+
+# include
+target_include_directories(postgresql_h3_postgis PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}/src
+  src
+)
+
 # link
 target_link_libraries(postgresql_h3_postgis PRIVATE postgresql_h3_shared h3)
 target_include_directories(postgresql_h3_postgis PRIVATE ${H3_INTERNAL_INCLUDE_DIR})

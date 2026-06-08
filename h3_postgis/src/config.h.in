@@ -14,28 +14,9 @@
  * limitations under the License.
  */
 
-/* required for MSVC */
-#define _USE_MATH_DEFINES
+#ifndef PGH3_CONFIG_H
+#define PGH3_CONFIG_H
 
-#include <postgres.h>
+#define POSTGRESQL_PGH3_VERSION "@INSTALL_VERSION@"
 
-#include <fmgr.h> // PG_MODULE_MAGIC
-
-#include "config.h"
-#include "guc.h"
-
-/* see https://www.postgresql.org/docs/current/xfunc-c.html#XFUNC-C-DYNLOAD */
-#if POSTGRESQL_VERSION_MAJOR >= 18
-PG_MODULE_MAGIC_EXT(.name = "h3", .version = POSTGRESQL_H3_VERSION);
-#else
-PG_MODULE_MAGIC;
-#endif
-
-void
-_PG_init(void)
-{
-	/* In case we allow using shared library h3, */
-	/* we could make version number assertion here */
-
-	_guc_init();
-}
+#endif /* PGH3_CONFIG_H */

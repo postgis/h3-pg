@@ -18,5 +18,11 @@
 
 #include <fmgr.h> // PG_MODULE_MAGIC
 
+#include "config.h"
+
 /* see https://www.postgresql.org/docs/current/xfunc-c.html#XFUNC-C-DYNLOAD */
+#if POSTGRESQL_VERSION_MAJOR >= 18
+PG_MODULE_MAGIC_EXT(.name = "h3_postgis", .version = POSTGRESQL_PGH3_VERSION);
+#else
 PG_MODULE_MAGIC;
+#endif
