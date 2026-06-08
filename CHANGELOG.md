@@ -22,6 +22,7 @@ avoid adding features or APIs which do not map onto the
 
 ## [4.5.0] - 2026-06-08
 
+- Use `PG_MODULE_MAGIC_EXT` macro in PostgreSQL 18 and later ([Andreas Karlsson])
 
 ### Project
 
