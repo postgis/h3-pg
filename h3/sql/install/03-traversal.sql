@@ -33,7 +33,7 @@ AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_grid_disk_distances(h3index, integer)
 IS 'Preferred disk API with distances. Like h3_grid_disk(), but also returns the grid distance from origin for each returned cell. Handles pentagon distortion internally. Row order is not guaranteed.';
 
---@ availability: unreleased
+--@ availability: 4.5.0
 CREATE OR REPLACE FUNCTION
     h3_grid_ring(origin h3index, k integer DEFAULT 1) RETURNS SETOF h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
