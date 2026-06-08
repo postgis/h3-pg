@@ -27,7 +27,7 @@
 --@ refid: h3_polygon_to_cells_geometry
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells(multi geometry, resolution integer) RETURNS SETOF h3index
     AS $$ SELECT @extschema:h3@.h3_polygon_to_cells(exterior, holes, resolution) FROM (
-        SELECT 
+        SELECT
             -- extract exterior ring of each polygon
             @extschema:postgis@.ST_MakePolygon(@extschema:postgis@.ST_ExteriorRing(poly))::polygon exterior,
             -- extract holes of each polygon
@@ -144,7 +144,7 @@ CREATE AGGREGATE h3_cells_to_multi_polygon_geography(h3index) (
 --@ refid: h3_polygon_to_cells_geometry_experimental
 CREATE OR REPLACE FUNCTION h3_polygon_to_cells_experimental(multi geometry, resolution integer, containment_mode text DEFAULT 'center') RETURNS SETOF h3index
     AS $$ SELECT @extschema:h3@.h3_polygon_to_cells_experimental(exterior, holes, resolution, containment_mode) FROM (
-        SELECT 
+        SELECT
             -- extract exterior ring of each polygon
             @extschema:postgis@.ST_MakePolygon(@extschema:postgis@.ST_ExteriorRing(poly))::polygon exterior,
             -- extract holes of each polygon
