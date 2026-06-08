@@ -67,14 +67,14 @@ Returns the base cell number (0 through 121) associated with the index.
 
 
 ### h3_get_index_digit(`h3index`, resolution `integer`) ⇒ `integer`
-*Since vunreleased*
+*Since v4.5.0*
 
 
 Returns the index digit at a specific resolution step. Resolution numbering is 1-based: pass 1 for the first digit below the base cell, 2 for the next, and so on.
 
 
 ### h3_construct_cell(resolution `integer`, base_cell_number `integer`, digits `integer[]`) ⇒ `h3index`
-*Since vunreleased*
+*Since v4.5.0*
 
 
 Builds a valid H3 cell from explicit components: the target resolution, the base cell number, and a digits array ordered from resolution 1 up to the target resolution. The digits array must contain exactly one non-NULL entry per resolution step.
@@ -88,7 +88,7 @@ Returns true only for valid H3 cell indexes (hexagons or pentagons). Directed ed
 
 
 ### h3_is_valid_index(`h3index`) ⇒ `boolean`
-*Since vunreleased*
+*Since v4.5.0*
 
 
 Returns true for any valid H3 index mode: cell, directed edge, or vertex.
@@ -134,7 +134,7 @@ Preferred disk API with distances. Like h3_grid_disk(), but also returns the gri
 
 
 ### h3_grid_ring(origin `h3index`, [k `integer` = 1]) ⇒ SETOF `h3index`
-*Since vunreleased*
+*Since v4.5.0*
 
 
 Preferred ring API. Returns the cells exactly "k" grid steps from origin. Continues to work near pentagons, but row order is not guaranteed and the result may contain fewer than 6*k cells when pentagonal distortion removes positions from the ring.
@@ -364,7 +364,7 @@ Provides the coordinates defining the unidirectional edge.
 
 
 ### h3_reverse_directed_edge(edge `h3index`) ⇒ `h3index`
-*Since vunreleased*
+*Since v4.5.0*
 
 
 Returns the directed edge with origin and destination cells reversed.

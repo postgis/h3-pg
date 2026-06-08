@@ -20,11 +20,8 @@ avoid adding features or APIs which do not map onto the
 
 ## [Unreleased]
 
-<details>
-  <summary>
-    Changes that have landed in master but are not yet released.
-    Click to see more.
-  </summary>
+## [4.5.0] - 2026-06-08
+
 
 * Project *
 
@@ -72,7 +69,6 @@ avoid adding features or APIs which do not map onto the
 - [#197], Release managers can prepare releases with `scripts/release` and `scripts/postrelease`, including metadata, API-doc, changelog, next-cycle update-file, duplicate-version, and argument checks ([Darafei Praliaskouski])
 - [#184], Contributors and packagers get more reliable validation: build-tree extension-upgrade tests, explicit missing-`pg_validate_extupgrade` reporting, metadata checks, non-Intel PostGIS regression tolerance, and sturdier PGXN, Windows, and macOS CI ([Zacharias Knudsen], [@esiaero], [Darafei Praliaskouski])
 
-</details>
 
 ## [4.2.3] - 2025-06-24
 
@@ -270,7 +266,8 @@ avoid adding features or APIs which do not map onto the
 
 - Initial public release
 
-[unreleased]: https://github.com/postgis/h3-pg/compare/v4.2.3...HEAD
+[unreleased]: https://github.com/postgis/h3-pg/compare/v4.5.0...HEAD
+[4.5.0]: https://github.com/postgis/h3-pg/compare/v4.2.3...v4.5.0
 [4.2.3]: https://github.com/postgis/h3-pg/compare/v4.2.2...v4.2.3
 [4.2.2]: https://github.com/postgis/h3-pg/compare/v4.2.1...v4.2.2
 [4.2.1]: https://github.com/postgis/h3-pg/compare/v4.2.0...v4.2.1

@@ -34,14 +34,14 @@ AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_get_base_cell_number(h3index)
 IS 'Returns the base cell number (0 through 121) associated with the index.';
 
---@ availability: unreleased
+--@ availability: 4.5.0
 CREATE OR REPLACE FUNCTION
     h3_get_index_digit(h3index, resolution integer) RETURNS integer
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_get_index_digit(h3index, integer)
 IS 'Returns the index digit at a specific resolution step. Resolution numbering is 1-based: pass 1 for the first digit below the base cell, 2 for the next, and so on.';
 
---@ availability: unreleased
+--@ availability: 4.5.0
 CREATE OR REPLACE FUNCTION
     h3_construct_cell(resolution integer, base_cell_number integer, digits integer[]) RETURNS h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
@@ -55,7 +55,7 @@ AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_is_valid_cell(h3index)
 IS 'Returns true only for valid H3 cell indexes (hexagons or pentagons). Directed edges, vertices, and malformed values return false.';
 
---@ availability: unreleased
+--@ availability: 4.5.0
 CREATE OR REPLACE FUNCTION
     h3_is_valid_index(h3index) RETURNS boolean
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION

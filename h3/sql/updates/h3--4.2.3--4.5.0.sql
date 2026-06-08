@@ -16,7 +16,7 @@
  */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
-\echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+\echo Use "ALTER EXTENSION h3 UPDATE TO '4.5.0'" to load this file. \quit
 
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 -- Keep the public bigint <-> signature upgrade-safe, refresh stored/indexed

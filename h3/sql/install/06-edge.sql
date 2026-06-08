@@ -75,7 +75,7 @@ AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION
     h3_directed_edge_to_boundary(edge h3index)
 IS 'Provides the coordinates defining the unidirectional edge.';
 
---@ availability: unreleased
+--@ availability: 4.5.0
 CREATE OR REPLACE FUNCTION
     h3_reverse_directed_edge(edge h3index) RETURNS h3index
 AS 'h3' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; COMMENT ON FUNCTION

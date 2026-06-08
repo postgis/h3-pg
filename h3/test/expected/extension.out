@@ -97,7 +97,7 @@ SELECT
     hex,
     h3_distance_user_wrapper(hex) AS dist
 FROM h3_distance_expr_fail_userfn;
-ALTER EXTENSION h3 UPDATE TO 'unreleased';
+ALTER EXTENSION h3 UPDATE TO '4.5.0';
 SELECT (current_setting('server_version_num')::int >= 140000) = EXISTS (
     SELECT 1
     FROM pg_amproc ap
