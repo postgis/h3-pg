@@ -20,9 +20,9 @@ avoid adding features or APIs which do not map onto the
 
 ## [Unreleased]
 
-## [4.5.0] - 2026-06-08
+- Use `PG_MODULE_MAGIC_EXT` macro in PostgreSQL 18 and later ([#203], [Andreas Karlsson])
 
-- Use `PG_MODULE_MAGIC_EXT` macro in PostgreSQL 18 and later ([Andreas Karlsson])
+## [4.5.0] - 2026-06-08
 
 ### Project
 
@@ -357,7 +357,9 @@ avoid adding features or APIs which do not map onto the
 [#192]: https://github.com/postgis/h3-pg/issues/192
 [#194]: https://github.com/postgis/h3-pg/pull/194
 [#197]: https://github.com/postgis/h3-pg/pull/197
+[#203]: https://github.com/postgis/h3-pg/pull/203
 [Abel Vázquez Montoro]: https://github.com/AbelVM
+[Andreas Karlsson]: https://github.com/jeltz
 [Darafei Praliaskouski]: https://github.com/Komzpa
 [Eric Schoffstall]: https://github.com/yocontra
 [Paul Ramsey]: https://github.com/pramsey
