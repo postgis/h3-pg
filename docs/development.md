@@ -49,7 +49,9 @@ This command also validates that all extension GUCs are documented in `h3/src/gu
      the release after `release-X.Y.Z` is merged.
    - Create or draft release `vX.Y.Z` from the merged release commit on `main`.
      If GitHub creates the tag, verify that tag `vX.Y.Z` points at that commit.
-   - Copy the `CHANGELOG.md` entry into the release description.
+   - Copy the `CHANGELOG.md` entry into the release description, including the
+     link reference definitions used by that entry, and preview the rendered
+     Markdown before publishing.
 5. Distribute the extension on PGXN
    - Run `scripts/bundle` to package the release
    - Upload the distribution on [PGXN Manager](https://manager.pgxn.org/)
