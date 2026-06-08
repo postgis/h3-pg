@@ -23,11 +23,11 @@ avoid adding features or APIs which do not map onto the
 ## [4.5.0] - 2026-06-08
 
 
-* Project *
+### Project
 
 - `h3-pg` now lives under the PostGIS umbrella. Use https://github.com/postgis/h3-pg/ for releases, issues, and pull requests.
 
-* New Features *
+### New Features
 
 - [#188], Add experimental GiST operator class for `h3index`; initial work in [#42] ([Zacharias Knudsen], [Eric Schoffstall], [Darafei Praliaskouski], [Abel Vázquez Montoro], [@mattiZed])
 - Add `h3_grid_ring` as the preferred ring traversal API: it returns cells exactly `k` grid steps from the origin and handles pentagon distortion internally ([Darafei Praliaskouski])
@@ -36,11 +36,11 @@ avoid adding features or APIs which do not map onto the
 - Add `h3_reverse_directed_edge` to reverse a directed edge without manually unpacking its origin and destination cells ([Darafei Praliaskouski])
 - Improve `h3_grid_path_cells` with upstream bidirectional path generation from bundled H3 `v4.5.0` ([Darafei Praliaskouski])
 
-* Breaking Changes *
+### Breaking Changes
 
 - [#190], ⚠️ Fix btree comparator returning wrong sign, causing reversed `ORDER BY` and incorrect range scans; upgrade auto-reindexes affected indexes. If you prefer to handle that manually, drop the affected indexes before upgrade and recreate them afterwards ([Eric Schoffstall])
 
-* Bug Fixes *
+### Bug Fixes
 
 - Harden core H3 SQL bindings around null, array, polygon, and error handling; negative traversal distances now report a clear PostgreSQL parameter error ([#192], [Darafei Praliaskouski])
 - Fix distance-result upgrade refresh to follow transitive dependencies through user wrapper functions ([Darafei Praliaskouski])
@@ -56,7 +56,7 @@ avoid adding features or APIs which do not map onto the
 - [#194], Fix `h3_postgis` geometry output and polygonization for low-zoom and buffered tile covers, polar seams, exact whole-world covers, disjoint polygon segments, vertex graph sizing, and polygon allocation state ([Paul Ramsey], [Darafei Praliaskouski])
 - Fix Windows builds when PostgreSQL installations do not report include flags through `pg_config --cppflags` ([Darafei Praliaskouski])
 
-* Documentation *
+### Documentation
 
 - [#183], Add the packaged h3-pg skill for agent-assisted maintenance workflows ([Darafei Praliaskouski])
 - Update README and package metadata links for the PostGIS repository move ([Regina Obe], [Darafei Praliaskouski])
@@ -64,7 +64,7 @@ avoid adding features or APIs which do not map onto the
 - [#165], [#168], Add a maintainer note in migration SQL: avoid function-level `SET search_path` in these wrappers to preserve SQL-function inlining ([Darafei Praliaskouski])
 - Generate and validate GUC documentation from source comments, and teach the SQL documentation parser the operator-class syntax used by the new GiST docs ([Darafei Praliaskouski], [Eric Schoffstall])
 
-* Tooling *
+### Tooling
 
 - [#197], Release managers can prepare releases with `scripts/release` and `scripts/postrelease`, including metadata, API-doc, changelog, next-cycle update-file, duplicate-version, and argument checks ([Darafei Praliaskouski])
 - [#184], Contributors and packagers get more reliable validation: build-tree extension-upgrade tests, explicit missing-`pg_validate_extupgrade` reporting, metadata checks, non-Intel PostGIS regression tolerance, and sturdier PGXN, Windows, and macOS CI ([Zacharias Knudsen], [@esiaero], [Darafei Praliaskouski])
