@@ -23,6 +23,11 @@ These exist only in h3-pg, not other H3 language bindings.
 - `a <-> b` — grid distance in cells between two h3index values (`h3`)
 - `geom @ resolution` — index geometry/geography at resolution (`h3_postgis`)
 
+**Inspection and construction helpers** (`h3`):
+- `h3_get_index_digit(cell, resolution)` — inspect the digit at a 1-based resolution step
+- `h3_construct_cell(resolution, base_cell_number, digits[])` — rebuild a cell from explicit components
+- `h3_is_valid_index(index)` — validate any H3 index mode: cell, directed edge, or vertex
+
 **Directed edge convenience** (`h3`):
 - `h3_reverse_directed_edge(edge)` — returns the same directed edge with origin and destination reversed
 
@@ -56,6 +61,8 @@ These exist only in h3-pg, not other H3 language bindings.
 | Grid distance (cells) | `h3_distance(a, b)` | `a <-> b` |
 
 **Antimeridian gotcha:** Cells crossing 180° are split into valid polygons. `ST_Centroid` of a split polygon may fall outside the cell — use `h3::geometry` for centroids instead.
+
+**Ring traversal gotcha:** Prefer `h3_grid_ring(origin, k)` for rings because it handles pentagon distortion internally. Use `h3_grid_ring_unsafe(origin, k)` only when fail-fast behavior or ring-walk ordering matters.
 
 ## Critical v3 → v4 Renames
 

@@ -33,8 +33,11 @@ avoid adding features or APIs which do not map onto the
 * New Features *
 
 - [#188], Add experimental GiST operator class for `h3index`; initial work in [#42] ([Zacharias Knudsen], [Eric Schoffstall], [Darafei Praliaskouski], [Abel Vázquez Montoro], [@mattiZed])
-- Bump bundled H3 core library to `v4.4.1` and add bindings for new upstream APIs including `h3_grid_ring`, `h3_get_index_digit`, `h3_construct_cell`, and `h3_is_valid_index` ([Darafei Praliaskouski])
-- Bump bundled H3 core library to `v4.5.0`, expose `h3_reverse_directed_edge`, and inherit upstream bidirectional `h3_grid_path_cells` plus stricter cell-to-multipolygon validation ([Darafei Praliaskouski])
+- Add `h3_grid_ring` as the preferred ring traversal API: it returns cells exactly `k` grid steps from the origin and handles pentagon distortion internally ([Darafei Praliaskouski])
+- Add `h3_get_index_digit` and `h3_construct_cell` for inspecting and rebuilding cell indexes from explicit resolution, base-cell, and digit components ([Darafei Praliaskouski])
+- Add `h3_is_valid_index` for validating any H3 index mode, including cells, directed edges, and vertices ([Darafei Praliaskouski])
+- Add `h3_reverse_directed_edge` to reverse a directed edge without manually unpacking its origin and destination cells ([Darafei Praliaskouski])
+- Improve `h3_grid_path_cells` with upstream bidirectional path generation from bundled H3 `v4.5.0` ([Darafei Praliaskouski])
 
 * Breaking Changes *
 
@@ -42,20 +45,32 @@ avoid adding features or APIs which do not map onto the
 
 * Bug Fixes *
 
+- Harden core H3 SQL bindings around null, array, polygon, and error handling; negative traversal distances now report a clear PostgreSQL parameter error ([#192], [Darafei Praliaskouski])
 - Fix distance-result upgrade refresh to follow transitive dependencies through user wrapper functions ([Darafei Praliaskouski])
 - [#165], [#168], Fix PostgreSQL 17+ maintenance-operation failures for `h3_postgis` SQL wrappers by schema-qualifying extension object references ([Darafei Praliaskouski])
 - [#168], Fix pg_dump/restore-style `search_path=''` expression-index replay on `h3_lat_lng_to_cell` ([Darafei Praliaskouski])
 - Fix extension upgrade validation drift for placeholder-qualified SQL, including the PostgreSQL 14 raster class summary helper ([Darafei Praliaskouski])
+- [#181], Fix deprecated alias warnings so each wrapper warns once per backend while preserving parallel-safe behavior ([Darafei Praliaskouski])
 - Fix GiST union summaries to ignore the unused entry-vector slot, keeping internal bounds stable on deeper trees ([Darafei Praliaskouski])
+- Reject invalid cell-to-multipolygon input more strictly with bundled H3 `v4.5.0` ([Darafei Praliaskouski])
 - [#189], Fix SP-GiST picksplit using wrong prefix when batch has mixed parents, silently dropping containment query results ([Eric Schoffstall])
 - [#187], Fix SP-GiST picksplit crash when tree depth exceeds cell resolution ([Eric Schoffstall])
 - [#191], Fix `<@` operator and SP-GiST returning false for self-containment ([Eric Schoffstall])
-- Fix `h3_postgis` geometry output for low-zoom and buffered tile covers, polar seams, and exact whole-world covers, so tile polyfills cover the intended Web Mercator tiles and return valid geometries ([Darafei Praliaskouski])
+- [#194], Fix `h3_postgis` geometry output and polygonization for low-zoom and buffered tile covers, polar seams, exact whole-world covers, disjoint polygon segments, vertex graph sizing, and polygon allocation state ([Paul Ramsey], [Darafei Praliaskouski])
+- Fix Windows builds when PostgreSQL installations do not report include flags through `pg_config --cppflags` ([Darafei Praliaskouski])
 
 * Documentation *
 
+- [#183], Add the packaged h3-pg skill for agent-assisted maintenance workflows ([Darafei Praliaskouski])
+- Update README and package metadata links for the PostGIS repository move ([Regina Obe], [Darafei Praliaskouski])
 - [#157], Document invalid polygon inputs to `h3_polygon_to_cells*` and add guidance for `ST_IsValid()` / `ST_MakeValid()` workflows ([Darafei Praliaskouski])
 - [#165], [#168], Add a maintainer note in migration SQL: avoid function-level `SET search_path` in these wrappers to preserve SQL-function inlining ([Darafei Praliaskouski])
+- Generate and validate GUC documentation from source comments, and teach the SQL documentation parser the operator-class syntax used by the new GiST docs ([Darafei Praliaskouski], [Eric Schoffstall])
+
+* Tooling *
+
+- [#197], Release managers can prepare releases with `scripts/release` and `scripts/postrelease`, including metadata, API-doc, changelog, next-cycle update-file, duplicate-version, and argument checks ([Darafei Praliaskouski])
+- [#184], Contributors and packagers get more reliable validation: build-tree extension-upgrade tests, explicit missing-`pg_validate_extupgrade` reporting, metadata checks, non-Intel PostGIS regression tolerance, and sturdier PGXN, Windows, and macOS CI ([Zacharias Knudsen], [@esiaero], [Darafei Praliaskouski])
 
 </details>
 
@@ -333,20 +348,29 @@ avoid adding features or APIs which do not map onto the
 [#176]: https://github.com/postgis/h3-pg/pull/176
 [#177]: https://github.com/postgis/h3-pg/pull/177
 [#179]: https://github.com/postgis/h3-pg/issues/179
+[#181]: https://github.com/postgis/h3-pg/issues/181
+[#183]: https://github.com/postgis/h3-pg/pull/183
+[#184]: https://github.com/postgis/h3-pg/pull/184
 [#187]: https://github.com/postgis/h3-pg/pull/187
 [#188]: https://github.com/postgis/h3-pg/pull/188
 [#189]: https://github.com/postgis/h3-pg/pull/189
 [#190]: https://github.com/postgis/h3-pg/pull/190
 [#191]: https://github.com/postgis/h3-pg/pull/191
+[#192]: https://github.com/postgis/h3-pg/issues/192
+[#194]: https://github.com/postgis/h3-pg/pull/194
+[#197]: https://github.com/postgis/h3-pg/pull/197
 [Abel Vázquez Montoro]: https://github.com/AbelVM
 [Darafei Praliaskouski]: https://github.com/Komzpa
 [Eric Schoffstall]: https://github.com/yocontra
+[Paul Ramsey]: https://github.com/pramsey
+[Regina Obe]: https://github.com/robe2
 [Zacharias Knudsen]: https://github.com/zachasme
 [@AbelVM]: https://github.com/AbelVM
 [@bayandin]: https://github.com/bayandin
 [@BielStela]: https://github.com/BielStela
 [@devrimgunduz]: https://github.com/devrimgunduz
 [@df7cb]: https://github.com/df7cb
+[@esiaero]: https://github.com/esiaero
 [@jmealo]: https://github.com/jmealo
 [@kalenikaliaksandr]: https://github.com/kalenikaliaksandr
 [@kmacdough]: https://github.com/kmacdough
