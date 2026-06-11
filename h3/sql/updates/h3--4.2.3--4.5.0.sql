@@ -19,9 +19,9 @@
 \echo Use "ALTER EXTENSION h3 UPDATE TO '4.5.0'" to load this file. \quit
 
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
--- Keep the public bigint <-> signature upgrade-safe, refresh stored/indexed
--- distance results that may still contain the old sentinel, and wire in the
--- GiST KNN operator class support functions used below.
+-- Keep the public bigint <-> signature upgrade-safe and wire in the GiST KNN
+-- operator class support functions used below.  User-defined dependent objects
+-- must be maintained explicitly after the upgrade, not by this script.
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
 CREATE OR REPLACE FUNCTION h3index_distance(h3index, h3index) RETURNS bigint
@@ -29,130 +29,16 @@ CREATE OR REPLACE FUNCTION h3index_distance(h3index, h3index) RETURNS bigint
 COMMENT ON OPERATOR <-> (h3index, h3index) IS
   'Returns the distance in grid cells between the two indices after refining the coarser input to its center child at the finer resolution. Returns the maximum bigint value when gridDistance fails (e.g. near pentagons).';
 
-DO $$
-DECLARE
-    dep_index RECORD;
-    dep_table RECORD;
-    dep_matview RECORD;
-    distance_op oid := '<->(h3index,h3index)'::regoperator;
-    distance_fn oid := 'h3index_distance(h3index,h3index)'::regprocedure;
-    original_replication_role text := pg_catalog.current_setting('session_replication_role');
-BEGIN
-    /*
-     * Stored generated columns need their rows recomputed, but the extension
-     * upgrade must not fire arbitrary user UPDATE triggers while doing so.
-     */
-    PERFORM pg_catalog.set_config('session_replication_role', 'replica', true);
-    BEGIN
-        FOR dep_table IN
-            WITH RECURSIVE distance_dependents AS (
-                SELECT 'pg_operator'::regclass::oid AS classid, distance_op AS objid
-                UNION
-                SELECT 'pg_proc'::regclass::oid AS classid, distance_fn AS objid
-                UNION
-                SELECT d.classid, d.objid
-                FROM pg_depend d
-                JOIN distance_dependents dd
-                  ON d.refclassid = dd.classid
-                 AND d.refobjid = dd.objid
-                WHERE d.deptype IN ('n', 'a', 'i')
-            )
-            SELECT DISTINCT
-                c.oid::regclass AS relid,
-                base.attname AS base_attname
-            FROM distance_dependents dd
-            JOIN pg_attrdef ad
-                ON ad.oid = dd.objid
-            JOIN pg_attribute a
-                ON a.attrelid = ad.adrelid
-               AND a.attnum = ad.adnum
-               AND a.attgenerated = 's'
-            JOIN pg_class c
-                ON c.oid = ad.adrelid
-            JOIN LATERAL (
-                SELECT a2.attname
-                FROM pg_attribute a2
-                WHERE a2.attrelid = c.oid
-                  AND a2.attnum > 0
-                  AND NOT a2.attisdropped
-                  AND a2.attgenerated = ''
-                  AND a2.attidentity <> 'a'
-                ORDER BY a2.attnum
-                LIMIT 1
-            ) base ON TRUE
-            WHERE dd.classid = 'pg_attrdef'::regclass
-        LOOP
-            EXECUTE pg_catalog.format(
-                'UPDATE %s SET %I = %I',
-                dep_table.relid,
-                dep_table.base_attname,
-                dep_table.base_attname
-            );
-        END LOOP;
-    EXCEPTION
-        WHEN OTHERS THEN
-            PERFORM pg_catalog.set_config(
-                'session_replication_role',
-                original_replication_role,
-                true
-            );
-            RAISE;
-    END;
-    PERFORM pg_catalog.set_config(
-        'session_replication_role',
-        original_replication_role,
-        true
-    );
-
-    FOR dep_index IN
-        WITH RECURSIVE distance_dependents AS (
-            SELECT 'pg_operator'::regclass::oid AS classid, distance_op AS objid
-            UNION
-            SELECT 'pg_proc'::regclass::oid AS classid, distance_fn AS objid
-            UNION
-            SELECT d.classid, d.objid
-            FROM pg_depend d
-            JOIN distance_dependents dd
-              ON d.refclassid = dd.classid
-             AND d.refobjid = dd.objid
-            WHERE d.deptype IN ('n', 'a', 'i')
-        )
-        SELECT c.oid::regclass AS relid
-        FROM distance_dependents dd
-        JOIN pg_class c
-            ON c.oid = dd.objid
-        WHERE dd.classid = 'pg_class'::regclass
-          AND c.relkind = 'i'
-    LOOP
-        EXECUTE pg_catalog.format('REINDEX INDEX %s', dep_index.relid);
-    END LOOP;
-
-    FOR dep_matview IN
-        WITH RECURSIVE distance_dependents AS (
-            SELECT 'pg_operator'::regclass::oid AS classid, distance_op AS objid
-            UNION
-            SELECT 'pg_proc'::regclass::oid AS classid, distance_fn AS objid
-            UNION
-            SELECT d.classid, d.objid
-            FROM pg_depend d
-            JOIN distance_dependents dd
-              ON d.refclassid = dd.classid
-             AND d.refobjid = dd.objid
-            WHERE d.deptype IN ('n', 'a', 'i')
-        )
-        SELECT c.oid::regclass AS relid
-        FROM distance_dependents dd
-        JOIN pg_rewrite r
-            ON r.oid = dd.objid
-        JOIN pg_class c
-            ON c.oid = r.ev_class
-        WHERE dd.classid = 'pg_rewrite'::regclass
-          AND c.relkind = 'm'
-    LOOP
-        EXECUTE pg_catalog.format('REFRESH MATERIALIZED VIEW %s', dep_matview.relid);
-    END LOOP;
-END
-$$;
+/*
+ * Do not automatically UPDATE, REINDEX, or REFRESH user-defined objects that
+ * depend on h3index_distance() or <-> here.  Those operations can evaluate
+ * user-controlled generated-column, expression-index, or materialized-view
+ * expressions with the privileges of the extension upgrade session.
+ *
+ * Administrators should arrange any required post-upgrade maintenance for
+ * affected objects explicitly, under an appropriate application/object-owner
+ * role, after reviewing the object definitions.
+ */
 
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 -- Btree comparator sign fix: existing btree indexes on h3index columns are

@@ -116,6 +116,20 @@ FROM h3_distance_expr_fail_userfn;
 
 ALTER EXTENSION h3 UPDATE TO 'unreleased';
 
+-- Extension upgrade scripts must not evaluate user-controlled expressions.
+-- Rebuild/refresh dependent user objects explicitly after the upgrade.
+REINDEX INDEX h3_distance_expr_fail_idx;
+REINDEX INDEX h3_distance_expr_fail_fn_idx;
+REINDEX INDEX h3_distance_expr_fail_userfn_idx;
+ALTER TABLE h3_distance_generated_fail DISABLE TRIGGER USER;
+UPDATE h3_distance_generated_fail SET hex = hex;
+ALTER TABLE h3_distance_generated_fail ENABLE TRIGGER USER;
+UPDATE h3_distance_generated_fail_fn SET hex = hex;
+UPDATE h3_distance_generated_fail_userfn SET hex = hex;
+UPDATE h3_distance_generated_fail_userfn_identity SET hex = hex;
+REFRESH MATERIALIZED VIEW h3_distance_matview_fail_fn;
+REFRESH MATERIALIZED VIEW h3_distance_matview_fail_userfn;
+
 SELECT (current_setting('server_version_num')::int >= 140000) = EXISTS (
     SELECT 1
     FROM pg_amproc ap
