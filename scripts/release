@@ -72,7 +72,8 @@ release_update_file() {
   [[ ! -e "$new_file" ]] || die "${new_file} already exists"
 
   git mv "$old_file" "$new_file"
-  sed -i "s/unreleased/${version}/g" "$new_file"
+  sed -i "s/UPDATE TO 'unreleased'/UPDATE TO '${version}'/g" "$new_file"
+  sed -i "s/availability: unreleased/availability: ${version}/g" "$new_file"
   sed -i -E 's/[[:space:]]+$//' "$new_file"
   grep -qF "$old_name" "$cmake_file" || die "${cmake_file} does not reference ${old_name}"
   OLD_NAME="$old_name" NEW_NAME="$new_name" \
