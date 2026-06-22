@@ -166,7 +166,7 @@ verify_release_state() {
     die "unreleased update files remain after release"
   fi
 
-  if grep -R -n -E 'availability: unreleased|Since vunreleased|--unreleased\.sql' \
+  if grep -R -n -E 'availability: unreleased|Since vunreleased|UPDATE TO '\''unreleased'\''|--unreleased\.sql' \
       h3 h3_postgis docs/api.md CMakeLists.txt; then
     die "unreleased release markers remain"
   fi
