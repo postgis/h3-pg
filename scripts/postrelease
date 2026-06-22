@@ -87,11 +87,9 @@ main() {
 
   make_next_update h3 h3/sql/updates h3/CMakeLists.txt "$version"
   make_next_update h3_postgis h3_postgis/sql/updates h3_postgis/CMakeLists.txt "$version"
-  sed -i "s/ALTER EXTENSION h3 UPDATE TO '${version}'/ALTER EXTENSION h3 UPDATE TO 'unreleased'/g" \
-    h3/test/sql/extension.sql h3/test/expected/extension.out
   for test_file in h3/test/sql/extension.sql h3/test/expected/extension.out; do
-    grep -q "ALTER EXTENSION h3 UPDATE TO 'unreleased'" "$test_file" ||
-      die "${test_file} extension regression target was not restored to unreleased"
+    grep -q "ALTER EXTENSION h3 UPDATE;" "$test_file" ||
+      die "${test_file} extension regression target does not update to the default version"
   done
 
   verify_update_references

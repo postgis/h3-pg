@@ -2,6 +2,13 @@
 
 In order to build and test your changes, simply run `./scripts/develop`.
 
+During development, repository source files keep `INSTALL_VERSION` and the
+latest update SQL filenames at `unreleased`. CMake derives the installed
+PostgreSQL extension version from that placeholder as `${PROJECT_VERSION}dev`,
+so a development build of project version `4.5.0` installs control, SQL, and
+module metadata for `4.5.0dev`. Release scripts still replace the source
+placeholder with the exact release version.
+
 For local upgrade-validation coverage, install `pg_validate_extupgrade` so
 `ctest` can run the same extension-upgrade checks as CI. Without it, CTest
 registers explicit `*_validate_extupgrade_unavailable` placeholder tests and
@@ -30,8 +37,9 @@ This command also validates that all extension GUCs are documented in `h3/src/gu
    - The script creates `release-X.Y.Z` and leaves the release changes
      uncommitted for review.
 2. Review the release diff
-   - Root `CMakeLists.txt` has `VERSION X.Y.Z` and installs
-     `${PROJECT_VERSION}` instead of `unreleased`.
+   - Root `CMakeLists.txt` has `VERSION X.Y.Z`, sets `INSTALL_VERSION` to
+     `${PROJECT_VERSION}`, and therefore installs exactly `X.Y.Z` instead of
+     the generated development version.
    - The `h3` and `h3_postgis` update files that ended in `--unreleased.sql`
      have been renamed to end in `--X.Y.Z.sql`, and their CMake references were
      renamed with them.
@@ -60,6 +68,6 @@ This command also validates that all extension GUCs are documented in `h3/src/gu
    - Run `scripts/postrelease`. The script restores `INSTALL_VERSION` to
      `unreleased`, creates the next empty `h3--X.Y.Z--unreleased.sql` and
      `h3_postgis--X.Y.Z--unreleased.sql` files, adds them to the extension CMake
-     files, restores the upgrade regression target to `unreleased`, and runs the
-     release metadata checks.
+     files, keeps the upgrade regression target pointed at the default
+     extension version, and runs the release metadata checks.
    - Review, commit, push, and merge the post-release development branch.
