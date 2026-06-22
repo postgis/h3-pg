@@ -4,7 +4,7 @@
 -- TEST h3_get_extension_version
 --
 
-SELECT h3_get_extension_version() ~ '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+SELECT h3_get_extension_version() ~ '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:dev|-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
     OR h3_get_extension_version() = 'unreleased';
 
 --
@@ -114,7 +114,7 @@ SELECT
     h3_distance_user_wrapper(hex) AS dist
 FROM h3_distance_expr_fail_userfn;
 
-ALTER EXTENSION h3 UPDATE TO 'unreleased';
+ALTER EXTENSION h3 UPDATE;
 
 SELECT (current_setting('server_version_num')::int >= 140000) = EXISTS (
     SELECT 1

@@ -2,7 +2,7 @@ PostgreSQL_add_extension(postgresql_h3
   RELOCATABLE
   NAME h3
   COMMENT "H3 bindings for PostgreSQL"
-  VERSION ${INSTALL_VERSION}
+  VERSION ${INSTALL_OUTPUT_VERSION}
   COMPONENT ${PROJECT_NAME}
   SOURCES
     src/binding/edge.c

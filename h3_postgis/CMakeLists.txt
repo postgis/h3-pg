@@ -2,7 +2,7 @@ PostgreSQL_add_extension(postgresql_h3_postgis
   RELOCATABLE
   NAME h3_postgis
   COMMENT "H3 PostGIS integration"
-  VERSION ${INSTALL_VERSION}
+  VERSION ${INSTALL_OUTPUT_VERSION}
   COMPONENT ${PROJECT_NAME}
   REQUIRES
     h3
