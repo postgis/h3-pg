@@ -60,6 +60,22 @@ void
 void
 			boundary_split_180_polar(const CellBoundary * boundary, CellBoundary * res);
 
+/* Adds one vertex while preserving the fixed CellBoundary capacity. */
+static void
+			boundary_add_vert(CellBoundary * boundary, const LatLng * vert);
+
+static void
+boundary_add_vert(CellBoundary * boundary, const LatLng * vert)
+{
+	const int	maxVerts = sizeof(boundary->verts) / sizeof(boundary->verts[0]);
+
+	SPLIT_ASSERT(
+		boundary->numVerts < maxVerts,
+		"Cell boundary split exceeds CellBoundary vertex capacity");
+
+	boundary->verts[boundary->numVerts++] = *vert;
+}
+
 /*
  * Serialize one H3 cell boundary to WKB.
  *
@@ -166,7 +182,7 @@ boundary_split_180(const CellBoundary * boundary, CellBoundary * part1, CellBoun
 		part = (lon < 0) ? part1 : part2;
 
 		/* Add current vertex */
-		part->verts[part->numVerts++] = verts[v];
+		boundary_add_vert(part, &verts[v]);
 
 		if (SIGN(lon) != SIGN(nextLon))
 		{
@@ -182,11 +198,11 @@ boundary_split_180(const CellBoundary * boundary, CellBoundary * part1, CellBoun
 
 			/* Add split point */
 			/* current part  */
-			part->verts[part->numVerts++] = vert;
+			boundary_add_vert(part, &vert);
 			/* next part */
 			vert.lng = -vert.lng;
 			part = (part == part1) ? part2 : part1;
-			part->verts[part->numVerts++] = vert;
+			boundary_add_vert(part, &vert);
 		}
 	}
 }
@@ -205,7 +221,7 @@ boundary_split_180_polar(const CellBoundary * boundary, CellBoundary * res)
 		double		nextLon;
 
 		/* Add current vertex */
-		res->verts[res->numVerts++] = verts[v];
+		boundary_add_vert(res, &verts[v]);
 
 		lon = verts[v].lng;
 		nextLon = verts[next].lng;
@@ -225,17 +241,17 @@ boundary_split_180_polar(const CellBoundary * boundary, CellBoundary * res)
 			/* Add intersection point */
 			vert.lat = splitLat;
 			vert.lng = (lon < 0) ? -M_PI : M_PI;
-			res->verts[res->numVerts++] = vert;
+			boundary_add_vert(res, &vert);
 
 			/* Add points on antimeridian near the pole */
 			vert.lat = SIGN(vert.lat) * ABS_LAT_MAX;
-			res->verts[res->numVerts++] = vert;
+			boundary_add_vert(res, &vert);
 			vert.lng = -vert.lng;
-			res->verts[res->numVerts++] = vert;
+			boundary_add_vert(res, &vert);
 
 			/* Add intersection point */
 			vert.lat = splitLat;
-			res->verts[res->numVerts++] = vert;
+			boundary_add_vert(res, &vert);
 		}
 	}
 }
