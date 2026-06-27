@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
+die() {
+  echo "bundle: $*" >&2
+  exit 1
+}
+
+require_clean_tracked_tree() {
+  git diff --quiet || die "tracked worktree changes are present"
+  git diff --cached --quiet || die "staged changes are present"
+}
+
+require_clean_tracked_tree
 git clean -xdf
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target=source_bundle

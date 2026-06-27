@@ -12,6 +12,15 @@ set(ENABLE_DOCS       OFF)
 
 set(H3_BUNDLED_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/upstream")
 if(EXISTS "${H3_BUNDLED_SOURCE_DIR}/CMakeLists.txt")
+  file(READ "${H3_BUNDLED_SOURCE_DIR}/VERSION" H3_BUNDLED_VERSION)
+  string(STRIP "${H3_BUNDLED_VERSION}" H3_BUNDLED_VERSION)
+  if(NOT H3_BUNDLED_VERSION VERSION_EQUAL H3_CORE_VERSION)
+    message(FATAL_ERROR
+      "Bundled H3 source version ${H3_BUNDLED_VERSION} does not match "
+      "configured H3 core version ${H3_CORE_VERSION}"
+    )
+  endif()
+
   FetchContent_Declare(
     h3
     SOURCE_DIR "${H3_BUNDLED_SOURCE_DIR}"
