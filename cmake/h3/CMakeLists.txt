@@ -24,6 +24,7 @@ else()
   )
 endif()
 FetchContent_MakeAvailable(h3)
+set(h3_SOURCE_DIR "${h3_SOURCE_DIR}" CACHE PATH "Vendored H3 source directory" FORCE)
 
 set_target_properties(h3 PROPERTIES
   INTERPROCEDURAL_OPTIMIZATION TRUE
