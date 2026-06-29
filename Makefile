@@ -14,7 +14,7 @@
 
 # this file only exists to support pgxnclient
 
-PG_CONFIG ?= pg_config
+PG_CONFIG ?= $(shell where pg_config.exe || command -v pg_config)
 CMAKE_PG_CONFIG = -DPostgreSQL_CONFIG=$(PG_CONFIG)
 
 .PHONY: all install installcheck
