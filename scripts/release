@@ -225,7 +225,7 @@ main() {
   echo "  - review and commit the release-${version} changes"
   echo "  - push and merge the release branch"
   echo "  - have the release manager publish GitHub release v${version} from CHANGELOG.md"
-  echo "  - run scripts/bundle and upload to PGXN"
+  echo "  - run scripts/bundle, upload h3-${version}.zip to PGXN, and attach h3-${version}.tar.gz to the GitHub release"
   echo "  - run scripts/postrelease after the release is merged"
 }
 

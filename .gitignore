@@ -15,6 +15,7 @@ h3/test/results
 /h3/test/sql/ci-*.sql
 /libh3-*/
 /h3-*.zip
+/h3-*.tar.gz
 *.BAK
 
 # IDEs
