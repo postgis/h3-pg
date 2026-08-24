@@ -41,6 +41,21 @@ h3index_cmp(PG_FUNCTION_ARGS)
 }
 
 
+/*
+ * Btree "equalimage" (support function 4).
+ *
+ * h3index is a fixed-width 64-bit pass-by-value type whose equality
+ * operator is bitwise identity, so deduplication is always safe.
+ * Mirrors btequalimage() in the PostgreSQL source.
+ */
+PGDLLEXPORT PG_FUNCTION_INFO_V1(h3index_btequalimage);
+
+Datum
+h3index_btequalimage(PG_FUNCTION_ARGS)
+{
+	PG_RETURN_BOOL(true);
+}
+
 static int
 h3index_cmp_abbrev(Datum x, Datum y, SortSupport ssup)
 {

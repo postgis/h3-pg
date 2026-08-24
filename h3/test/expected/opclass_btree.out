@@ -90,3 +90,20 @@ SELECT i.idx_between > 0 FROM btree_idx_bw i;
  t
 
 DROP TABLE btree_idx_bw, btree_seq_bw;
+--
+-- TEST equalimage support function is registered
+-- Without support function 4 PostgreSQL silently disables btree
+-- deduplication for every h3index index.
+--
+SELECT COUNT(*) = 1 AS has_equalimage
+  FROM pg_amproc ap
+  JOIN pg_opfamily f ON f.oid = ap.amprocfamily
+  JOIN pg_am am ON am.oid = f.opfmethod
+  JOIN pg_proc p ON p.oid = ap.amproc
+ WHERE f.opfname = 'h3index_ops' AND am.amname = 'btree' AND ap.amprocnum = 4
+   AND p.proname = 'h3index_btequalimage'
+   AND p.prorettype = 'boolean'::regtype
+   AND ap.amproclefttype = 'h3index'::regtype
+   AND ap.amprocrighttype = 'h3index'::regtype;
+ t
+

@@ -17,3 +17,10 @@
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "ALTER EXTENSION h3 UPDATE TO 'unreleased'" to load this file. \quit
+
+-- Add equalimage support function for btree opclass
+CREATE OR REPLACE FUNCTION h3index_btequalimage(oid) RETURNS boolean
+    AS 'h3', 'h3index_btequalimage' LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+ALTER OPERATOR FAMILY h3index_ops USING btree ADD
+    FUNCTION  4  (h3index, h3index) h3index_btequalimage(oid);

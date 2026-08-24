@@ -27,6 +27,12 @@ CREATE OR REPLACE FUNCTION h3index_sortsupport(internal)
 	LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 --@ internal
+CREATE OR REPLACE FUNCTION h3index_btequalimage(oid)
+	RETURNS boolean
+	AS 'h3', 'h3index_btequalimage'
+	LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+--@ internal
 CREATE OPERATOR CLASS h3index_ops DEFAULT FOR TYPE h3index USING btree AS
     OPERATOR  1  <  ,
     OPERATOR  2  <= ,
@@ -34,4 +40,5 @@ CREATE OPERATOR CLASS h3index_ops DEFAULT FOR TYPE h3index USING btree AS
     OPERATOR  4  >= ,
     OPERATOR  5  >  ,
     FUNCTION  1  h3index_cmp(h3index, h3index),
-    FUNCTION  2  h3index_sortsupport(internal);
+    FUNCTION  2  h3index_sortsupport(internal),
+    FUNCTION  4  h3index_btequalimage(oid);

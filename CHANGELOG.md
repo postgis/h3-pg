@@ -21,6 +21,7 @@ avoid adding features or APIs which do not map onto the
 ## [Unreleased]
 
 - Use `PG_MODULE_MAGIC_EXT` macro in PostgreSQL 18 and later ([#203], [Andreas Karlsson])
+- [#213], Register the btree `equalimage` support function for `h3index`, enabling B-tree index deduplication. Existing indexes keep answering correctly across the upgrade, but `allequalimage` is stamped into the index at build time, so they only pick up the space saving on their next `REINDEX` ([#214], [@jmealo])
 
 ## [4.5.0] - 2026-06-08
 
@@ -358,6 +359,8 @@ avoid adding features or APIs which do not map onto the
 [#194]: https://github.com/postgis/h3-pg/pull/194
 [#197]: https://github.com/postgis/h3-pg/pull/197
 [#203]: https://github.com/postgis/h3-pg/pull/203
+[#213]: https://github.com/postgis/h3-pg/issues/213
+[#214]: https://github.com/postgis/h3-pg/pull/214
 [Abel Vázquez Montoro]: https://github.com/AbelVM
 [Andreas Karlsson]: https://github.com/jeltz
 [Darafei Praliaskouski]: https://github.com/Komzpa
