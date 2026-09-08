@@ -8,6 +8,16 @@ SELECT h3_get_extension_version() ~ '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?
     OR h3_get_extension_version() = 'unreleased';
 
 --
+-- TEST h3_pg_migrate_pass_by_reference
+--
+-- Nothing to migrate where h3index is already pass-by-value, so the function
+-- must say so rather than dereference the cell as a pointer (see issue #31,
+-- where doing so segfaulted the backend during constant folding).
+--
+
+SELECT h3_pg_migrate_pass_by_reference('0x85283473fffffff'::h3index);
+
+--
 -- TEST upgrading from 4.2.3 with dependent distance objects
 --
 
