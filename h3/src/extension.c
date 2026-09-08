@@ -19,6 +19,7 @@
 
 #include <fmgr.h>			// PG_FUNCTION_INFO_V1
 #include <utils/builtins.h> // cstring_to_text
+#include <utils/lsyscache.h> // get_typbyval
 
 #include "type.h"
 #include "config.h"
@@ -36,11 +37,26 @@ h3_get_extension_version(PG_FUNCTION_ARGS)
 /*
  * Migration from pass-by-reference to pass-by-value
  * https://github.com/postgis/h3-pg/issues/31
+ *
+ * Dereferences an h3index datum that is still pass-by-reference. The guard
+ * reads the catalog rather than USE_FLOAT8_BYVAL: where the type is already
+ * pass-by-value the datum is the cell itself, and dereferencing it segfaults.
  */
 Datum
 h3_pg_migrate_pass_by_reference(PG_FUNCTION_ARGS)
 {
-	H3Index		cell = (*((H3Index *) DatumGetPointer(PG_GETARG_DATUM(0))));
+	Oid			argtype = get_fn_expr_argtype(fcinfo->flinfo, 0);
+	H3Index		cell;
+
+	if (!OidIsValid(argtype))
+		elog(ERROR, "could not determine argument type");
+
+	if (get_typbyval(argtype))
+		ereport(ERROR,
+				(errcode(ERRCODE_OBJECT_NOT_IN_PREREQUISITE_STATE),
+				 errmsg("h3index is already pass-by-value in this database")));
+
+	cell = *((H3Index *) DatumGetPointer(PG_GETARG_DATUM(0)));
 
 	PG_RETURN_H3INDEX(cell);
 }
