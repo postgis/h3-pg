@@ -60,7 +60,17 @@ void
 void
 			boundary_split_180_polar(const CellBoundary * boundary, CellBoundary * res);
 
-/* Adds one vertex while preserving the fixed CellBoundary capacity. */
+/*
+ * Adds one vertex while preserving the fixed CellBoundary capacity.
+ *
+ * Invariant: a single-crossing (polar) cell is a hexagon of at most six
+ * vertices (H3 pentagons sit on icosahedron vertices, never on a pole), and the
+ * polar splitter adds four seam vertices, so it stays within
+ * MAX_CELL_BNDRY_VERTS (10). The multi-crossing splitter adds two vertices per
+ * crossing and distributes the rest over two parts. The assert below keeps any
+ * violation of this a clean error rather than a stack overflow; the polar-cell
+ * sweep in test/sql/postgis.sql pins the invariant for all resolutions.
+ */
 static void
 			boundary_add_vert(CellBoundary * boundary, const LatLng * vert);
 

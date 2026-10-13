@@ -320,6 +320,15 @@ SELECT GeometryType(h3_cell_to_boundary_wkb(:polar)::geometry) LIKE 'POLYGON';
 -- check num points in polar cell boundary
 SELECT ST_NPoints(h3_cell_to_boundary_geometry(:polar)) = 11;
 
+-- every cell around both poles converts at every resolution without
+-- exceeding the fixed CellBoundary capacity in the antimeridian splitters
+SELECT count(*) >= 2 * 16 * 7 AS all_polar_cells_converted,
+       every(ST_NPoints(h3_cell_to_boundary_geometry(h3)) BETWEEN 4 AND 20) AS point_counts_sane
+FROM (
+    SELECT h3_grid_disk(h3_latlng_to_cell(point(0, pole), res), 3) AS h3
+    FROM generate_series(0, 15) AS res, (VALUES (90), (-90)) AS poles(pole)
+) AS q;
+
 -- check latitude of antimeridian crossing points
 SET h3.split_antimeridian TO true;
 SELECT every(ABS(ST_Y(p) - :lat1) < :epsilon OR ABS(ST_Y(p) - :lat2) < :epsilon)
