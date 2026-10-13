@@ -10,6 +10,11 @@ die() {
 require_clean_tracked_tree() {
   git diff --quiet || die "tracked worktree changes are present"
   git diff --cached --quiet || die "staged changes are present"
+  # `git clean -xdf` below deletes untracked files; refuse rather than lose them.
+  # Ignored files (e.g. build/) are not listed here and are cleaned on purpose.
+  if [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+    die "untracked files are present (git clean -xdf would delete them)"
+  fi
 }
 
 require_clean_tracked_tree
