@@ -81,3 +81,20 @@ add_custom_target(pgxn
                       -o h3-${INSTALL_VERSION}.zip HEAD
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+# h3_SOURCE_DIR is exported as a CACHE variable by cmake/h3/CMakeLists.txt;
+# a subdirectory-scoped value would expand to empty here and break the bundle.
+if(NOT h3_SOURCE_DIR)
+  message(FATAL_ERROR "h3_SOURCE_DIR is not set; cmake/h3 must export it")
+endif()
+add_custom_target(source_bundle
+  COMMAND ${CMAKE_COMMAND}
+          -DARCHIVE_OUTPUT=${CMAKE_CURRENT_SOURCE_DIR}/h3-${INSTALL_VERSION}.tar.gz
+          -DARCHIVE_PREFIX=h3-${INSTALL_VERSION}
+          -DH3_SOURCE_DIR=${h3_SOURCE_DIR}
+          -DMETA_JSON=${CMAKE_BINARY_DIR}/META.json
+          -DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+          -DPROJECT_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+          -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/BundleSource.cmake
+  DEPENDS pgxn
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)

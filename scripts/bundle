@@ -1,5 +1,23 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
+die() {
+  echo "bundle: $*" >&2
+  exit 1
+}
+
+require_clean_tracked_tree() {
+  git diff --quiet || die "tracked worktree changes are present"
+  git diff --cached --quiet || die "staged changes are present"
+  # `git clean -xdf` below deletes untracked files; refuse rather than lose them.
+  # Ignored files (e.g. build/) are not listed here and are cleaned on purpose.
+  if [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+    die "untracked files are present (git clean -xdf would delete them)"
+  fi
+}
+
+require_clean_tracked_tree
 git clean -xdf
 cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target=pgxn
+cmake --build build --target=source_bundle
