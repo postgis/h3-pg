@@ -45,6 +45,11 @@ COMMENT ON OPERATOR <-> (h3index, h3index) IS
 -- physically sorted in the wrong order.  REINDEX every btree index that uses
 -- the h3index_ops operator class (in any column position) so the on-disk sort
 -- matches the corrected comparator.
+--
+-- Expression and partial indexes are skipped: REINDEX evaluates their
+-- expressions and predicates with the privileges of the upgrading role, which
+-- would run user-controlled code.  Administrators must REINDEX those
+-- explicitly, under the index owner's role, after the upgrade.
 -- ---------- ---------- ---------- ---------- ---------- ---------- ----------
 
 DO $$
@@ -60,6 +65,8 @@ BEGIN
         WHERE am.amname = 'btree'
           AND ci.relkind = 'i'
           AND opc.opcname = 'h3index_ops'
+          AND i.indexprs IS NULL
+          AND i.indpred IS NULL
     LOOP
         EXECUTE pg_catalog.format('REINDEX INDEX %s', r.idx);
     END LOOP;
