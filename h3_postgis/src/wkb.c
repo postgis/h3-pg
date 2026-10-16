@@ -43,16 +43,16 @@
 		(int)(data - (uint8 *)wkb), VARSIZE(wkb))
 
 static bool
-			boundary_is_empty(const CellBoundary * boundary);
+			boundary_is_empty(const WkbBoundary * boundary);
 
 static bool
-			boundary_is_closed(const CellBoundary * boundary);
+			boundary_is_closed(const WkbBoundary * boundary);
 
 static size_t
-			boundary_array_data_size(const CellBoundary * boundaries, int num);
+			boundary_array_data_size(const WkbBoundary * boundaries, int num);
 
 static size_t
-			boundary_data_size(const CellBoundary * boundary);
+			boundary_data_size(const WkbBoundary * boundary);
 
 static size_t
 			linked_geo_polygon_data_size(const LinkedGeoPolygon * multiPolygon);
@@ -61,10 +61,10 @@ static size_t
 			linked_geo_loop_data_size(const LinkedGeoLoop * loop);
 
 static uint8 *
-			wkb_write_boundary_array_data(uint8 *data, const CellBoundary * boundaries, int num);
+			wkb_write_boundary_array_data(uint8 *data, const WkbBoundary * boundaries, int num);
 
 static uint8 *
-			wkb_write_boundary_data(uint8 *data, const CellBoundary * boundary);
+			wkb_write_boundary_data(uint8 *data, const WkbBoundary * boundary);
 
 static uint8 *
 			wkb_write_linked_geo_polygon_data(uint8 *data, const LinkedGeoPolygon * multiPolygon);
@@ -88,7 +88,7 @@ static uint8 *
 			wkb_write(uint8 *data, const void *value, size_t size);
 
 bytea *
-boundary_array_to_wkb(const CellBoundary * boundaries, size_t num)
+boundary_array_to_wkb(const WkbBoundary * boundaries, size_t num)
 {
 	uint8	   *data;
 	bytea	   *wkb;
@@ -105,7 +105,7 @@ boundary_array_to_wkb(const CellBoundary * boundaries, size_t num)
 }
 
 bytea *
-boundary_to_wkb(const CellBoundary * boundary)
+boundary_to_wkb(const WkbBoundary * boundary)
 {
 	bytea	   *wkb;
 	uint8	   *data;
@@ -139,13 +139,13 @@ linked_geo_polygon_to_wkb(const LinkedGeoPolygon * multiPolygon)
 }
 
 bool
-boundary_is_empty(const CellBoundary * boundary)
+boundary_is_empty(const WkbBoundary * boundary)
 {
 	return boundary->numVerts < 1;
 }
 
 bool
-boundary_is_closed(const CellBoundary * boundary)
+boundary_is_closed(const WkbBoundary * boundary)
 {
 	const LatLng *verts;
 	int			numVerts;
@@ -160,7 +160,7 @@ boundary_is_closed(const CellBoundary * boundary)
 }
 
 size_t
-boundary_array_data_size(const CellBoundary * boundaries, int num)
+boundary_array_data_size(const WkbBoundary * boundaries, int num)
 {
 	/* byte order + type + srid + # of polygons */
 	size_t		size = WKB_BYTE_SIZE + WKB_INT_SIZE * 3;
@@ -172,7 +172,7 @@ boundary_array_data_size(const CellBoundary * boundaries, int num)
 }
 
 size_t
-boundary_data_size(const CellBoundary * boundary)
+boundary_data_size(const WkbBoundary * boundary)
 {
 	/* byte order + type + srid + # of rings */
 	size_t		size = WKB_BYTE_SIZE + WKB_INT_SIZE * 3;
@@ -238,7 +238,7 @@ linked_geo_loop_data_size(const LinkedGeoLoop * loop)
 }
 
 uint8 *
-wkb_write_boundary_array_data(uint8 *data, const CellBoundary * boundaries, int num)
+wkb_write_boundary_array_data(uint8 *data, const WkbBoundary * boundaries, int num)
 {
 	/* byte order */
 	data = wkb_write_endian(data);
@@ -255,7 +255,7 @@ wkb_write_boundary_array_data(uint8 *data, const CellBoundary * boundaries, int 
 }
 
 uint8 *
-wkb_write_boundary_data(uint8 *data, const CellBoundary * boundary)
+wkb_write_boundary_data(uint8 *data, const WkbBoundary * boundary)
 {
 	/* byte order */
 	data = wkb_write_endian(data);

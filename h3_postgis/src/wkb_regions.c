@@ -59,7 +59,7 @@ typedef struct
 typedef struct
 {
 	int			numParts;
-	CellBoundary parts[2];
+	WkbBoundary parts[2];
 } SplitCellBoundary;
 
 typedef struct
@@ -99,7 +99,7 @@ typedef struct
 	bool		used;
 } PolygonizeHalfEdge;
 
-static const CellBoundary FULL_WORLD_BOUNDARY = {
+static const WkbBoundary FULL_WORLD_BOUNDARY = {
 	.numVerts = 4,
 	.verts = {
 		{.lat = 90.0, .lng = -180.0},
@@ -117,10 +117,10 @@ int
 			boundary_crosses_180_num(const CellBoundary * boundary);
 
 void
-			boundary_split_180(const CellBoundary * boundary, CellBoundary * part1, CellBoundary * part2);
+			boundary_split_180(const CellBoundary * boundary, WkbBoundary * part1, WkbBoundary * part2);
 
 void
-			boundary_split_180_polar(const CellBoundary * boundary, CellBoundary * res);
+			boundary_split_180_polar(const CellBoundary * boundary, WkbBoundary * res);
 
 /*
  * Released H3 can return E_FAILED for coarse polar/global covers. In that
@@ -218,7 +218,7 @@ static void
 			split_cell_boundary(H3Index cell, SplitCellBoundary * splitBoundary);
 
 static void
-			append_boundary_polygon(LinkedGeoPolygon ** multiPolygon, LinkedGeoPolygon ** lastPolygon, const CellBoundary * boundary);
+			append_boundary_polygon(LinkedGeoPolygon ** multiPolygon, LinkedGeoPolygon ** lastPolygon, const WkbBoundary * boundary);
 
 static int
 			sort_unique_latitudes(double *lats, int count);
@@ -299,7 +299,7 @@ static bool
 			prepared_polygon_matches_h3set_extents(const LinkedGeoPolygon * polygon, const H3Index * h3set, int numHexes);
 
 static void
-			build_extent_boundary(CellBoundary * boundary, const BoundaryExtents * extents);
+			build_extent_boundary(WkbBoundary * boundary, const BoundaryExtents * extents);
 
 static void
 			prune_linked_geo_loop_spikes(LinkedGeoLoop * loop);
@@ -379,7 +379,7 @@ h3_cells_to_multi_polygon_wkb(PG_FUNCTION_ARGS)
 			&& (extents.maxLat > degsToRads(82.0)
 				|| extents.minLat < degsToRads(-82.0)))
 		{
-			CellBoundary boundary;
+			WkbBoundary boundary;
 
 			build_extent_boundary(&boundary, &extents);
 			wkb = boundary_to_wkb(&boundary);
@@ -719,7 +719,7 @@ coarse_cells_to_multi_polygon_wkb(const H3Index * h3set, int numHexes, int resol
 	{
 		/* Same class as the low-res direct path: shrunken cap/extent output. */
 		BoundaryExtents extents;
-		CellBoundary boundary;
+		WkbBoundary boundary;
 
 		h3_set_boundary_extents(h3set, numHexes, &extents);
 		build_extent_boundary(&boundary, &extents);
@@ -1380,7 +1380,7 @@ find_split_loop_parent(const LinkedGeoLoop ** loops, const LoopBounds * bounds, 
 
 /* Wrap one split cell boundary part as a single-loop polygon. */
 void
-append_boundary_polygon(LinkedGeoPolygon ** multiPolygon, LinkedGeoPolygon ** lastPolygon, const CellBoundary * boundary)
+append_boundary_polygon(LinkedGeoPolygon ** multiPolygon, LinkedGeoPolygon ** lastPolygon, const WkbBoundary * boundary)
 {
 	LinkedGeoPolygon *polygon;
 	LinkedGeoLoop *loop;
@@ -1578,7 +1578,9 @@ split_cell_boundary(H3Index cell, SplitCellBoundary * splitBoundary)
 	if (crossNum == 0)
 	{
 		splitBoundary->numParts = 1;
-		splitBoundary->parts[0] = boundary;
+		for (int v = 0; v < boundary.numVerts; v++)
+			splitBoundary->parts[0].verts[v] = boundary.verts[v];
+		splitBoundary->parts[0].numVerts = boundary.numVerts;
 	}
 	else if (crossNum == 1)
 	{
@@ -2370,7 +2372,7 @@ h3_set_boundary_extents(const H3Index * h3set, int numHexes, BoundaryExtents * e
 		split_cell_boundary(h3set[i], &splitBoundary);
 		for (int part = 0; part < splitBoundary.numParts; part++)
 		{
-			CellBoundary *boundary = &splitBoundary.parts[part];
+			WkbBoundary *boundary = &splitBoundary.parts[part];
 
 			for (int j = 0; j < boundary->numVerts; j++)
 			{
@@ -2469,7 +2471,7 @@ prepared_polygon_matches_h3set_extents(const LinkedGeoPolygon * polygon, const H
 
 /* Build the rectangular cap/extent boundary emitted for low-res collapsed results. */
 void
-build_extent_boundary(CellBoundary * boundary, const BoundaryExtents * extents)
+build_extent_boundary(WkbBoundary * boundary, const BoundaryExtents * extents)
 {
 	double		west = extents->hasWest && extents->hasEast ? -180.0 : radsToDegs(extents->minLng);
 	double		east = extents->hasWest && extents->hasEast ? 180.0 : radsToDegs(extents->maxLng);

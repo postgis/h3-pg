@@ -25,12 +25,24 @@
 #if POSTGRESQL_VERSION_MAJOR >= 16
 #include "varatt.h" //VAR_SIZE and friends moved to here from postgres.h
 #endif
+/*
+ * WKB boundaries may include synthetic seam vertices in addition to an H3
+ * cell boundary. Each original vertex enters at most one split part, and each
+ * boundary edge can add at most one seam vertex to a part.
+ */
+#define MAX_WKB_BNDRY_VERTS (MAX_CELL_BNDRY_VERTS * 2)
+
+typedef struct
+{
+	int			numVerts;
+	LatLng		verts[MAX_WKB_BNDRY_VERTS];
+} WkbBoundary;
 
 bytea *
-			boundary_array_to_wkb(const CellBoundary * boundaries, size_t num);
+			boundary_array_to_wkb(const WkbBoundary * boundaries, size_t num);
 
 bytea *
-			boundary_to_wkb(const CellBoundary * boundary);
+			boundary_to_wkb(const WkbBoundary * boundary);
 
 bytea *
 			linked_geo_polygon_to_wkb(const LinkedGeoPolygon * multiPolygon);
