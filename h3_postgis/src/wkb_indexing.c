@@ -44,9 +44,9 @@
 
 PGDLLEXPORT PG_FUNCTION_INFO_V1(h3_cell_to_boundary_wkb);
 
-/* Converts CellBoundary coordinates to degrees in place. */
+/* Converts WkbBoundary coordinates to degrees in place. */
 void
-			boundary_to_degs(CellBoundary * boundary);
+			boundary_to_degs(WkbBoundary * boundary);
 
 /* Counts antimeridian crossings in one cell boundary. */
 int
@@ -54,34 +54,29 @@ int
 
 /* Splits one antimeridian-crossing boundary into west/east planar parts. */
 void
-			boundary_split_180(const CellBoundary * boundary, CellBoundary * part1, CellBoundary * part2);
+			boundary_split_180(const CellBoundary * boundary, WkbBoundary * part1, WkbBoundary * part2);
 
 /* Expands a single-crossing polar cell into one explicit planar boundary. */
 void
-			boundary_split_180_polar(const CellBoundary * boundary, CellBoundary * res);
+			boundary_split_180_polar(const CellBoundary * boundary, WkbBoundary * res);
 
 /*
- * Adds one vertex while preserving the fixed CellBoundary capacity.
- *
- * Invariant: a single-crossing (polar) cell is a hexagon of at most six
- * vertices (H3 pentagons sit on icosahedron vertices, never on a pole), and the
- * polar splitter adds four seam vertices, so it stays within
- * MAX_CELL_BNDRY_VERTS (10). The multi-crossing splitter adds two vertices per
- * crossing and distributes the rest over two parts. The assert below keeps any
- * violation of this a clean error rather than a stack overflow; the polar-cell
- * sweep in test/sql/postgis.sql pins the invariant for all resolutions.
+ * Adds one vertex to the larger temporary boundary used for planar WKB.
+ * A split can add seam vertices beyond H3's fixed CellBoundary capacity.
+ * The bound is twice the H3 capacity, covering an original boundary plus one
+ * seam vertex per edge in either output part.
  */
 static void
-			boundary_add_vert(CellBoundary * boundary, const LatLng * vert);
+			boundary_add_vert(WkbBoundary * boundary, const LatLng * vert);
 
 static void
-boundary_add_vert(CellBoundary * boundary, const LatLng * vert)
+boundary_add_vert(WkbBoundary * boundary, const LatLng * vert)
 {
 	const int	maxVerts = sizeof(boundary->verts) / sizeof(boundary->verts[0]);
 
 	SPLIT_ASSERT(
 		boundary->numVerts < maxVerts,
-		"Cell boundary split exceeds CellBoundary vertex capacity");
+		"WKB boundary split exceeds WkbBoundary vertex capacity");
 
 	boundary->verts[boundary->numVerts++] = *vert;
 }
@@ -99,6 +94,7 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 
 	bytea	   *wkb;
 	CellBoundary boundary;
+	WkbBoundary wkbBoundary;
 	int			crossNum;
 
 	h3_assert(cellToBoundary(cell, &boundary));
@@ -107,8 +103,11 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 	if (crossNum == 0)
 	{
 		/* Cell is not crossed by antimeridian */
-		boundary_to_degs(&boundary);
-		wkb = boundary_to_wkb(&boundary);
+		wkbBoundary.numVerts = boundary.numVerts;
+		for (int v = 0; v < boundary.numVerts; v++)
+			wkbBoundary.verts[v] = boundary.verts[v];
+		boundary_to_degs(&wkbBoundary);
+		wkb = boundary_to_wkb(&wkbBoundary);
 	}
 	else if (crossNum == 1)
 	{
@@ -116,7 +115,7 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 		 * A single crossing means the cell touches a pole and returns through the
 		 * prime meridian. That needs the dedicated polar splitter.
 		 */
-		CellBoundary split;
+		WkbBoundary split;
 
 		boundary_split_180_polar(&boundary, &split);
 		boundary_to_degs(&split);
@@ -125,7 +124,7 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 	else
 	{
 		/* A normal antimeridian crossing splits into west/east polygons. */
-		CellBoundary parts[2];
+		WkbBoundary parts[2];
 
 		boundary_split_180(&boundary, &parts[0], &parts[1]);
 
@@ -138,7 +137,7 @@ h3_cell_to_boundary_wkb(PG_FUNCTION_ARGS)
 }
 
 void
-boundary_to_degs(CellBoundary * boundary)
+boundary_to_degs(WkbBoundary * boundary)
 {
 	LatLng	   *verts = boundary->verts;
 	const int	numVerts = boundary->numVerts;
@@ -173,7 +172,7 @@ boundary_crosses_180_num(const CellBoundary * boundary)
 }
 
 void
-boundary_split_180(const CellBoundary * boundary, CellBoundary * part1, CellBoundary * part2)
+boundary_split_180(const CellBoundary * boundary, WkbBoundary * part1, WkbBoundary * part2)
 {
 	const int	numVerts = boundary->numVerts;
 	const LatLng *verts = boundary->verts;
@@ -185,7 +184,7 @@ boundary_split_180(const CellBoundary * boundary, CellBoundary * part1, CellBoun
 		int			next = (v + 1) % numVerts;
 		double		lon;
 		double		nextLon;
-		CellBoundary *part;
+		WkbBoundary *part;
 
 		lon = verts[v].lng;
 		nextLon = verts[next].lng;
@@ -218,7 +217,7 @@ boundary_split_180(const CellBoundary * boundary, CellBoundary * part1, CellBoun
 }
 
 void
-boundary_split_180_polar(const CellBoundary * boundary, CellBoundary * res)
+boundary_split_180_polar(const CellBoundary * boundary, WkbBoundary * res)
 {
 	const int	numVerts = boundary->numVerts;
 	const LatLng *verts = boundary->verts;

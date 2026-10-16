@@ -21,6 +21,7 @@ avoid adding features or APIs which do not map onto the
 ## [Unreleased]
 
 - Use `PG_MODULE_MAGIC_EXT` macro in PostgreSQL 18 and later ([#203], [Andreas Karlsson])
+- Use larger temporary boundaries for antimeridian seam vertices
 
 ## [4.5.0] - 2026-06-08
 
