@@ -114,7 +114,53 @@ SELECT
     h3_distance_user_wrapper(hex) AS dist
 FROM h3_distance_expr_fail_userfn;
 
+-- Expression and partial btree indexes on h3index_ops must be left alone by the
+-- upgrade: REINDEX would evaluate their user-controlled expression/predicate.
+CREATE FUNCTION h3_reindex_guard(h3index) RETURNS h3index
+LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+    IF pg_catalog.current_setting('h3test.block', true) = 'on' THEN
+        RAISE EXCEPTION 'upgrade evaluated a user index expression';
+    END IF;
+    RETURN $1;
+END
+$$;
+CREATE FUNCTION h3_reindex_guard_pred(h3index) RETURNS boolean
+LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+    IF pg_catalog.current_setting('h3test.block', true) = 'on' THEN
+        RAISE EXCEPTION 'upgrade evaluated a user index predicate';
+    END IF;
+    RETURN true;
+END
+$$;
+CREATE TABLE h3_reindex_guard_tbl (hex h3index);
+INSERT INTO h3_reindex_guard_tbl VALUES ('831c02fffffffff'::h3index);
+CREATE INDEX h3_reindex_guard_expr_idx ON h3_reindex_guard_tbl (h3_reindex_guard(hex));
+CREATE INDEX h3_reindex_guard_pred_idx ON h3_reindex_guard_tbl (hex)
+    WHERE h3_reindex_guard_pred(hex);
+SET h3test.block = 'on';
+
 ALTER EXTENSION h3 UPDATE;
+
+RESET h3test.block;
+DROP TABLE h3_reindex_guard_tbl;
+DROP FUNCTION h3_reindex_guard(h3index);
+DROP FUNCTION h3_reindex_guard_pred(h3index);
+
+-- Extension upgrade scripts must not evaluate user-controlled expressions.
+-- Rebuild/refresh dependent user objects explicitly after the upgrade.
+REINDEX INDEX h3_distance_expr_fail_idx;
+REINDEX INDEX h3_distance_expr_fail_fn_idx;
+REINDEX INDEX h3_distance_expr_fail_userfn_idx;
+ALTER TABLE h3_distance_generated_fail DISABLE TRIGGER USER;
+UPDATE h3_distance_generated_fail SET hex = hex;
+ALTER TABLE h3_distance_generated_fail ENABLE TRIGGER USER;
+UPDATE h3_distance_generated_fail_fn SET hex = hex;
+UPDATE h3_distance_generated_fail_userfn SET hex = hex;
+UPDATE h3_distance_generated_fail_userfn_identity SET hex = hex;
+REFRESH MATERIALIZED VIEW h3_distance_matview_fail_fn;
+REFRESH MATERIALIZED VIEW h3_distance_matview_fail_userfn;
 
 SELECT (current_setting('server_version_num')::int >= 140000) = EXISTS (
     SELECT 1
