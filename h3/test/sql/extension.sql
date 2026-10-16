@@ -141,7 +141,7 @@ CREATE INDEX h3_reindex_guard_pred_idx ON h3_reindex_guard_tbl (hex)
     WHERE h3_reindex_guard_pred(hex);
 SET h3test.block = 'on';
 
-ALTER EXTENSION h3 UPDATE TO 'unreleased';
+ALTER EXTENSION h3 UPDATE;
 
 RESET h3test.block;
 DROP TABLE h3_reindex_guard_tbl;
